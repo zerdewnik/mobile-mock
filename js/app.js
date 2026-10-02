@@ -2843,81 +2843,153 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return `
       <div class="list-pad an-groups">
         ${MOCK.groups
-          .map((g) => {
-            const a = groupStats(g);
-            return `
+          .map(
+            (g) => `
           <button type="button" class="ag-card" data-an-group="${g.id}">
-            ${a.pending ? `<span class="sp-badge">${a.pending}</span>` : ""}
             <div class="ag-top">
               <div style="flex:1;min-width:0">
                 <div class="group-name">${g.name}</div>
-                <div class="group-course">${g.courseLabel} · ${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</div>
+                <div class="group-course">${g.courseLabel}</div>
               </div>
               ${icon("chevron_right")}
             </div>
-            <div class="ag-metrics">
-              <div><b>${a.avgScore}</b><span>ср. балл</span></div>
-              <div><b>${a.avgTest}</b><span>ср. тест</span></div>
-              <div><b>${a.active}/${g.studentsCount}</b><span>активны сегодня</span></div>
-            </div>
-            <div class="ag-prog"><i style="width:${a.avgProgress}%"></i></div>
-            <div class="ag-prog-l">Средний прогресс по курсу · ${a.avgProgress}%</div>
-          </button>`;
-          })
+          </button>`
+          )
           .join("")}
       </div>`;
   }
 
+  /** Студенттің соңғы пробный ЕНТ нәтижелері (макс 140): тұрақты жалған деректер */
+  function studentEnt(x) {
+    if (!x.ent) {
+      const h = (n) => ((x.id * 2654435761 + n * 40503) >>> 0) % 1000;
+      const base = 45 + Math.round(((x.score || 0) / 100) * 60) + (h(1) % 15);
+      x.ent = [3, 2, 1, 0].map((k) => ({
+        date: ["05.09", "12.09", "19.09", "26.09"][3 - k],
+        score: Math.max(20, Math.min(140, base - k * (2 + (h(k + 2) % 5)))),
+      }));
+    }
+    return x.ent;
+  }
+
+  /** Белсенділік: күн → сағаттар, апта → күндер, ай → күндер */
+  function activitySeries(g, period, date) {
+    const n = g.students.length;
+    const h = (k) => ((g.id * 7919 + k * 104729) >>> 0) % 1000;
+    const seed = date.getFullYear() * 400 + date.getMonth() * 32 + date.getDate();
+    if (period === "day") {
+      const hours = ["08", "10", "12", "14", "16", "18", "20", "22"];
+      const shape = [0.15, 0.25, 0.2, 0.35, 0.5, 0.65, 0.8, 0.45];
+      return hours.map((t, i) => ({ label: t, tip: `${t}:00–${hours[i + 1] || "24"}:00`, v: Math.min(n, Math.round(n * shape[i] * (0.7 + (h(seed + i) % 50) / 100))) }));
+    }
+    if (period === "week") {
+      const mon = new Date(date);
+      mon.setDate(date.getDate() - ((date.getDay() + 6) % 7));
+      return ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"].map((d, i) => {
+        const day = new Date(mon);
+        day.setDate(mon.getDate() + i);
+        const k = day.getFullYear() * 400 + day.getMonth() * 32 + day.getDate();
+        return { label: d, tip: `${d}, ${pad(day.getDate())}.${pad(day.getMonth() + 1)}`, v: Math.min(n, Math.round(n * (i >= 5 ? 0.45 : 0.62) + (h(k) % Math.max(2, Math.ceil(n * 0.35))))) };
+      });
+    }
+    const days = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+    return Array.from({ length: days }, (_, i) => {
+      const day = new Date(date.getFullYear(), date.getMonth(), i + 1);
+      const k = day.getFullYear() * 400 + day.getMonth() * 32 + day.getDate();
+      const wk = day.getDay() === 0 || day.getDay() === 6;
+      return { label: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", tip: `${pad(i + 1)}.${pad(date.getMonth() + 1)}`, v: Math.min(n, Math.round(n * (wk ? 0.4 : 0.6) + (h(k) % Math.max(2, Math.ceil(n * 0.35))))) };
+    });
+  }
+
   function openGroupAnalytics(g) {
-    const a = groupStats(g);
-    const days = ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"];
-    const maxW = Math.max(1, ...a.week);
-    const rows = [...g.students].sort((p, q) => a.pct(q) - a.pct(p));
-    let attAll = false;
-    const build = () => `
+    const A = { period: "week", date: new Date(2026, 9, 3), attAll: false };
+    const build = () => {
+      const a = groupStats(g);
+      const ents = g.students.map((x) => ({ x, list: studentEnt(x) }));
+      const last = ents.map((e) => e.list[e.list.length - 1].score);
+      const prev = ents.map((e) => e.list[e.list.length - 2].score);
+      const avg = (arr) => (arr.length ? Math.round(arr.reduce((t, v) => t + v, 0) / arr.length) : 0);
+      const entAvg = avg(last);
+      const diff = entAvg - avg(prev);
+      const grant = last.filter((v) => v >= 50).length;
+      const series = activitySeries(g, A.period, A.date);
+      const maxV = Math.max(1, ...series.map((p) => p.v));
+      const peak = series.findIndex((p) => p.v === maxV);
+      const dateLabel =
+        A.period === "day"
+          ? dmy(A.date)
+          : A.period === "week"
+            ? (() => {
+                const mon = new Date(A.date);
+                mon.setDate(A.date.getDate() - ((A.date.getDay() + 6) % 7));
+                const sun = new Date(mon);
+                sun.setDate(mon.getDate() + 6);
+                return `${pad(mon.getDate())}.${pad(mon.getMonth() + 1)} – ${pad(sun.getDate())}.${pad(sun.getMonth() + 1)}`;
+              })()
+            : `${KZ_MONTHS[A.date.getMonth()].replace(/^./, (c) => c.toUpperCase())} ${A.date.getFullYear()}`;
+      const ranked = [...ents].sort((p, q) => q.list[q.list.length - 1].score - p.list[p.list.length - 1].score);
+      return `
       <div class="ga">
         <div class="ga-head">
           <div class="ga-title">${g.name}</div>
           <div class="ga-sub">${g.courseLabel} · ${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</div>
         </div>
+
+        <div class="ga-ent">
+          <div class="ga-ent-l">Пробный ЕНТ · средний балл группы</div>
+          <div class="ga-ent-v"><b>${entAvg}</b><span> / 140</span>
+            <em class="${diff >= 0 ? "up" : "down"}">${icon(diff >= 0 ? "arrow_upward" : "arrow_downward")}${diff >= 0 ? "+" : ""}${diff} с прошлого пробного</em>
+          </div>
+          <div class="ga-ent-bar"><i style="width:${(entAvg / 140) * 100}%"></i><s style="left:${(50 / 140) * 100}%" title="Порог гранта 50"></s></div>
+          <div class="ga-ent-meta"><span>Последний пробный: 26.09</span><span>≥ 50 баллов: ${grant} из ${g.students.length}</span></div>
+        </div>
+
         <div class="ga-tiles">
-          <div class="ga-tile"><span>Средний балл за неделю</span><b>${a.avgScore}</b></div>
-          <div class="ga-tile"><span>Средний прогресс</span><b>${a.avgProgress}%</b></div>
-          <div class="ga-tile"><span>Средний результат тестов</span><b>${a.avgTest}<small> из 100</small></b></div>
           <div class="ga-tile"><span>Активны сегодня</span><b>${a.active}<small> / ${g.studentsCount}</small></b></div>
-          <div class="ga-tile wide ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "check_circle", "material-icons-outlined")}Конспекты на проверке</span><b>${a.pending}</b></div>
+          <div class="ga-tile ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "check_circle", "material-icons-outlined")}Конспекты</span><b>${a.pending}<small> на проверке</small></b></div>
         </div>
 
         <div class="ga-card">
-          <div class="ga-ctitle">Активность за неделю</div>
+          <div class="ga-ctitle">Активность</div>
           <div class="ga-csub">Сколько учеников заходили в приложение</div>
-          <div class="ga-bars">
-            ${a.week
+          <div class="seg-tabs seg-3 ga-seg">
+            ${[["day", "День"], ["week", "Неделя"], ["month", "Месяц"]].map(([k, l]) => `<button type="button" data-ga-period="${k}" class="${A.period === k ? "on" : ""}">${l}</button>`).join("")}
+          </div>
+          <div class="ga-dnav">
+            <button type="button" class="sch-arrow" data-ga-shift="-1">${icon("chevron_left")}</button>
+            <button type="button" class="ga-date" id="gaDate">${icon("calendar_today")}${dateLabel}</button>
+            <button type="button" class="sch-arrow" data-ga-shift="1">${icon("chevron_right")}</button>
+          </div>
+          <div class="ga-bars ${A.period === "month" ? "month" : ""}" style="grid-template-columns:repeat(${series.length},1fr)">
+            ${series
               .map(
-                (v, i) => `
-              <button type="button" class="ga-bar ${i === 6 ? "today" : ""}" data-tip="${days[i]}: ${v} из ${g.studentsCount}">
-                ${i === 6 || v === maxW ? `<em>${v}</em>` : ""}
-                <i style="height:${Math.max(4, (v / g.studentsCount) * 100)}%"></i>
-                <span>${days[i]}</span>
+                (p, i) => `
+              <button type="button" class="ga-bar ${i === peak ? "today" : ""}" data-tip="${p.tip}: ${p.v} из ${g.studentsCount}">
+                ${i === peak && A.period !== "month" ? `<em>${p.v}</em>` : ""}
+                <i style="height:${Math.max(3, (p.v / g.studentsCount) * 100)}%"></i>
+                <span>${p.label}</span>
               </button>`
               )
               .join("")}
           </div>
+          <div class="ga-peak">Пик: ${series[peak].tip} · ${series[peak].v} из ${g.studentsCount}</div>
         </div>
 
         <div class="ga-card">
-          <div class="ga-ctitle">Прогресс по курсу</div>
-          <div class="ga-csub">Пройдено уроков, % · нажмите, чтобы открыть профиль</div>
+          <div class="ga-ctitle">Пробный ЕНТ по ученикам</div>
+          <div class="ga-csub">Последний результат из 140 · нажмите, чтобы открыть профиль</div>
           <div class="ga-hbars">
-            ${rows
-              .map(
-                (x) => `
-              <button type="button" class="ga-hrow" data-ga-student="${x.id}" data-tip="${x.name}: ${x.progress} уроков">
-                <span class="ga-hname">${x.name}</span>
-                <span class="ga-htrack"><i style="width:${Math.max(2, a.pct(x))}%"></i></span>
-                <span class="ga-hval">${a.pct(x)}%</span>
-              </button>`
-              )
+            ${ranked
+              .map((e) => {
+                const v = e.list[e.list.length - 1].score;
+                const d = v - e.list[e.list.length - 2].score;
+                return `
+              <button type="button" class="ga-hrow" data-ga-student="${e.x.id}" data-tip="${e.list.map((r) => `${r.date}: ${r.score}`).join(" · ")}">
+                <span class="ga-hname">${e.x.name}</span>
+                <span class="ga-htrack"><i style="width:${(v / 140) * 100}%"></i></span>
+                <span class="ga-hval">${v}<small class="${d >= 0 ? "up" : "down"}">${d >= 0 ? "+" : ""}${d}</small></span>
+              </button>`;
+              })
               .join("")}
           </div>
         </div>
@@ -2927,7 +2999,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           ${
             a.attention.length
               ? a.attention
-                  .slice(0, attAll ? 999 : 5)
+                  .slice(0, A.attAll ? 999 : 5)
                   .map(
                     (r) => `
               <button type="button" class="ga-att" data-ga-student="${r.x.id}">
@@ -2936,20 +3008,31 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
                 ${icon("chevron_right")}
               </button>`
                   )
-                  .join("") + (a.attention.length > 5 && !attAll ? `<button type="button" class="ga-more" id="gaMore">Показать ещё ${a.attention.length - 5}</button>` : "")
+                  .join("") + (a.attention.length > 5 && !A.attAll ? `<button type="button" class="ga-more" id="gaMore">Показать ещё ${a.attention.length - 5}</button>` : "")
               : `<div class="ga-ok">${icon("check_circle", "material-icons-outlined")}Все ученики в норме</div>`
           }
         </div>
       </div>`;
+    };
     pushScreen(
       "Аналитика группы",
       build,
       () => {
         $$("[data-ga-student]").forEach((b) => (b.onclick = () => openStaffStudent(g.students.find((x) => x.id === Number(b.dataset.gaStudent)), g)));
-        $("#gaMore")?.addEventListener("click", () => {
-          attAll = true;
-          paintStack();
+        $$("[data-ga-period]").forEach((b) => (b.onclick = () => ((A.period = b.dataset.gaPeriod), paintStack())));
+        $$("[data-ga-shift]").forEach((b) => {
+          b.onclick = () => {
+            const k = Number(b.dataset.gaShift);
+            const d = new Date(A.date);
+            if (A.period === "day") d.setDate(d.getDate() + k);
+            else if (A.period === "week") d.setDate(d.getDate() + 7 * k);
+            else d.setMonth(d.getMonth() + k, 1);
+            A.date = d;
+            paintStack();
+          };
         });
+        $("#gaDate").onclick = () => openDatePicker(A.date, (d) => ((A.date = d), paintStack()));
+        $("#gaMore")?.addEventListener("click", () => ((A.attAll = true), paintStack()));
         $("[data-ga-pending]")?.addEventListener("click", () => {
           const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0);
           if (s) openStaffStudent(s, g);

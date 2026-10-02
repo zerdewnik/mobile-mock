@@ -3143,3 +3143,31 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .ga-att > .material-icons-round { color: #6c6f84; }
 .ga-ok { margin-top: 10px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--primary); }
 .ga-more { width: 100%; margin-top: 8px; border: 0; background: #262628; color: var(--primary); font-family: inherit; font-size: 13px; font-weight: 500; border-radius: 10px; padding: 10px; cursor: pointer; }
+
+/* Аналитика v2 */
+.ag-card { padding: 18px 16px; }
+.ga-ent { background: linear-gradient(135deg, #24382e, #1e1e1e 70%); border: 1px solid #2f4a3c; border-radius: 16px; padding: 16px; }
+.ga-ent-l { font-size: 12px; color: #a9c7b6; }
+.ga-ent-v { margin-top: 8px; display: flex; align-items: baseline; flex-wrap: wrap; gap: 4px 6px; }
+.ga-ent-v b { font-size: 40px; font-weight: 800; line-height: 1; }
+.ga-ent-v > span { font-size: 15px; color: #8a8d9c; }
+.ga-ent-v em { font-style: normal; font-size: 11.5px; display: inline-flex; align-items: center; gap: 2px; margin-left: auto; }
+.ga-ent-v em .material-icons-round { font-size: 14px; }
+.up { color: #5cb36d; }
+.down { color: #e06b5b; }
+.ga-ent-bar { position: relative; margin-top: 14px; height: 8px; border-radius: 5px; background: #2b2f2d; }
+.ga-ent-bar i { display: block; height: 100%; border-radius: 5px; background: var(--primary); }
+.ga-ent-bar s { position: absolute; top: -4px; width: 2px; height: 16px; background: #e6e6e6; border-radius: 1px; }
+.ga-ent-meta { margin-top: 10px; display: flex; justify-content: space-between; font-size: 11px; color: #8a8d9c; }
+.ga-tiles { margin-top: 8px; }
+.ga-seg { margin: 14px 0 0; }
+.ga-dnav { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.ga-dnav .sch-arrow { width: 36px; height: 36px; background: #262628; }
+.ga-date { flex: 1; height: 36px; border: 0; border-radius: 9px; background: #262628; color: #fff; font-family: inherit; font-size: 13px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 6px; cursor: pointer; }
+.ga-date .material-icons-round { font-size: 16px; color: var(--primary); }
+.ga-bars.month { gap: 1px; }
+.ga-bars.month .ga-bar i { width: 70%; border-radius: 2px 2px 0 0; }
+.ga-peak { font-size: 11px; color: #8a8d9c; }
+.ga-hrow { grid-template-columns: 110px 1fr 52px; }
+.ga-hval { display: flex; gap: 4px; justify-content: flex-end; align-items: baseline; }
+.ga-hval small { font-size: 10px; }
