@@ -3,7 +3,7 @@
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
   const NAV_STAFF = [
-    { out: "assignment", fill: "assignment", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисления" },
+    { out: "insert_chart", fill: "insert_chart", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Аналитика" },
     { out: "live_tv", fill: "live_tv", outClass: "material-icons-outlined", fillClass: "material-icons-outlined", label: "Эфир" },
     { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Хабарлама" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои группы" },
@@ -14,13 +14,13 @@
     { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Уведомление" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Зачисления", "Эфир", "Хабарлама", "Мои группы"];
+  const CHIPS_STAFF = ["Аналитика", "Эфир", "Хабарлама", "Мои группы"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Уведомления", "Мои курсы"];
 
   const state = {
     mode: "staff",
     tab: 3,
-    expandedGroupId: 9,
+    expandedGroupId: null,
     efirDate: new Date(2026, 9, 2),
     expandedEnrollmentId: null,
     profileStudent: null,
@@ -2381,7 +2381,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return `
       <div class="soon-screen">
         ${icon("handyman")}
-        <div class="soon-title">Зачисления</div>
+        <div class="soon-title">Аналитика</div>
         <div class="soon-sub">Скоро будет доступно</div>
       </div>`;
   }
@@ -3144,7 +3144,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
     return `
-      <div class="appbar-title" style="flex:1">${["Зачисления", "Эфир", "", "Мои группы"][state.tab]}</div>
+      <div class="appbar-title" style="flex:1">${["Аналитика", "Эфир", "", "Мои группы"][state.tab]}</div>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
 
