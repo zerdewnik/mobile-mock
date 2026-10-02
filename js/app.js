@@ -2507,9 +2507,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $$(".chip-mode").forEach((btn) => {
       btn.addEventListener("click", () => setMode(btn.dataset.mode));
     });
-    paintTabChips();
-
-    setTab(state.tab);
+    // По умолчанию — студент; staff: .../mobile-mock/#staff
+    setMode(location.hash === "#staff" ? "staff" : "student");
   }
 
   document.addEventListener("DOMContentLoaded", init);
