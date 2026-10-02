@@ -2193,6 +2193,334 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     ]);
   }
 
+  /* —— Staff: студент профилі және курс прогресі —— */
+  const STAFF_POSTERS = {
+    10: { lines: ["ДҮНИЕЖҮЗІ", "ТАРИХЫ"], bg: "linear-gradient(135deg,#3f8a78,#2e6e5f)", img: "assets/v2/history_world.png", title: "Дүниежүзі Тарихы" },
+    11: { lines: ["МАТЕМАТИКА"], bg: "linear-gradient(135deg,#4f86d0,#3567b0)", img: "assets/v2/math.png", title: "Математика" },
+    12: { lines: ["ҚҰҚЫҚ"], bg: "linear-gradient(135deg,#8a5a3a,#6a4128)", img: "assets/v2/law.png", title: "Құқық негіздері" },
+    13: { lines: ["ҚАЗАҚСТАН", "ТАРИХЫ"], bg: "linear-gradient(135deg,#2f8a7d,#226b61)", img: "assets/v2/history_kz.png", title: "Қазақстан тарихы" },
+    14: { lines: ["ХИМИЯ"], bg: "linear-gradient(135deg,#9a3fb4,#73288a)", img: "assets/v2/chemistry.png", title: "Химия" },
+    15: { lines: ["БИОЛОГИЯ"], bg: "linear-gradient(135deg,#46a14f,#2f7d3a)", img: "assets/v2/bio.png", title: "Биология" },
+    16: { lines: ["АҒЫЛШЫН", "ТІЛІ"], bg: "linear-gradient(135deg,#7b2fc0,#5a1f9a)", img: "assets/v2/eng_uk.png", title: "Ағылшын тілі" },
+  };
+  /** Курс бөлімдері (staff көрінісі). ДЖТ — скриншоттағыдай */
+  const STAFF_SECTIONS = {
+    10: [
+      ["Ерте орта ғасырлар және Ислам әлемі", ["Ерте орта ғасырлар", "Араб халифаты"]],
+      ["Феодалдық соғыстар және Абсолютизмге өту", ["Жүзжылдық соғыс", "Англия мен Ресейдегі абсолютизм"]],
+      ["Ұлы географиялық ашулар, Реформация және Ағартушылық", ["Ұлы географиялық ашулар", "Реформация", "Ағартушылық"]],
+      ["Француз революциясы және XIX ғ. империялар", ["Француз революциясы", "Наполеон империясы"]],
+      ["XIX ғасырдағы дағдарыстар, соғыстар мен реформалар", ["Қырым соғысы", "Ресейдегі 1861 жылғы реформа"]],
+      ["XIX ҒАСЫРДАҒЫ РЕВОЛЮЦИЯЛАР МЕН ИМПЕРИАЛИЗМ", ["1848 жылғы революциялар", "Германияның бірігуі"]],
+      [
+        "XIX–XX ғ. саяси өзгерістер және революциялар",
+        ["ЖАПОНИЯНЫҢ АШЫЛУЫ", "Жаңа Заман ұғымы", "Капиталистік қатынастар арасындағы қайшылықтар", "w:Апталық сынақ (11 - апта)", "РЕСЕЙДЕГІ АҚПАН РЕВОЛЮЦИЯСЫ, КСРО-НЫҢ ҚҰРЫЛУЫ", "Осман империясында Сұлтандық биліктің жойылуы", "Қытайдағы Синьхай революциясы", "Гоминьдан партиясы, ҚКП және азамат соғысы"],
+      ],
+      ["Бірінші дүниежүзілік соғыстан кейінгі әлем", ["Версаль-Вашингтон жүйесі", "Ұлы депрессия"]],
+      ["II Дүниежүзілік соғыс және Мәдени бағыттар", ["Екінші дүниежүзілік соғыс", "XX ғасыр мәдениеті"]],
+      ["Қырғи қабақ соғыс", ["Қырғи қабақ соғыстың басталуы", "Кариб дағдарысы"]],
+    ],
+    11: [["Теңдеулер", ["Сызықтық теңдеулер", "Квадрат теңдеулер"]], ["Теңсіздіктер", ["Интервалдар әдісі", "w:Апталық сынақ (5 - апта)"]], ["Функция", ["Функция. Анықтамасы", "Гипербола. Кубтық парабола"]], ["Логарифм", ["Логарифм анықтамасы"]]],
+    12: [["Мемлекет және құқық", ["Мемлекет нысандары", "Құқық көздері"]], ["Конституциялық құқық", ["ҚР Конституциясы", "w:Апталық сынақ (4 - апта)"]], ["Азаматтық құқық", ["Меншік құқығы"]]],
+    13: [["Ежелгі Қазақстан", ["Тас ғасыры", "Сақтар"]], ["Орта ғасырлар", ["Түрік қағанаты", "Қарахандар", "w:Апталық сынақ (6 - апта)"]], ["Қазақ хандығы", ["Қазақ хандығының құрылуы", "Есім хан"]], ["Алаш қозғалысы", ["Алаш партиясы"]]],
+    14: [["Атом құрылысы", ["Атом құрылысы", "Изотоптар"]], ["Химиялық байланыс", ["Ковалентті байланыс", "w:Апталық сынақ (3 - апта)"]], ["Органикалық химия", ["Алкандар"]]],
+    15: [["Микробиология", ["Вирустар", "Бактериялар"]], ["Жасушалық биология", ["Жасуша құрылысы", "Митоз", "w:Апталық сынақ (4 - апта)"]], ["Ботаника", ["Фотосинтез"]]],
+    16: [["Nouns, Pronouns & Basic Tenses", ["Noun", "Adjective", "Present Simple"]], ["Tenses System", ["Present Perfect", "w:Апталық сынақ (4 - апта)"]], ["Modals", ["Modal Verbs"]]],
+  };
+  const staffProgress = {};
+  function staffCourseFor(student, group) {
+    if (staffProgress[student.id]) return staffProgress[student.id];
+    const cid = STAFF_SECTIONS[group?.courseId] ? group.courseId : 10;
+    const flat = [];
+    STAFF_SECTIONS[cid].forEach(([title, topics], si) =>
+      topics.forEach((t) => {
+        if (t.startsWith("w:")) flat.push({ si, kind: "weekly", title: t.slice(2) });
+        else {
+          flat.push({ si, kind: "video", title: t });
+          flat.push({ si, kind: "test", title: t });
+        }
+      })
+    );
+    const [done, total] = String(student.progress || "0/1").split("/").map(Number);
+    // ДЖТ: «Гоминьдан…» тесті — қазір өтетін сабақ (скриншоттағыдай)
+    let cur = cid === 10 ? flat.findIndex((x) => x.kind === "test" && x.title.startsWith("Гоминьдан")) : Math.round((done / total) * flat.length);
+    cur = Math.max(0, Math.min(flat.length - 1, cur));
+    const start = new Date(2026, 8, 28, 18, 5);
+    const h = (n) => (n * 2654435761) % 1000;
+    // Күндер: ағымдағы сабақтан артқа қарай, әр сабақ арасы 9–38 сағат
+    const when = [];
+    for (let i = cur - 1, t = start.getTime(); i >= 0; i--) {
+      t -= (9 + (h(i + student.id) % 30)) * 3600 * 1000;
+      when[i] = new Date(t);
+    }
+    flat.forEach((x, i) => {
+      x.state = i < cur ? "done" : i === cur ? "current" : "locked";
+      if (x.state !== "done") return;
+      const back = cur - i;
+      const d = when[i];
+      x.date = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      if (x.kind === "test") x.result = 40 + (h(i * 7 + student.id) % 13) * 5;
+      if (x.kind === "weekly") x.result = 60 + (h(i * 3 + student.id) % 9) * 5;
+      if (x.kind === "video") x.note = back <= 9 && back % 2 === 1 && h(i + student.id) % 3 !== 0 ? "pending" : h(i * 5 + student.id) % 3 === 0 ? "none" : "ok";
+    });
+    if (cid === 10) {
+      const fix = { "ЖАПОНИЯНЫҢ АШЫЛУЫ": ["none", 50], "Жаңа Заман ұғымы": ["ok", 55], "Капиталистік қатынастар арасындағы қайшылықтар": ["pending", 55], "РЕСЕЙДЕГІ АҚПАН РЕВОЛЮЦИЯСЫ, КСРО-НЫҢ ҚҰРЫЛУЫ": ["pending", 80], "Осман империясында Сұлтандық биліктің жойылуы": ["pending", 80], "Қытайдағы Синьхай революциясы": ["pending", 70], "Гоминьдан партиясы, ҚКП және азамат соғысы": ["pending", null] };
+      const dates = ["21.09.2026 22:11", "21.09.2026 22:43", "23.09.2026 20:05", "23.09.2026 20:49", "23.09.2026 22:07", "24.09.2026 01:09", "27.09.2026 09:44", "28.09.2026 15:18", "28.09.2026 17:11", "28.09.2026 17:25", "28.09.2026 18:05", "29.09.2026 19:40", "29.09.2026 20:22", "01.10.2026 21:15"];
+      const sec = flat.filter((x) => x.si === 6);
+      sec.forEach((x, k) => {
+        if (dates[k] && x.state === "done") x.date = dates[k];
+        const f = fix[x.title];
+        if (!f || x.state !== "done") return;
+        if (x.kind === "video") x.note = f[0];
+        if (x.kind === "test" && f[1] != null) x.result = f[1];
+      });
+      const wk = sec.find((x) => x.kind === "weekly");
+      if (wk) wk.result = 90;
+    }
+    const data = { cid, flat, cur, done, total, poster: STAFF_POSTERS[cid], sections: STAFF_SECTIONS[cid].map(([t]) => t) };
+    staffProgress[student.id] = data;
+    return data;
+  }
+  const pendingCount = (data, si = null) => data.flat.filter((x) => x.note === "pending" && (si == null || x.si === si)).length;
+
+  /** Студент id бойынша тұрақты UUID (8-4-4-4-12) */
+  function fakeUuid(seed) {
+    let x = (seed * 2654435761) | 0 || 1;
+    let hex = "";
+    while (hex.length < 32) {
+      x ^= x << 13;
+      x ^= x >>> 17;
+      x ^= x << 5;
+      hex += (x >>> 0).toString(16).toUpperCase().padStart(8, "0");
+    }
+    return [8, 4, 4, 4, 12].reduce((acc, n, i, arr) => {
+      const from = arr.slice(0, i).reduce((t, k) => t + k, 0);
+      return [...acc, hex.slice(from, from + n)];
+    }, []).join("-");
+  }
+
+  function studentExtra(s) {
+    if (!s.extra) {
+      const n = s.id * 7919;
+      s.extra = {
+        parentName: "—",
+        parentPhone: `+7 7${70 + (n % 9)} ${100 + (n % 900)} ${10 + (n % 89)} ${10 + ((n >> 3) % 89)}`,
+        city: "—",
+        grade: "11 класс",
+        uuid: fakeUuid(s.id),
+      };
+    }
+    return s.extra;
+  }
+
+  function openStaffStudent(s, group) {
+    const data = staffCourseFor(s, group);
+    const ex = studentExtra(s);
+    const curItem = data.flat[data.cur];
+    const build = () => {
+      const pend = pendingCount(data);
+      return `
+        <div class="sp-head">
+          <div class="sp-avatar" style="background:${s.color}">${s.initials}</div>
+          <div class="sp-name">${s.name.toUpperCase()}</div>
+          <div class="sp-seen">${s.lastSeen || ""}</div>
+        </div>
+        <div class="sp-actions">
+          <a class="sp-act" href="tel:${s.phone.replace(/\s/g, "")}">${icon("call", "material-icons-outlined")}<span>Звонок</span></a>
+          <a class="sp-act" href="https://wa.me/${s.phone.replace(/\D/g, "")}" target="_blank" rel="noopener">${waSvg()}<span>Написать</span></a>
+          <button type="button" class="sp-act" id="spReport">${icon("check_circle_outline", "material-icons-outlined")}<span>Отчёт</span></button>
+          <button type="button" class="sp-act" id="spEdit">${icon("edit", "material-icons-outlined")}<span>Изменить</span></button>
+        </div>
+        <div class="sp-info">
+          <div class="sp-f"><span>Номер ученика</span><a href="tel:${s.phone.replace(/\s/g, "")}" class="green">${s.phone}</a></div>
+          <div class="sp-f"><span>ФИО родителя</span><b>${ex.parentName}</b></div>
+          <div class="sp-f"><span>Номер родителя</span><b>${ex.parentPhone}</b></div>
+          <div class="sp-f"><span>Город</span><b>${ex.city}</b></div>
+          <div class="sp-f"><span>Класс</span><b>${ex.grade}</b></div>
+          <div class="sp-f"><span>UUID</span><b class="mono">${ex.uuid}</b></div>
+        </div>
+        <button type="button" class="sp-course" id="spCourse">
+          ${pend ? `<span class="sp-badge">${pend}</span>` : ""}
+          <div class="sp-poster">${posterHtml(data.poster)}</div>
+          <div class="sp-cbody">
+            <div class="sp-ctitle">${data.poster.title}</div>
+            <div class="sp-cmeta">Пройдено ${data.done} из ${data.total}</div>
+            <div class="sp-cur">${kindIcon(curItem.kind)}<span>${curItem.title}</span></div>
+          </div>
+        </button>`;
+    };
+    pushScreen(
+      "Профиль",
+      build,
+      () => {
+        $("#spCourse").onclick = () => openStaffCourse(s, data);
+        $("#spHistory").onclick = () => openLoginHistory(s);
+        $("#spReport").onclick = () => openStudentReport(s, data);
+        $("#spEdit").onclick = () => openStudentEdit(s);
+      },
+      { screenCls: "sp-screen", right: `<button type="button" class="sp-hist" id="spHistory">История входа</button>` }
+    );
+  }
+
+  function openStaffCourse(s, data) {
+    const open = {};
+    const build = () => `
+      <div class="list-pad course-secs staff-secs" style="--acc:#2e3a34">${data.sections
+        .map((title, si) => {
+          const rows = data.flat.map((x, i) => ({ ...x, i })).filter((x) => x.si === si);
+          const dim = rows.every((x) => x.state === "locked");
+          const pend = pendingCount(data, si);
+          return `
+          <div class="csec ${open[si] ? "open" : ""} ${dim ? "dim" : ""}">
+            <button type="button" class="csec-head" data-ssec="${si}">
+              <span>${title}</span>${pend ? `<i class="sp-badge in">${pend}</i>` : ""}${icon(open[si] ? "expand_less" : "expand_more")}
+            </button>
+            ${
+              open[si]
+                ? `<div class="csec-body">${rows
+                    .map((x) => {
+                      let right = "";
+                      if (x.state === "locked") right = icon("lock", "material-icons-outlined lk");
+                      else if (x.state === "current") right = `<span class="ln-act grey">Не пройдено</span>`;
+                      else if (x.kind === "video")
+                        right =
+                          x.note === "pending"
+                            ? `<span class="ln-act orange">Конспект ${icon("schedule", "material-icons-outlined")}</span>`
+                            : x.note === "ok"
+                              ? `<span class="ln-act white">Конспект ${icon("check_circle")}</span>`
+                              : x.note === "back"
+                                ? `<span class="ln-act red">На доработке</span>`
+                                : `<span class="ln-act grey">Нет конспекта</span>`;
+                      else right = `<span class="ln-act ${x.kind === "weekly" ? "purple" : "green"}">${x.result} из 100</span>`;
+                      return `
+              <button type="button" class="ln-row ${x.state} ${x.note === "pending" ? "pending" : ""}" data-sitem="${x.i}">
+                ${kindIcon(x.kind)}
+                <span class="ln-title">${x.title}${x.date ? `<small>${x.date}</small>` : ""}</span>
+                ${right}
+              </button>`;
+                    })
+                    .join("")}</div>`
+                : ""
+            }
+          </div>`;
+        })
+        .join("")}</div>`;
+    pushScreen(data.poster.title, build, () => {
+      $$("[data-ssec]").forEach((b) => (b.onclick = () => ((open[b.dataset.ssec] = !open[b.dataset.ssec]), paintStack())));
+      $$("[data-sitem]").forEach((b) => {
+        b.onclick = () => {
+          const x = data.flat[Number(b.dataset.sitem)];
+          if (x.state === "locked") return toast("Студент ещё не открыл этот урок", "err");
+          if (x.state === "current") return toast("Студент ещё не прошёл этот урок");
+          if (x.kind === "video") {
+            if (x.note === "none") return toast("Студент не прикрепил конспект");
+            return openConspect(s, x);
+          }
+          toast(`${x.title}: ${x.result} из 100`);
+        };
+      });
+    }, { right: "<span></span>" });
+  }
+
+  function openConspect(s, x) {
+    openSheet(
+      `
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Конспект</div>
+      <div class="sheet-sub">${s.name} · ${x.title}<br>${x.date}</div>
+      <div class="cs-page">
+        <div class="cs-lines">${Array.from({ length: 9 }, (_, i) => `<i style="width:${55 + ((i * 37) % 40)}%"></i>`).join("")}</div>
+        <span class="cs-file">${icon("image", "material-icons-outlined")}konspekt_${x.date.slice(0, 5).replace(".", "_")}.jpg</span>
+      </div>
+      ${
+        x.note === "pending"
+          ? `<div class="sheet-actions btn-row">
+              <button type="button" class="btn cs-back" id="csBack">Вернуть</button>
+              <button type="button" class="btn btn-primary" id="csOk">Принять</button>
+            </div>`
+          : `<div class="cs-status ${x.note}">${x.note === "ok" ? "Конспект принят" : "Отправлен на доработку"}</div>`
+      }`,
+      { tall: true }
+    );
+    $("#csOk") &&
+      ($("#csOk").onclick = () => {
+        x.note = "ok";
+        closeSheet();
+        toast("Конспект принят");
+        paintStack();
+      });
+    $("#csBack") &&
+      ($("#csBack").onclick = () => {
+        x.note = "back";
+        closeSheet();
+        toast("Конспект возвращён на доработку");
+        paintStack();
+      });
+  }
+
+  function openLoginHistory(s) {
+    const rows = [
+      ["iPhone 13 · iOS 18.6", "02.10.2026 22:18"],
+      ["iPhone 13 · iOS 18.6", "02.10.2026 08:41"],
+      ["Chrome · Windows", "30.09.2026 19:02"],
+      ["iPhone 13 · iOS 18.6", "28.09.2026 15:10"],
+    ];
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">История входа</div>
+      <div class="sheet-sub">${s.name}</div>
+      <div class="lh-list">${rows
+        .map(([d, t], i) => `<div class="lh-row">${icon(d.startsWith("Chrome") ? "laptop" : "phone_iphone", "material-icons-outlined")}<span>${d}${i === 0 ? ` <i>сейчас</i>` : ""}</span><b>${t}</b></div>`)
+        .join("")}</div>`);
+  }
+
+  function openStudentReport(s, data) {
+    const tests = data.flat.filter((x) => x.state === "done" && x.result != null);
+    const avg = tests.length ? Math.round(tests.reduce((t, x) => t + x.result, 0) / tests.length) : 0;
+    const notes = data.flat.filter((x) => x.kind === "video" && x.state === "done");
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Отчёт за неделю</div>
+      <div class="sheet-sub">${s.name} · ${data.poster.title}</div>
+      <div class="rp-grid">
+        <div class="sch-stat"><b style="color:#58aa80">${data.done}/${data.total}</b><span>пройдено</span></div>
+        <div class="sch-stat"><b style="color:#6C7FD8">${avg}</b><span>средний балл</span></div>
+        <div class="sch-stat"><b style="color:#E0A84A">${notes.filter((x) => x.note === "ok").length}/${notes.length}</b><span>конспекты</span></div>
+      </div>
+      <div class="rp-text">Рейтинг в группе: ${s.rank ?? "—"} место · ${s.score ?? 0} баллов за неделю${s.pointsToday ? ` (+${s.pointsToday} сегодня)` : ""}.</div>
+      <div class="sheet-actions"><button type="button" class="btn btn-primary" id="rpSend" style="width:100%">Отправить родителю в WhatsApp</button></div>`);
+    $("#rpSend").onclick = () => {
+      closeSheet();
+      toast("Отчёт отправлен родителю");
+    };
+  }
+
+  function openStudentEdit(s) {
+    const ex = studentExtra(s);
+    openSheet(
+      `
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Изменить данные</div>
+      <div class="ef-label">ФИО родителя</div><input class="ef-input" id="seParent" value="${ex.parentName === "—" ? "" : ex.parentName}" placeholder="Иванова Айгүл" />
+      <div class="ef-label">Номер родителя</div><input class="ef-input" id="sePhone" value="${ex.parentPhone}" />
+      <div class="ef-label">Город</div><input class="ef-input" id="seCity" value="${ex.city === "—" ? "" : ex.city}" placeholder="Алматы" />
+      <div class="ef-label">Класс</div>
+      <label class="ef-select"><span id="seGradeL">${ex.grade}</span><select id="seGrade">${["9 класс", "10 класс", "11 класс", "Выпускник"].map((g) => `<option ${g === ex.grade ? "selected" : ""}>${g}</option>`).join("")}</select>${icon("expand_more")}</label>
+      <button type="button" class="ef-submit" id="seSave">Сохранить</button>`,
+      { tall: true }
+    );
+    $("#seGrade").onchange = () => ($("#seGradeL").textContent = $("#seGrade").value);
+    $("#seSave").onclick = () => {
+      ex.parentName = $("#seParent").value.trim() || "—";
+      ex.parentPhone = $("#sePhone").value.trim() || "—";
+      ex.city = $("#seCity").value.trim() || "—";
+      ex.grade = $("#seGrade").value;
+      closeSheet();
+      toast("Сохранено");
+      paintStack();
+    };
+  }
+
   /* —— Render —— */
   function medalColor(medal) {
     if (medal === "gold") return "var(--gold)";
@@ -3271,11 +3599,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
     $$("[data-student-id]").forEach((row) => {
       row.onclick = () => {
-        const s = findStudent(Number(row.dataset.studentId));
-        if (s) {
-          state.profileStudent = s;
-          render();
-        }
+        const id = Number(row.dataset.studentId);
+        const group = MOCK.groups.find((g) => g.students?.some((x) => x.id === id));
+        const s = findStudent(id);
+        if (s) openStaffStudent(s, group);
       };
     });
 

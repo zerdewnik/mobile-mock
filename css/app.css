@@ -2971,3 +2971,72 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 /* Мои группы */
 .groups-list { padding-top: 10px; }
 .groups-list .card { border-radius: 16px; }
+
+/* ============================================================
+   Staff: студент профилі / курс прогресі / конспект
+   ============================================================ */
+.screen-overlay.sp-screen .appbar { background: var(--bg); }
+.app:has(.screen-overlay.sp-screen:not([hidden])) .status-bar { background: var(--bg); }
+.sp-screen .appbar-back { color: var(--primary); }
+.sp-screen .appbar-title { font-weight: 500; }
+.sp-hist { border: 0; background: transparent; color: var(--primary); font-family: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; padding: 0; }
+.sp-head { text-align: center; padding: 18px 15px 6px; }
+.sp-avatar { width: 104px; height: 104px; border-radius: 50%; margin: 0 auto; display: grid; place-items: center; font-size: 34px; color: #fff; }
+.sp-name { margin-top: 18px; font-size: 16.5px; font-weight: 700; letter-spacing: 0.5px; }
+.sp-seen { margin-top: 8px; font-size: 12px; color: #8a8d9c; }
+.sp-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; padding: 18px 15px 6px; }
+.sp-act { height: 60px; border: 0; border-radius: 12px; background: #262628; color: #fff; font-family: inherit; font-size: 11px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-decoration: none; cursor: pointer; }
+.sp-act .material-icons-outlined { font-size: 20px; color: var(--primary); }
+.sp-act .menu-brand { width: 20px; height: 20px; display: block; }
+.sp-act .menu-brand svg { width: 20px; height: 20px; fill: var(--primary); }
+.sp-info { margin: 12px 15px; background: #1e1e1e; border-radius: 16px; padding: 4px 16px; }
+.sp-f { padding: 10px 0 9px; border-bottom: 1px solid #3a3a3f; display: flex; flex-direction: column; gap: 6px; }
+.sp-f:last-child { border-bottom: 0; }
+.sp-f span { font-size: 11.5px; color: #8a8d9c; }
+.sp-f b { font-size: 14.5px; font-weight: 400; }
+.sp-f b.mono { font-size: 12px; letter-spacing: 0.2px; }
+.sp-f a.green { color: var(--primary); font-size: 14.5px; text-decoration: none; }
+.sp-course { position: relative; width: calc(100% - 30px); margin: 0 15px 20px; border: 0; background: #1e1e1e; color: #fff; font-family: inherit; text-align: left; border-radius: 16px; padding: 14px; display: flex; gap: 12px; cursor: pointer; }
+.sp-poster { width: 118px; flex-shrink: 0; }
+.sp-cbody { flex: 1; min-width: 0; }
+.sp-ctitle { font-size: 15.5px; }
+.sp-cmeta { margin-top: 8px; font-size: 13px; color: #8a8d9c; }
+.sp-cur { margin-top: 8px; display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 600; }
+.sp-cur span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-cur .ls-ico { width: 16px; height: 16px; font-size: 16px !important; }
+.sp-badge { position: absolute; top: -6px; right: -4px; min-width: 20px; height: 20px; border-radius: 10px; background: #e0873a; color: #fff; font-size: 11px; font-weight: 700; font-style: normal; display: grid; place-items: center; padding: 0 5px; }
+.sp-badge.in { position: static; margin: 0 14px 0 auto; flex-shrink: 0; }
+.staff-secs .csec-head span:first-child { flex: 1; min-width: 0; }
+.staff-secs .csec-head { gap: 6px; }
+.ln-title small { display: block; margin-top: 4px; font-size: 11px; color: #8a8d9c; }
+.ln-act { display: inline-flex; align-items: center; gap: 4px; align-self: flex-start; padding-top: 2px; }
+.ln-act .material-icons-outlined, .ln-act .material-icons-round { font-size: 16px; }
+.ln-act.grey { color: #8a8d9c; }
+.ln-act.white { color: #e6e6e6; }
+.ln-act.white .material-icons-round { color: #5cb36d; }
+.ln-act.orange { color: #e0873a; }
+.ln-act.purple { color: #a05ad8; }
+.staff-secs .ln-row { align-items: flex-start; }
+.staff-secs .ln-row .ls-ico { margin-top: 1px; }
+.ln-row.pending { border-color: #6a4a2a; background: #2a2119; }
+.ln-row.pending::before { display: none; }
+
+/* Конспект */
+.cs-page { margin-top: 14px; height: 220px; border-radius: 12px; background: repeating-linear-gradient(#fbfaf5 0 22px, #d7e3f4 22px 23px); position: relative; overflow: hidden; }
+.cs-lines { padding: 18px 18px 0 34px; display: flex; flex-direction: column; gap: 10px; }
+.cs-lines i { display: block; height: 3px; border-radius: 2px; background: #3a4a8a; opacity: 0.55; }
+.cs-file { position: absolute; left: 10px; bottom: 10px; display: flex; align-items: center; gap: 4px; background: rgba(0, 0, 0, 0.6); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 8px; }
+.cs-file .material-icons-outlined { font-size: 14px; }
+.cs-back { background: #3a2020; color: #e86b6b; border: 0; }
+.cs-status { margin-top: 14px; text-align: center; font-size: 13px; padding: 12px; border-radius: 12px; }
+.cs-status.ok { background: #1f2e24; color: #5cb36d; }
+.cs-status.back { background: #3a2020; color: #e86b6b; }
+
+/* История входа / Отчёт */
+.lh-list { margin-top: 12px; }
+.lh-row { display: flex; align-items: center; gap: 12px; padding: 12px 2px; border-bottom: 1px solid var(--divider); font-size: 13px; }
+.lh-row span { flex: 1; }
+.lh-row i { color: var(--primary); font-style: normal; font-size: 11px; margin-left: 4px; }
+.lh-row b { font-weight: 400; color: #8a8d9c; font-size: 12px; }
+.rp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.rp-text { margin-top: 12px; font-size: 13px; color: #c8cad4; line-height: 1.5; }
