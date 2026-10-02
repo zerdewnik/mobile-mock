@@ -2809,6 +2809,156 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /* —— Staff: Аналитика (топтар → топ аналитикасы) —— */
+  function groupStats(g) {
+    const st = g.students;
+    const pct = (x) => {
+      const [d, t] = String(x.progress || "0/1").split("/").map(Number);
+      return t ? Math.round((d / t) * 100) : 0;
+    };
+    const today = (x) => /минут|час назад|часа назад|часов назад|онлайн/.test(x.lastSeen || "");
+    const avgScore = st.length ? Math.round(st.reduce((t, x) => t + (x.score || 0), 0) / st.length) : 0;
+    const avgProgress = st.length ? Math.round(st.reduce((t, x) => t + pct(x), 0) / st.length) : 0;
+    const active = st.filter(today).length;
+    const pending = st.reduce((t, x) => t + pendingCount(staffCourseFor(x, g)), 0);
+    const tests = st.flatMap((x) => staffCourseFor(x, g).flat.filter((i) => i.result != null).map((i) => i.result));
+    const avgTest = tests.length ? Math.round(tests.reduce((t, v) => t + v, 0) / tests.length) : 0;
+    // Белсенділік (Дс–Жс): топ көлеміне қарай тұрақты сандар
+    const week = [0.72, 0.8, 0.64, 0.86, 0.58, 0.41, Math.max(0.1, active / Math.max(1, st.length))].map((k, i) =>
+      Math.min(st.length, Math.round(st.length * k + ((g.id * (i + 3)) % 3) - 1))
+    );
+    const attention = st
+      .map((x) => {
+        const reasons = [];
+        if (pct(x) < 40) reasons.push(`прогресс ${pct(x)}%`);
+        if (!x.score) reasons.push("0 баллов за неделю");
+        if (/\d\d\.\d\d\.\d\d|вчера/.test(x.lastSeen || "")) reasons.push(x.lastSeen);
+        return { x, reasons };
+      })
+      .filter((r) => r.reasons.length);
+    return { avgScore, avgProgress, active, pending, avgTest, week, attention, pct };
+  }
+
+  function renderStaffAnalytics() {
+    return `
+      <div class="list-pad an-groups">
+        ${MOCK.groups
+          .map((g) => {
+            const a = groupStats(g);
+            return `
+          <button type="button" class="ag-card" data-an-group="${g.id}">
+            ${a.pending ? `<span class="sp-badge">${a.pending}</span>` : ""}
+            <div class="ag-top">
+              <div style="flex:1;min-width:0">
+                <div class="group-name">${g.name}</div>
+                <div class="group-course">${g.courseLabel} · ${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</div>
+              </div>
+              ${icon("chevron_right")}
+            </div>
+            <div class="ag-metrics">
+              <div><b>${a.avgScore}</b><span>ср. балл</span></div>
+              <div><b>${a.avgTest}</b><span>ср. тест</span></div>
+              <div><b>${a.active}/${g.studentsCount}</b><span>активны сегодня</span></div>
+            </div>
+            <div class="ag-prog"><i style="width:${a.avgProgress}%"></i></div>
+            <div class="ag-prog-l">Средний прогресс по курсу · ${a.avgProgress}%</div>
+          </button>`;
+          })
+          .join("")}
+      </div>`;
+  }
+
+  function openGroupAnalytics(g) {
+    const a = groupStats(g);
+    const days = ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"];
+    const maxW = Math.max(1, ...a.week);
+    const rows = [...g.students].sort((p, q) => a.pct(q) - a.pct(p));
+    let attAll = false;
+    const build = () => `
+      <div class="ga">
+        <div class="ga-head">
+          <div class="ga-title">${g.name}</div>
+          <div class="ga-sub">${g.courseLabel} · ${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</div>
+        </div>
+        <div class="ga-tiles">
+          <div class="ga-tile"><span>Средний балл за неделю</span><b>${a.avgScore}</b></div>
+          <div class="ga-tile"><span>Средний прогресс</span><b>${a.avgProgress}%</b></div>
+          <div class="ga-tile"><span>Средний результат тестов</span><b>${a.avgTest}<small> из 100</small></b></div>
+          <div class="ga-tile"><span>Активны сегодня</span><b>${a.active}<small> / ${g.studentsCount}</small></b></div>
+          <div class="ga-tile wide ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "check_circle", "material-icons-outlined")}Конспекты на проверке</span><b>${a.pending}</b></div>
+        </div>
+
+        <div class="ga-card">
+          <div class="ga-ctitle">Активность за неделю</div>
+          <div class="ga-csub">Сколько учеников заходили в приложение</div>
+          <div class="ga-bars">
+            ${a.week
+              .map(
+                (v, i) => `
+              <button type="button" class="ga-bar ${i === 6 ? "today" : ""}" data-tip="${days[i]}: ${v} из ${g.studentsCount}">
+                ${i === 6 || v === maxW ? `<em>${v}</em>` : ""}
+                <i style="height:${Math.max(4, (v / g.studentsCount) * 100)}%"></i>
+                <span>${days[i]}</span>
+              </button>`
+              )
+              .join("")}
+          </div>
+        </div>
+
+        <div class="ga-card">
+          <div class="ga-ctitle">Прогресс по курсу</div>
+          <div class="ga-csub">Пройдено уроков, % · нажмите, чтобы открыть профиль</div>
+          <div class="ga-hbars">
+            ${rows
+              .map(
+                (x) => `
+              <button type="button" class="ga-hrow" data-ga-student="${x.id}" data-tip="${x.name}: ${x.progress} уроков">
+                <span class="ga-hname">${x.name}</span>
+                <span class="ga-htrack"><i style="width:${Math.max(2, a.pct(x))}%"></i></span>
+                <span class="ga-hval">${a.pct(x)}%</span>
+              </button>`
+              )
+              .join("")}
+          </div>
+        </div>
+
+        <div class="ga-card">
+          <div class="ga-ctitle">Требуют внимания</div>
+          ${
+            a.attention.length
+              ? a.attention
+                  .slice(0, attAll ? 999 : 5)
+                  .map(
+                    (r) => `
+              <button type="button" class="ga-att" data-ga-student="${r.x.id}">
+                <span class="ga-att-ico">${icon("warning_amber", "material-icons-outlined")}</span>
+                <span style="flex:1;min-width:0"><b>${r.x.name}</b><small>${r.reasons.join(" · ")}</small></span>
+                ${icon("chevron_right")}
+              </button>`
+                  )
+                  .join("") + (a.attention.length > 5 && !attAll ? `<button type="button" class="ga-more" id="gaMore">Показать ещё ${a.attention.length - 5}</button>` : "")
+              : `<div class="ga-ok">${icon("check_circle", "material-icons-outlined")}Все ученики в норме</div>`
+          }
+        </div>
+      </div>`;
+    pushScreen(
+      "Аналитика группы",
+      build,
+      () => {
+        $$("[data-ga-student]").forEach((b) => (b.onclick = () => openStaffStudent(g.students.find((x) => x.id === Number(b.dataset.gaStudent)), g)));
+        $("#gaMore")?.addEventListener("click", () => {
+          attAll = true;
+          paintStack();
+        });
+        $("[data-ga-pending]")?.addEventListener("click", () => {
+          const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0);
+          if (s) openStaffStudent(s, g);
+        });
+      },
+      { right: "<span></span>" }
+    );
+  }
+
   function renderEnrollSoon() {
     return `
       <div class="soon-screen">
@@ -3603,7 +3753,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       return;
     }
 
-    if (state.tab === 0) content.innerHTML = renderEnrollSoon();
+    if (state.tab === 0) content.innerHTML = renderStaffAnalytics();
     else if (state.tab === 1) content.innerHTML = renderEfir();
     else if (state.tab === 2) content.innerHTML = renderPushes();
     else content.innerHTML = renderGroups();
@@ -3778,6 +3928,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       })
     );
     $("#efirAdd")?.addEventListener("click", openEfirForm);
+    $$("[data-an-group]").forEach((b) => {
+      b.onclick = () => openGroupAnalytics(MOCK.groups.find((g) => g.id === Number(b.dataset.anGroup)));
+    });
     $("#efirCreate")?.addEventListener("click", openEfirForm);
     $$("[data-efir-del]").forEach((b) => {
       b.onclick = async () => {
