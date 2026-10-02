@@ -2720,3 +2720,114 @@ html[data-mode="student"] .seg-tabs button.on { background: #222; }
 .pr-fb.ok .pr-explain b:first-child { color: #5cb36d; }
 .pr-fb.bad .pr-explain b:first-child { color: #e06b5b; }
 .pr-explain b { color: #fff; }
+
+/* ============================================================
+   Курс беті / Видео сабақ / Сабақ тесті / Кесте сүзгілері / Профиль
+   ============================================================ */
+
+/* —— Курс: бөлімдер —— */
+.course-secs { padding-top: 14px; }
+.csec { border: 1px solid #2a3647; background: #1c1c1e; border-radius: 13px; margin-bottom: 10px; overflow: hidden; }
+.csec-head { width: 100%; border: 0; background: transparent; color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 500; letter-spacing: 0.2px; display: flex; align-items: center; justify-content: space-between; padding: 17px 16px 17px 16px; cursor: pointer; text-align: left; }
+.csec-head .material-icons-round { font-size: 22px; }
+.csec.open .csec-head { border-bottom: 1px solid #2a2f38; }
+.csec-body { padding: 6px 6px 8px; }
+.ln-row { width: 100%; border: 1px solid transparent; background: transparent; color: #fff; font-family: inherit; text-align: left; display: flex; align-items: center; gap: 16px; padding: 12px 8px 12px 12px; border-radius: 10px; cursor: pointer; position: relative; }
+.ln-row .ls-ico { width: 18px; height: 18px; font-size: 20px !important; }
+.ln-title { flex: 1; min-width: 0; font-size: 12.5px; line-height: 1.4; }
+.ln-act { font-size: 10.5px; font-weight: 600; flex-shrink: 0; }
+.ln-act.teal { color: #4fb1ba; }
+.ln-act.green { color: #5cb36d; }
+.ln-row.current { border-color: #2f3c4c; background: #1e2126; }
+.ln-row.current::before { content: ""; position: absolute; left: 20%; right: 20%; top: -1px; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, #6f8fc8, transparent); }
+.ln-row.locked .ln-title { color: #5c5f6e; }
+.ln-row .lk { font-size: 20px; color: #7a7d8c; }
+
+/* —— Видео сабақ —— */
+.vplayer { position: relative; aspect-ratio: 16 / 9; background: #fff; overflow: hidden; }
+.v-slide { position: absolute; inset: 0; display: flex; }
+.v-cam { position: relative; width: 24%; background: linear-gradient(180deg, #5a3a2a, #2d2a2a 60%, #222); }
+.v-logo { position: absolute; left: 0; right: 0; top: 0; background: #c0392b; color: #fff; text-align: center; font-weight: 800; font-size: 13px; padding: 3px 0; }
+.v-face { position: absolute; left: 22%; right: 22%; top: 34%; bottom: 20%; border-radius: 40% 40% 10% 10%; background: radial-gradient(circle at 50% 26%, #f1c9a5 0 22%, transparent 23%), linear-gradient(#3a2418 0 30%, #f3f3f3 30%); }
+.v-tag { position: absolute; left: 0; right: 0; bottom: 0; background: #5cc6c0; color: #fff; text-align: center; font-size: 7px; font-weight: 800; padding: 3px 0; overflow: hidden; }
+.v-board { position: relative; flex: 1; display: grid; place-items: center; }
+.v-bulb { position: absolute; top: 12%; left: 46%; color: #e0b040; }
+.v-bulb .material-icons-outlined { font-size: 28px; }
+.v-subject { font-size: 22px; color: #3c7fa8; letter-spacing: 0.5px; }
+.v-name { position: absolute; right: 12%; bottom: 30%; font-size: 6.5px; font-weight: 700; color: #111; background: #7fc48a; border: 1px solid #333; padding: 3px 6px; max-width: 46%; }
+.v-big { position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%); width: 52px; height: 52px; border-radius: 50%; border: 0; background: rgba(60, 60, 60, 0.8); color: #fff; display: grid; place-items: center; cursor: pointer; }
+.v-big .material-icons-round { font-size: 34px; }
+.v-big[hidden] { display: none; }
+.v-ctrl { position: absolute; bottom: 12px; height: 32px; border-radius: 16px; background: rgba(40, 40, 40, 0.75); color: #fff; display: flex; align-items: center; gap: 2px; padding: 0 8px; font-size: 11px; }
+.v-ctrl.left { left: 6px; }
+.v-ctrl.right { right: 8px; gap: 8px; padding: 0 10px 0 12px; }
+.v-ctrl button { border: 0; background: transparent; color: #fff; display: grid; place-items: center; padding: 2px 3px; cursor: pointer; font-family: inherit; }
+.v-ctrl .material-icons-round { font-size: 20px; }
+.v-speed { font-size: 11px; font-weight: 700; }
+.v-line { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: rgba(0, 0, 0, 0.25); }
+.v-line i { display: block; height: 100%; width: 0; background: #5b6ec2; }
+.v-note { margin: 14px 15px; display: flex; align-items: center; gap: 10px; background: #1e1e1e; border-radius: 12px; padding: 12px 14px; font-size: 12.5px; }
+.v-note span:nth-child(2) { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.v-note .material-icons-round { color: #5cb36d; font-size: 20px; }
+.lesson-foot { padding-top: 0; }
+.attach-row { border: 0; background: transparent; color: #8a8d9c; font-family: inherit; font-size: 12px; display: flex; align-items: center; gap: 14px; margin: 0 0 14px; padding: 0; cursor: pointer; }
+.attach-plus { width: 40px; height: 40px; border-radius: 50%; background: #5f6bbd; color: #fff; display: grid; place-items: center; }
+.attach-plus .material-icons-round { font-size: 24px; }
+.attach-title { margin-bottom: 16px; font-weight: 500; }
+.attach-opt { width: 100%; border: 0; background: transparent; color: #fff; font-family: inherit; text-align: left; display: flex; align-items: center; gap: 22px; padding: 12px 10px; cursor: pointer; border-radius: 10px; }
+.attach-opt:hover { background: rgba(255, 255, 255, 0.04); }
+.attach-opt .material-icons-outlined { font-size: 26px; }
+.attach-opt b { display: block; font-size: 14px; font-weight: 500; }
+.attach-opt small { display: block; margin-top: 3px; font-size: 11.5px; color: #c8cad4; }
+
+/* —— Сабақ тесті —— */
+.tq-nums { display: flex; gap: 10px; overflow-x: auto; padding: 12px 15px 6px; }
+.tq-nums::-webkit-scrollbar { height: 0; }
+.tq-num { flex-shrink: 0; width: 40px; height: 40px; border: 0; border-radius: 6px; background: #2b3046; color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.tq-num.ans { background: #3d4670; }
+.tq-num.on { background: #5b6ec2; }
+.tq-body { padding: 18px 15px; }
+.tq-q { font-size: 14px; line-height: 1.5; margin-bottom: 14px; }
+.tq-opt { width: 100%; min-height: 44px; margin-bottom: 10px; border: 1px solid #3a3a40; background: #2a2a2c; border-radius: 10px; color: #fff; font-family: inherit; font-size: 14px; text-align: left; display: flex; align-items: center; gap: 16px; padding: 10px 14px; cursor: pointer; }
+.tq-radio { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #fff; flex-shrink: 0; position: relative; }
+.tq-opt.on { border-color: #6c74d6; }
+.tq-opt.on .tq-radio { border-color: #8a8fd6; }
+.tq-opt.on .tq-radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: #8a8fd6; }
+.m { font-family: "Times New Roman", "STIX Two Math", serif; font-style: italic; font-size: 15px; white-space: nowrap; }
+.sqrt { position: relative; padding-left: 9px; margin-left: 2px; border-top: 1px solid currentColor; }
+.sqrt::before { content: "√"; position: absolute; left: -2px; top: -3px; font-style: normal; }
+.tq-foot { flex-shrink: 0; background: #1a1a1a; border-radius: 16px 16px 0 0; padding: 18px 15px 30px; }
+.tq-prog { position: relative; height: 10px; border-radius: 6px; background: #2b3046; margin: 6px 6px 0 2px; }
+.tq-prog i { display: block; height: 100%; border-radius: 6px; background: #5b6ec2; }
+.tq-pill { position: absolute; top: 50%; transform: translateY(-50%); background: #5b6ec2; color: #fff; font-size: 9.5px; font-weight: 700; padding: 4px 8px; border-radius: 8px; }
+.tq-nav { display: flex; justify-content: space-between; margin-top: 22px; }
+.tq-btn { height: 48px; border: 1px solid #2e2e36; background: #232326; color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 600; border-radius: 14px; display: flex; align-items: center; gap: 10px; padding: 0 22px; cursor: pointer; }
+.tq-btn .material-icons-outlined { font-size: 22px; }
+.tq-btn:disabled { opacity: 0.45; cursor: default; }
+.tq-btn.finish { background: #5b6ec2; border-color: #5b6ec2; }
+.tr-result { text-align: center; padding: 26px 15px 10px; }
+.tr-score { font-size: 15px; color: #9a9db0; }
+.tr-score b { font-size: 40px; color: #fff; }
+.tr-sub { margin-top: 6px; font-size: 13px; color: #9a9db0; }
+.tr-item { background: #1e1e1e; border-radius: 12px; padding: 12px 14px; margin-bottom: 8px; border-left: 3px solid; }
+.tr-item.ok { border-color: #5cb36d; }
+.tr-item.bad { border-color: #e06b5b; }
+.tr-q { font-size: 13px; line-height: 1.5; }
+.tr-n { display: inline-block; min-width: 20px; color: #8a8d9c; }
+.tr-a { margin-top: 8px; display: flex; gap: 8px; align-items: center; font-size: 12.5px; color: #c8cad4; }
+.tr-item.ok .tr-a .material-icons-round { color: #5cb36d; font-size: 18px; }
+.tr-item.bad .tr-a .material-icons-round { color: #e06b5b; font-size: 18px; }
+
+/* —— Кесте: плиткалар сүзгі ретінде —— */
+button.sch-stat { border: 1px solid transparent; color: inherit; font-family: inherit; cursor: pointer; }
+.sch-stat b { color: var(--c); }
+.sch-stat.on { border-color: var(--c); background: color-mix(in srgb, var(--c) 7%, #1e1e1e); }
+.sch-list-head { display: flex; justify-content: space-between; align-items: center; margin: 22px 15px 18px; font-size: 13.5px; font-weight: 500; }
+.sch-list-head button { border: 0; background: transparent; color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; padding: 0; }
+
+/* —— Профиль (студент) —— */
+.user-avatar.ph { background: #e6e6e6; color: #9b9b9b; overflow: hidden; display: grid; place-items: end center; }
+.user-avatar.ph .material-icons-round { font-size: 92px; line-height: 0.8; }
+.poster.long .poster-text b { font-size: 8px; letter-spacing: -0.3px; }
+.poster.sq.long .poster-text b { font-size: 5.5px; }
+.course-hero .poster.long .poster-text b { font-size: 20px; }

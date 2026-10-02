@@ -1564,8 +1564,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </button>`;
   }
 
+  const PROFILE_T = {
+    ru: { about: "О компании I4U", terms: "Условия и положения", privacy: "Политика конфиденциальности", help: "Помощь и поддержка", restore: "Восстановить покупки", dark: "Тёмная тема", lang: "Язык", ig: "Наш Instagram", wa: "Написать в WhatsApp", admin: "Админ-панель", back: "Вернуться в приложение" },
+    kk: { about: "I4U компаниясы туралы", terms: "Шарттар мен ережелер", privacy: "Құпиялылық саясаты", help: "Көмек және қолдау", restore: "Сатып алуларды қалпына келтіру", dark: "Қараңғы тема", lang: "Тіл", ig: "Біздің Instagram", wa: "WhatsApp-қа жазу", admin: "Админ-панель", back: "Қосымшаға оралу" },
+  };
+
   function openUserProfile() {
     const me = MOCK.me;
+    const L = PROFILE_T[state.lang] || PROFILE_T.ru;
     const inStaff = state.mode === "staff";
     const accent = inStaff ? "#5B6EC2" : "#25AB7C";
     const staffToggle = me.canStaff
@@ -1573,7 +1579,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <div class="menu-block">
         ${menuRow({
           iconName: inStaff ? "school" : "admin_panel_settings",
-          title: inStaff ? "Вернуться в приложение" : "Админ-панель",
+          title: inStaff ? L.back : L.admin,
           accent,
           action: "toggleStaff",
         })}
@@ -1582,6 +1588,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
     const el = $("#screenOverlay");
     el.hidden = false;
+    el.className = "screen-overlay";
     el.innerHTML = `
       <div class="appbar">
         <button type="button" class="appbar-back" id="profileBack">${icon("arrow_back")}</button>
@@ -1592,31 +1599,35 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="user-card">
           <button type="button" class="user-card-edit" id="profileEdit">${icon("edit", "material-icons-outlined")}</button>
           <div class="user-card-body">
-            <div class="user-avatar" style="background:${me.color}">${me.initials}</div>
+            ${
+              inStaff
+                ? `<div class="user-avatar" style="background:${me.color}">${me.initials}</div>`
+                : `<div class="user-avatar ph">${icon("person")}</div>`
+            }
             <div class="user-name">${me.firstName} ${me.lastName}</div>
           </div>
         </div>
         <div class="menu-block">
-          ${menuRow({ iconName: "info", title: "О компании I4U", action: "about" })}
+          ${menuRow({ iconName: "info", title: L.about, action: "about" })}
           <div class="menu-divider"></div>
-          ${menuRow({ iconName: "description", title: "Условия и положения", action: "terms" })}
+          ${menuRow({ iconName: "description", title: L.terms, action: "terms" })}
           <div class="menu-divider"></div>
-          ${menuRow({ iconName: "security", title: "Политика конфиденциальности", action: "privacy" })}
+          ${menuRow({ iconName: "security", title: L.privacy, action: "privacy" })}
         </div>
         <div class="menu-block">
-          ${menuRow({ iconName: "headset_mic", title: "Помощь и поддержка", action: "help" })}
+          ${menuRow({ iconName: "headset_mic", title: L.help, action: "help" })}
           <div class="menu-divider"></div>
-          ${menuRow({ iconName: "restore", iconClass: "material-icons-round", title: "Восстановить покупки", action: "restore" })}
+          ${menuRow({ iconName: "restore", iconClass: "material-icons-round", title: L.restore, action: "restore" })}
           <div class="menu-divider"></div>
           <div class="menu-row switch-row">
             <span class="menu-ico material-icons-outlined">dark_mode</span>
-            <span class="menu-title">Тёмная тема</span>
+            <span class="menu-title">${L.dark}</span>
             <button type="button" class="toggle ${state.darkTheme ? "on" : ""}" id="themeToggle" aria-label="Тёмная тема"></button>
           </div>
           <div class="menu-divider"></div>
           <div class="menu-row switch-row">
             <span class="menu-ico material-icons-round">language</span>
-            <span class="menu-title">Выберите язык</span>
+            <span class="menu-title">${L.lang}</span>
             <div class="lang-switch">
               <button type="button" class="lang-chip ${state.lang === "ru" ? "active" : ""}" data-lang="ru">РУС</button>
               <button type="button" class="lang-chip ${state.lang === "kk" ? "active" : ""}" data-lang="kk">ҚАЗ</button>
@@ -1624,9 +1635,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           </div>
         </div>
         <div class="menu-block">
-          ${menuRow({ leading: igSvg(), title: "Наш Instagram", action: "instagram" })}
+          ${menuRow({ leading: igSvg(), title: L.ig, action: "instagram" })}
           <div class="menu-divider"></div>
-          ${menuRow({ leading: waSvg(), title: "Написать в WhatsApp", action: "whatsapp" })}
+          ${menuRow({ leading: waSvg(), title: L.wa, action: "whatsapp" })}
         </div>
         ${staffToggle}
       </div>`;
@@ -1653,7 +1664,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $$("[data-lang]", el).forEach((btn) => {
       btn.onclick = () => {
         state.lang = btn.dataset.lang;
-        $$("[data-lang]", el).forEach((b) => b.classList.toggle("active", b.dataset.lang === state.lang));
+        openUserProfile();
         toast(state.lang === "kk" ? "Қазақша" : "Русский", "ok");
       };
     });
@@ -2039,7 +2050,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
   function posterHtml(p, variant = "") {
     return `
-      <div class="poster ${variant}" style="background:${p.bg}">
+      <div class="poster ${variant} ${Math.max(...p.lines.map((l) => l.length)) > 9 ? "long" : ""}" style="background:${p.bg}">
         <div class="poster-text">
           <b>${p.lines.join("<br>")}</b>
           <i>ҰБТ 2026</i>
@@ -2173,6 +2184,317 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /* —— Курс: бөлімдер мен сабақтар —— */
+  const LESSON_KIND = { v: "video", t: "test", w: "weekly", f: "final" };
+  function courseItems(cc) {
+    const flat = [];
+    cc.sections.forEach((sec, si) =>
+      sec.items.forEach((raw) => flat.push({ si, key: raw, kind: LESSON_KIND[raw[0]], title: raw.slice(2) }))
+    );
+    if (cc.cur == null) cc.cur = Math.max(0, flat.findIndex((x) => x.key === cc.current));
+    flat.forEach((x, i) => (x.state = i < cc.cur ? "done" : i === cc.cur ? "current" : "locked"));
+    return flat;
+  }
+  function kindIcon(kind) {
+    if (kind === "video") return PLAY_SVG;
+    if (kind === "test") return `<span class="material-icons-outlined ls-ico" style="color:#5CB36D">help_outline</span>`;
+    if (kind === "weekly") return `<span class="material-icons-outlined ls-ico" style="color:#A05AD8">calendar_month</span>`;
+    return `<span class="material-icons-outlined ls-ico" style="color:#E0604A">grid_on</span>`;
+  }
+  function lessonAction(x) {
+    if (x.state === "locked") return icon("lock", "material-icons-outlined lk");
+    if (x.kind === "video") return `<span class="ln-act teal">Смотреть</span>`;
+    return x.state === "done" ? `<span class="ln-act green">Результат</span>` : `<span class="ln-act green">Пройти тест</span>`;
+  }
+
+  function openCourse(c) {
+    const cc = MOCK.courseContent[c.id];
+    if (!cc) {
+      openInner(c.title, `<div class="empty">Скоро здесь появятся уроки</div>`);
+      return;
+    }
+    const items = courseItems(cc);
+    const open = { [items[cc.cur]?.si ?? 0]: true };
+    const build = () => {
+      const flat = courseItems(cc);
+      return `<div class="list-pad course-secs">${cc.sections
+        .map((sec, si) => {
+          const rows = flat.map((x, i) => ({ ...x, i })).filter((x) => x.si === si);
+          return `
+          <div class="csec ${open[si] ? "open" : ""}">
+            <button type="button" class="csec-head" data-csec="${si}">
+              <span>${si + 1}. ${sec.title}</span>${icon(open[si] ? "expand_less" : "expand_more")}
+            </button>
+            ${
+              open[si]
+                ? `<div class="csec-body">${rows
+                    .map(
+                      (x) => `
+              <button type="button" class="ln-row ${x.state}" data-lesson-i="${x.i}">
+                ${kindIcon(x.kind)}
+                <span class="ln-title">${x.title}</span>
+                ${lessonAction(x)}
+              </button>`
+                    )
+                    .join("")}</div>`
+                : ""
+            }
+          </div>`;
+        })
+        .join("")}</div>`;
+    };
+    pushScreen(c.title, build, () => {
+      $$("[data-csec]").forEach((b) => {
+        b.onclick = () => {
+          const si = Number(b.dataset.csec);
+          open[si] = !open[si];
+          paintStack();
+        };
+      });
+      $$("[data-lesson-i]").forEach((b) => {
+        b.onclick = () => {
+          const flat = courseItems(cc);
+          const x = flat[Number(b.dataset.lessonI)];
+          if (x.state === "locked") {
+            toast("Сначала пройдите предыдущие уроки", "err");
+            return;
+          }
+          openLesson(c, cc, Number(b.dataset.lessonI));
+        };
+      });
+    });
+  }
+
+  function openLesson(c, cc, i) {
+    const x = courseItems(cc)[i];
+    if (x.kind === "video") openVideoLesson(c, cc, i);
+    else openLessonTest(c, cc, i);
+  }
+
+  /** Келесі сабаққа өту: ағымдағыны аяқталды деп белгілеп, келесісін ашу */
+  function finishLesson(c, cc, i, { goNext = true } = {}) {
+    if (i === cc.cur) {
+      cc.cur += 1;
+      c.done = Math.min(c.total, c.done + 1);
+    }
+    state.navStack.pop();
+    const flat = courseItems(cc);
+    if (goNext && flat[i + 1]) openLesson(c, cc, i + 1);
+    else paintStack();
+  }
+
+  function openVideoLesson(c, cc, i) {
+    const x = courseItems(cc)[i];
+    const v = { playing: false, t: 0, len: 193, speed: 1, timer: null, note: null };
+    const fmt = (sec) => `${Math.floor(sec / 60)}:${String(Math.floor(sec % 60)).padStart(2, "0")}`;
+    const sync = () => {
+      const time = $("#vTime");
+      if (!time) {
+        clearInterval(v.timer);
+        return;
+      }
+      time.textContent = `${fmt(v.t)} / ${fmt(v.len)}`;
+      $("#vLine").style.width = `${(v.t / v.len) * 100}%`;
+      $("#vPlayBig").hidden = v.playing;
+      $("#vPlay").innerHTML = icon(v.playing ? "pause" : "play_arrow");
+      $("#vSpeed").textContent = `${v.speed}x`;
+    };
+    const toggle = () => {
+      v.playing = !v.playing;
+      clearInterval(v.timer);
+      if (v.playing)
+        v.timer = setInterval(() => {
+          v.t = Math.min(v.len, v.t + 0.5 * v.speed);
+          if (v.t >= v.len) v.playing = false;
+          sync();
+        }, 500);
+      sync();
+    };
+    const build = () => `
+      <div class="vplayer" id="vPlayer">
+        <div class="v-slide">
+          <div class="v-cam"><span class="v-logo">i4U</span><span class="v-face"></span><span class="v-tag">${c.title.toUpperCase()}</span></div>
+          <div class="v-board">
+            <span class="v-bulb">${icon("lightbulb", "material-icons-outlined")}</span>
+            <span class="v-subject">${c.title}</span>
+            <span class="v-name">${x.title}</span>
+          </div>
+        </div>
+        <button type="button" class="v-big" id="vPlayBig">${icon("play_arrow")}</button>
+        <div class="v-ctrl left">
+          <button type="button" id="vPlay">${icon("play_arrow")}</button>
+          <button type="button" id="vMute">${icon("volume_up")}</button>
+          <button type="button" id="vSpeed" class="v-speed">1x</button>
+        </div>
+        <div class="v-ctrl right">
+          <span id="vTime">0:00 / 3:13</span>
+          <button type="button" id="vFull">${icon("open_in_full")}</button>
+        </div>
+        <div class="v-line"><i id="vLine"></i></div>
+      </div>
+      ${v.note ? `<div class="v-note">${icon("description", "material-icons-outlined")}<span>${v.note}</span>${icon("check_circle")}</div>` : ""}`;
+    const footer = () => `
+      <div class="sticky-foot lesson-foot">
+        <button type="button" class="attach-row" id="vAttach">
+          <span class="attach-plus">${icon(v.note ? "check" : "add")}</span>
+          <span>${v.note ? "Конспект прикреплён" : "Прикрепите конспект"}</span>
+        </button>
+        <button type="button" class="save-btn" id="vNext">Келесі сабақ</button>
+      </div>`;
+    pushScreen(
+      x.title,
+      build,
+      () => {
+        $("#vPlayBig").onclick = toggle;
+        $("#vPlay").onclick = toggle;
+        $("#vMute").onclick = (e) => {
+          const b = e.currentTarget;
+          const muted = b.textContent.includes("off");
+          b.innerHTML = icon(muted ? "volume_up" : "volume_off");
+        };
+        $("#vSpeed").onclick = () => {
+          v.speed = v.speed === 1 ? 1.5 : v.speed === 1.5 ? 2 : 1;
+          sync();
+        };
+        $("#vFull").onclick = () => toast("Полноэкранный режим");
+        $("#vAttach").onclick = () =>
+          openAttachSheet((name) => {
+            v.note = name;
+            const t = v.t;
+            paintStack();
+            v.t = t;
+            sync();
+            toast("Конспект прикреплён");
+          });
+        $("#vNext").onclick = () => {
+          clearInterval(v.timer);
+          finishLesson(c, cc, i);
+        };
+        sync();
+      },
+      { footer }
+    );
+  }
+
+  function openAttachSheet(onFile) {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title attach-title">Прикрепить конспект</div>
+      <button type="button" class="attach-opt" data-accept="image/jpeg,image/png,image/webp,image/heic,.heic">
+        ${icon("photo_library", "material-icons-outlined")}
+        <span><b>Галерея</b><small>JPEG, PNG, WebP, HEIC</small></span>
+      </button>
+      <button type="button" class="attach-opt" data-accept="application/pdf,.pdf">
+        ${icon("picture_as_pdf", "material-icons-outlined")}
+        <span><b>Файл</b><small>PDF</small></span>
+      </button>
+      <input type="file" id="attachInput" hidden />`);
+    $$("[data-accept]").forEach((b) => {
+      b.onclick = () => {
+        const input = $("#attachInput");
+        input.accept = b.dataset.accept;
+        input.onchange = () => {
+          const f = input.files[0];
+          if (!f) return;
+          closeSheet();
+          onFile(f.name);
+        };
+        input.click();
+      };
+    });
+  }
+
+  function openLessonTest(c, cc, i) {
+    const x = courseItems(cc)[i];
+    const bank = MOCK.lessonTests[c.id] || MOCK.practice[c.id]?.questions || MOCK.lessonTests[15];
+    const T = { i: 0, picks: bank.map(() => null), done: x.state === "done" };
+    const answered = () => T.picks.filter((p) => p != null).length;
+    const score = () => T.picks.filter((p, k) => p === bank[k].answer).length;
+    if (T.done) T.picks = bank.map((q, k) => (k % 4 === 3 ? (q.answer + 1) % q.options.length : q.answer));
+    const build = () => {
+      if (T.done) {
+        return `
+          <div class="tr-result">
+            <div class="tr-score"><b>${score()}</b> / ${bank.length}</div>
+            <div class="tr-sub">${score() === bank.length ? "Отлично! Все ответы верные." : "Результат теста"}</div>
+          </div>
+          <div class="list-pad">${bank
+            .map((q, k) => {
+              const ok = T.picks[k] === q.answer;
+              return `<div class="tr-item ${ok ? "ok" : "bad"}">
+                <div class="tr-q"><span class="tr-n">${k + 1}</span>${q.q}</div>
+                <div class="tr-a">${icon(ok ? "check_circle" : "cancel")}<span>${q.options[q.answer]}</span></div>
+              </div>`;
+            })
+            .join("")}</div>`;
+      }
+      const q = bank[T.i];
+      return `
+        <div class="tq-nums">${bank
+          .map((_, k) => `<button type="button" class="tq-num ${k === T.i ? "on" : T.picks[k] != null ? "ans" : ""}" data-qn="${k}">${k + 1}</button>`)
+          .join("")}</div>
+        <div class="tq-body">
+          <div class="tq-q">${q.q}</div>
+          ${q.options
+            .map(
+              (o, k) =>
+                `<button type="button" class="tq-opt ${T.picks[T.i] === k ? "on" : ""}" data-tq="${k}"><span class="tq-radio"></span><span>${o}</span></button>`
+            )
+            .join("")}
+        </div>`;
+    };
+    const footer = () => {
+      if (T.done)
+        return `<div class="sticky-foot"><button type="button" class="save-btn" id="tqBack">${x.state === "done" ? "Назад к урокам" : "Келесі сабақ"}</button></div>`;
+      const pct = Math.round((answered() / bank.length) * 100);
+      const last = T.i === bank.length - 1;
+      return `
+        <div class="tq-foot">
+          <div class="tq-prog"><span class="tq-pill" style="left:calc(${pct}% * 0.88)">${pct}%</span><i style="width:${pct}%"></i></div>
+          <div class="tq-nav">
+            <button type="button" class="tq-btn" id="tqPrev" ${T.i === 0 ? "disabled" : ""}>${icon("arrow_circle_left", "material-icons-outlined")}Назад</button>
+            <button type="button" class="tq-btn ${last ? "finish" : ""}" id="tqNext">${last ? "Завершить" : "Вперёд"}${icon(last ? "check_circle" : "arrow_circle_right", "material-icons-outlined")}</button>
+          </div>
+        </div>`;
+    };
+    pushScreen(
+      x.title,
+      build,
+      () => {
+        $$("[data-qn]").forEach((b) => (b.onclick = () => ((T.i = Number(b.dataset.qn)), paintStack())));
+        $$("[data-tq]").forEach((b) => (b.onclick = () => ((T.picks[T.i] = Number(b.dataset.tq)), paintStack())));
+        $("#tqPrev") && ($("#tqPrev").onclick = () => ((T.i -= 1), paintStack()));
+        $("#tqNext") &&
+          ($("#tqNext").onclick = async () => {
+            if (T.i < bank.length - 1) {
+              T.i += 1;
+              paintStack();
+              return;
+            }
+            if (answered() < bank.length) {
+              const ok = await confirmDialog({
+                title: "Завершить тест?",
+                message: `Отвечено ${answered()} из ${bank.length}. Неотвеченные вопросы будут засчитаны как неверные.`,
+                confirmLabel: "Завершить",
+              });
+              if (!ok) return;
+            }
+            T.done = true;
+            paintStack();
+          });
+        $("#tqBack") &&
+          ($("#tqBack").onclick = () => {
+            if (x.state === "done") {
+              state.navStack.pop();
+              paintStack();
+            } else finishLesson(c, cc, i);
+          });
+        $(".tq-num.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+      },
+      { footer }
+    );
+  }
+
   function plural(n, one, few, many) {
     const m10 = n % 10;
     const m100 = n % 100;
@@ -2192,12 +2514,31 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           ? `<span class="sch-badge bad">Просрочено</span>`
           : `<span class="sch-badge">${w}</span>`;
     const items = S.items.filter((x) => x.period.includes(per));
-    return `
+    const f = state.schedFilter;
+    const card = (e) => `
+          <button type="button" class="sch-card" data-lesson="${e.lesson}" data-course="${e.course}">
+            ${lessonIcon(e.kind)}
+            <div style="flex:1;min-width:0">
+              <div class="sch-course">${e.course}</div>
+              <div class="sch-lesson">${e.lesson}</div>
+              <div class="sch-tags"><span>${e.kind === "test" ? "Тест" : "Видео"}</span><span>Нед. ${e.week}</span></div>
+            </div>
+            ${badge(e.when)}
+          </button>`;
+    const stats = `
       <div class="sch-stats">
-        <div class="sch-stat"><b style="color:#5CB36D">${S.stats.today}</b><span>Сегодня</span></div>
-        <div class="sch-stat"><b style="color:#6C7FD8">${S.stats.week}</b><span>На неделе</span></div>
-        <div class="sch-stat"><b style="color:#E86B6B">${S.stats.overdue}</b><span>Просрочено</span></div>
-      </div>
+        <button type="button" class="sch-stat ${f === "today" ? "on" : ""}" data-sfilter="today" style="--c:#5CB36D"><b>${S.stats.today}</b><span>Сегодня</span></button>
+        <button type="button" class="sch-stat ${f === "week" ? "on" : ""}" data-sfilter="week" style="--c:#6C7FD8"><b>${S.stats.week}</b><span>На неделе</span></button>
+        <button type="button" class="sch-stat ${f === "overdue" ? "on" : ""}" data-sfilter="overdue" style="--c:#E86B6B"><b>${S.stats.overdue}</b><span>Просрочено</span></button>
+      </div>`;
+    if (f) {
+      const list = f === "today" ? S.items.filter((x) => x.when === "today") : f === "week" ? S.weekList : S.overdueList;
+      const title = { today: "Уроки на сегодня", week: "Уроки на неделе", overdue: "Просроченные уроки" }[f];
+      return `${stats}
+        <div class="sch-list-head"><span>${title}</span><button type="button" id="toCalendar">К календарю</button></div>
+        <div class="list-pad" style="padding-top:0">${list.map(card).join("")}</div>`;
+    }
+    return `${stats}
       <div class="seg-tabs seg-3 sch-seg">
         ${[["day", "День"], ["week", "Неделя"], ["month", "Месяц"]]
           .map(([k, l]) => `<button type="button" data-period="${k}" class="${per === k ? "on" : ""}">${l}</button>`)
@@ -2208,22 +2549,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <b>${label}</b>
         <button type="button" class="sch-arrow" data-shift="1">${icon("chevron_right")}</button>
       </div>
-      <div class="list-pad" style="padding-top:0">
-        ${items
-          .map(
-            (e) => `
-          <button type="button" class="sch-card" data-lesson="${e.lesson}" data-course="${e.course}">
-            ${lessonIcon(e.kind)}
-            <div style="flex:1;min-width:0">
-              <div class="sch-course">${e.course}</div>
-              <div class="sch-lesson">${e.lesson}</div>
-              <div class="sch-tags"><span>${e.kind === "test" ? "Тест" : "Видео"}</span><span>Нед. ${e.week}</span></div>
-            </div>
-            ${badge(e.when)}
-          </button>`
-          )
-          .join("")}
-      </div>`;
+      <div class="list-pad" style="padding-top:0">${items.map(card).join("")}</div>`;
   }
 
   function renderMyCourses() {
@@ -2367,21 +2693,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       btn.onclick = () => {
         const c = MOCK.myCourses.find((x) => x.id === Number(btn.dataset.courseId));
         if (!c) return;
-        openInner(
-          c.title,
-          `<div class="list-pad">
-            <div class="course-hero">${posterHtml(c.poster)}</div>
-            <div class="news-card" style="margin-top:12px"><div class="n-body">Всего ${c.total} ${plural(c.total, "урок", "урока", "уроков")}<br>Пройдено ${c.done}</div></div>
-            ${["Урок 1. Введение", "Урок 2. Практика", "Урок 3. Зачёт"]
-              .map(
-                (name) => `<button type="button" class="cat-row" data-open="${name}"><span>${name}</span><span class="material-icons-round chev">chevron_right</span></button>`
-              )
-              .join("")}
-          </div>`
-        );
-        $$("[data-open]").forEach((row) => {
-          row.onclick = () => pushScreen(row.dataset.open, () => `<div class="empty">${row.dataset.open}</div>`);
-        });
+        state.navStack = [];
+        openCourse(c);
       };
     });
     $$("[data-seg]").forEach((btn) => {
@@ -2395,6 +2708,16 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         state.schedPeriod = btn.dataset.period;
         render();
       };
+    });
+    $$("[data-sfilter]").forEach((btn) => {
+      btn.onclick = () => {
+        state.schedFilter = state.schedFilter === btn.dataset.sfilter ? null : btn.dataset.sfilter;
+        render();
+      };
+    });
+    $("#toCalendar")?.addEventListener("click", () => {
+      state.schedFilter = null;
+      render();
     });
     $$("[data-shift]").forEach((btn) => {
       btn.onclick = () => toast(btn.dataset.shift === "1" ? "Следующий период" : "Предыдущий период");

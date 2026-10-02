@@ -110,8 +110,8 @@ window.MOCK = {
   },
   /** Logged-in user (profile screen) */
   me: {
-    firstName: "Томирис",
-    lastName: "Досымхан",
+    firstName: "Диана",
+    lastName: "I4U",
     initials: "ТД",
     color: "#5B6EC2",
     phone: "+7 778 215 35 57",
@@ -139,7 +139,112 @@ window.MOCK = {
       days: 334,
       poster: { lines: ["ДҮНИЕЖҮЗІ", "ТАРИХЫ"], bg: "linear-gradient(135deg,#3f8a78,#2e6e5f)", img: "assets/v2/history_world.png" },
     },
+    { id: 12, title: "Биология", total: 130, done: 2, days: 657, poster: { lines: ["БИОЛОГИЯ"], bg: "linear-gradient(135deg,#46a14f,#2f7d3a)", img: "assets/v2/bio.png" } },
+    { id: 13, title: "География", total: 223, done: 1, days: 657, poster: { lines: ["ГЕОГРАФИЯ"], bg: "linear-gradient(135deg,#2bb0c8,#1b8aa6)", img: "assets/v2/geo.png" } },
+    { id: 14, title: "Информатика", total: 131, done: 0, days: 657, poster: { lines: ["ИНФОРМАТИКА"], bg: "linear-gradient(135deg,#c23b5f,#962446)", img: "assets/v2/informatics.png" } },
+    { id: 15, title: "Математика", total: 132, done: 41, days: 657, poster: { lines: ["МАТЕМАТИКА"], bg: "linear-gradient(135deg,#4f86d0,#3567b0)", img: "assets/v2/math.png" } },
   ],
+  /**
+   * Курс → бөлімдер → сабақтар.
+   * Сабақ: "v:" видео, "t:" тест, "w:" апталық сынақ, "f:" бекіту тест.
+   * current — қазір өтетін сабақ (одан кейінгілері құлыпталған).
+   */
+  courseContent: {
+    15: {
+      current: "t:Гипербола. Кубтық парабола",
+      sections: [
+        { title: "Кіріспе", items: ["v:Кіріспе", "t:Кіріспе тест"] },
+        { title: "Теңдеулер", items: ["v:Сызықтық теңдеулер", "t:Сызықтық теңдеулер", "v:Квадрат теңдеулер", "t:Квадрат теңдеулер", "v:Теңдеулер. Әртүрлі теңдеулер", "t:Теңдеулер. Әртүрлі теңдеулер", "w:Апталық сынақ (3 - апта)"] },
+        { title: "Теңсіздіктер", items: ["v:Сызықтық теңсіздіктер", "t:Сызықтық теңсіздіктер", "v:Интервалдар әдісі", "t:Интервалдар әдісі"] },
+        { title: "Комбинаторика", items: ["v:Орналастыру, алмастыру", "t:Орналастыру, алмастыру", "v:Терулер", "t:Терулер", "w:Апталық сынақ (6 - апта)"] },
+        { title: "Тізбектер", items: ["v:Арифметикалық прогрессия", "t:Арифметикалық прогрессия", "v:Геометриялық прогрессия", "t:Геометриялық прогрессия"] },
+        { title: "Тригонометрия", items: ["v:Тригонометриялық функциялар", "t:Тригонометриялық функциялар", "v:Тригонометриялық теңдеулер", "t:Тригонометриялық теңдеулер", "w:Апталық сынақ (9 - апта)"] },
+        {
+          title: "Функция",
+          items: [
+            "v:Функция. Анықтамасы", "t:Функция. Анықтамасы",
+            "v:Функция. Жұптылық тақтылық", "t:Функция. Жұптылық тақтылық",
+            "v:Функция. Түзу, парабола", "t:Функция. Түзу, парабола",
+            "v:Гипербола. Кубтық парабола", "t:Гипербола. Кубтық парабола",
+            "v:Логарифмдік және көрсеткіштік функция", "t:Логарифмдік және көрсеткіштік функция",
+            "w:Апталық сынақ (10 - апта)",
+            "v:Кері функция", "v:Анықталу облысы", "v:Мәндер облысы",
+            "f:Бекіту тест (Функция)",
+          ],
+        },
+        { title: "Логарифм", items: ["v:Логарифм анықтамасы", "t:Логарифм анықтамасы", "v:Логарифмдік теңдеулер", "t:Логарифмдік теңдеулер"] },
+        { title: "Туынды", items: ["v:Туынды анықтамасы", "t:Туынды анықтамасы", "v:Туындының қолданылуы", "t:Туындының қолданылуы"] },
+        { title: "Алғашқы функция", items: ["v:Алғашқы функция", "t:Алғашқы функция", "v:Анықталған интеграл", "t:Анықталған интеграл", "f:Бекіту тест (Интеграл)"] },
+      ],
+    },
+    10: {
+      current: "v:Prepositions",
+      sections: [
+        { title: "Nouns & Articles", items: ["v:Noun", "t:Noun", "v:Article", "t:Article"] },
+        { title: "Adjectives & Adverbs", items: ["v:Adjective", "t:Adjective", "v:Adverb", "t:Adverb", "v:Homework 3"] },
+        { title: "Prepositions", items: ["v:Prepositions", "t:Prepositions", "w:Апталық сынақ (4 - апта)"] },
+        { title: "Tenses", items: ["v:Present Simple", "t:Present Simple", "v:Past Simple", "t:Past Simple", "f:Бекіту тест (Tenses)"] },
+      ],
+    },
+    11: {
+      current: "t:Осман империясы (1)",
+      sections: [
+        { title: "Ежелгі дүние", items: ["v:Ежелгі Египет", "t:Ежелгі Египет", "v:Рим империясының құлауы", "t:Рим империясының құлауы"] },
+        { title: "Орта ғасырлар", items: ["v:Византия", "t:Византия", "v:Осман империясы (1)", "t:Осман империясы (1)", "w:Апталық сынақ (4 - апта)"] },
+        { title: "Жаңа заман", items: ["v:Англия мен Ресейдегі абсолютизм", "t:Англия мен Ресейдегі абсолютизм", "v:Ұлы географиялық ашулар", "t:Ұлы географиялық ашулар"] },
+      ],
+    },
+    12: {
+      current: "t:Жасуша құрылысы",
+      sections: [
+        { title: "Кіріспе", items: ["v:Биология ғылымы", "t:Биология ғылымы"] },
+        { title: "Жасуша", items: ["v:Жасуша құрылысы", "t:Жасуша құрылысы", "v:Жасушаның бөлінуі", "t:Жасушаның бөлінуі"] },
+        { title: "Ас қорыту", items: ["v:Ферменттер", "t:Ферменттер", "w:Апталық сынақ (3 - апта)"] },
+      ],
+    },
+    13: {
+      current: "t:Географиялық карта",
+      sections: [
+        { title: "Кіріспе", items: ["v:Географиялық карта", "t:Географиялық карта"] },
+        { title: "Литосфера", items: ["v:Жер қыртысы", "t:Жер қыртысы", "v:Жер бедері", "t:Жер бедері"] },
+      ],
+    },
+    14: {
+      current: "v:Ақпарат және оның түрлері",
+      sections: [
+        { title: "Кіріспе", items: ["v:Ақпарат және оның түрлері", "t:Ақпарат және оның түрлері"] },
+        { title: "Санау жүйелері", items: ["v:Екілік санау жүйесі", "t:Екілік санау жүйесі", "w:Апталық сынақ (2 - апта)"] },
+      ],
+    },
+  },
+  /** Сабақ тесттері (math: HTML формулалар). answer = дұрыс жауап индексі */
+  lessonTests: {
+    15: [
+      { q: '<span class="m"><span class="sqrt">x + 5</span> = x − 1</span> теңдеуін шешіңіз.', options: ['<span class="m">x = 1</span>', '<span class="m">x = 4</span>', '<span class="m">x = −1</span>', '<span class="m">x = −1</span> немесе <span class="m">x = 4</span>'], answer: 1 },
+      { q: '<span class="m">2x + 3 = 11</span> теңдеуін шешіңіз.', options: ['<span class="m">x = 3</span>', '<span class="m">x = 4</span>', '<span class="m">x = 7</span>', '<span class="m">x = 5</span>'], answer: 1 },
+      { q: '<span class="m">x² − 5x + 6 = 0</span> теңдеуінің түбірлерінің қосындысы:', options: ['<span class="m">5</span>', '<span class="m">6</span>', '<span class="m">−5</span>', '<span class="m">1</span>'], answer: 0 },
+      { q: '<span class="m">y = 1/x</span> функциясының графигі қалай аталады?', options: ["Парабола", "Гипербола", "Түзу", "Кубтық парабола"], answer: 1 },
+      { q: '<span class="m">y = x³</span> функциясы:', options: ["Жұп", "Тақ", "Жұп та, тақ та емес", "Периодты"], answer: 1 },
+      { q: '<span class="m">|x − 2| = 3</span> теңдеуінің түбірлері:', options: ['<span class="m">5; −1</span>', '<span class="m">5; 1</span>', '<span class="m">−5; 1</span>', '<span class="m">3; −3</span>'], answer: 0 },
+      { q: '<span class="m">2<sup>x</sup> = 16</span> болса, <span class="m">x</span> = ?', options: ['<span class="m">3</span>', '<span class="m">4</span>', '<span class="m">8</span>', '<span class="m">2</span>'], answer: 1 },
+      { q: '<span class="m">y = 2x − 4</span> түзуі <span class="m">Ox</span> осін қай нүктеде қияды?', options: ['<span class="m">(2; 0)</span>', '<span class="m">(0; −4)</span>', '<span class="m">(−2; 0)</span>', '<span class="m">(4; 0)</span>'], answer: 0 },
+    ],
+    12: [
+      { q: "Крахмалдың ыдырауына қатысатын ферменттер:", options: ["Пепсин мен липаза", "Сілекейдегі амилаза, ашішектің дисахаридаза мен глюкоамилаза ферменттері", "Трипсин", "Химозин"], answer: 1 },
+      { q: "Жасушаның энергетикалық станциясы:", options: ["Рибосома", "Митохондрия", "Лизосома", "Ядро"], answer: 1 },
+      { q: "Фотосинтез жүретін органоид:", options: ["Хлоропласт", "Гольджи кешені", "Вакуоль", "Центриоль"], answer: 0 },
+    ],
+    13: [
+      { q: "Масштабы 1 : 100 000 картада 1 см неше км?", options: ["0,1 км", "1 км", "10 км", "100 км"], answer: 1 },
+      { q: "Ең ұзын өзен:", options: ["Амазонка", "Ніл", "Янцзы", "Ертіс"], answer: 1 },
+      { q: "Қазақстанның ең биік нүктесі:", options: ["Хан Тәңірі", "Белуха", "Талғар", "Мұзтау"], answer: 0 },
+    ],
+    14: [
+      { q: "1 байт неше битке тең?", options: ["4", "8", "16", "1024"], answer: 1 },
+      { q: "Екілік жүйедегі 101₂ саны ондық жүйеде:", options: ["3", "5", "6", "101"], answer: 1 },
+      { q: "Ақпаратты өлшеудің ең кіші бірлігі:", options: ["Байт", "Бит", "Килобайт", "Символ"], answer: 1 },
+    ],
+  },
   /** «Расписание»: kind → video | test; when → today | overdue | дата */
   schedule: {
     stats: { today: 2, week: 16, overdue: 61 },
@@ -153,6 +258,25 @@ window.MOCK = {
       { id: 4, course: "Дүниежүзі Тарихы", lesson: "Ұлы географиялық ашулар", kind: "video", week: 4, when: "04.10", period: ["week", "month"] },
       { id: 5, course: "Ағылшын тілі", lesson: "Present Simple", kind: "test", week: 3, when: "overdue", period: ["week", "month"] },
       { id: 6, course: "Дүниежүзі Тарихы", lesson: "Қайта өрлеу дәуірі", kind: "video", week: 5, when: "09.10", period: ["month"] },
+    ],
+    /** Плиткалар басылғанда шығатын тізімдер */
+    weekList: [
+      { course: "Ағылшын тілі", lesson: "Homework 3", kind: "video", week: 4, when: "overdue" },
+      { course: "Дүниежүзі Тарихы", lesson: "Англия мен Ресейдегі абсолютизм", kind: "video", week: 4, when: "overdue" },
+      { course: "Ағылшын тілі", lesson: "Adverb", kind: "video", week: 4, when: "overdue" },
+      { course: "Дүниежүзі Тарихы", lesson: "Англия мен Ресейдегі абсолютизм", kind: "test", week: 4, when: "overdue" },
+      { course: "Ағылшын тілі", lesson: "Prepositions", kind: "video", week: 4, when: "today" },
+      { course: "Дүниежүзі Тарихы", lesson: "Осман империясы (1)", kind: "test", week: 4, when: "today" },
+      { course: "Ағылшын тілі", lesson: "Articles: a / an / the", kind: "video", week: 4, when: "03.10" },
+    ],
+    overdueList: [
+      { course: "Ағылшын тілі", lesson: "Noun", kind: "video", week: 1, when: "overdue" },
+      { course: "Дүниежүзі Тарихы", lesson: "Рим империясының құлауы", kind: "video", week: 1, when: "overdue" },
+      { course: "Ағылшын тілі", lesson: "Noun", kind: "test", week: 1, when: "overdue" },
+      { course: "Дүниежүзі Тарихы", lesson: "Рим империясының құлауы", kind: "test", week: 1, when: "overdue" },
+      { course: "Ағылшын тілі", lesson: "Adjective", kind: "video", week: 2, when: "overdue" },
+      { course: "Ағылшын тілі", lesson: "Adjective", kind: "test", week: 2, when: "overdue" },
+      { course: "Дүниежүзі Тарихы", lesson: "Византия", kind: "video", week: 2, when: "overdue" },
     ],
   },
   scheduleToday: [
