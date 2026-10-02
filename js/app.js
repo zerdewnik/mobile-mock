@@ -2859,203 +2859,271 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
-  /** Студенттің соңғы пробный ЕНТ нәтижелері (макс 140): тұрақты жалған деректер */
-  function studentEnt(x) {
-    if (!x.ent) {
-      const h = (n) => ((x.id * 2654435761 + n * 40503) >>> 0) % 1000;
-      const base = 45 + Math.round(((x.score || 0) / 100) * 60) + (h(1) % 15);
-      x.ent = [3, 2, 1, 0].map((k) => ({
-        date: ["05.09", "12.09", "19.09", "26.09"][3 - k],
-        score: Math.max(20, Math.min(140, base - k * (2 + (h(k + 2) % 5)))),
-      }));
-    }
-    return x.ent;
+  /* —— Топ аналитикасы: бәрі таңдалған кезеңге (күн / апта / ай) байланысты —— */
+  const AN_TODAY = new Date(2026, 9, 3);
+  const dayKey = (d) => d.getFullYear() * 400 + d.getMonth() * 32 + d.getDate();
+  /** 0..1 тұрақты кездейсоқ сан */
+  function rnd(...n) {
+    let x = 2166136261;
+    n.forEach((v) => {
+      x ^= v & 0xffff;
+      x = Math.imul(x, 16777619);
+      x ^= v >>> 16;
+      x = Math.imul(x, 16777619);
+    });
+    x ^= x >>> 13;
+    x = Math.imul(x, 0x5bd1e995);
+    x ^= x >>> 15;
+    return (x >>> 0) / 4294967296;
   }
-
-  /** Кезеңдегі прогресс: әр оқушы неше сабақ өтті және жоспар (апта = 8 сабақ, Дс–Жм) */
-  function periodProgress(g, period, date) {
-    const workdays = (from, to) => {
-      let n = 0;
-      for (let d = new Date(from); d <= to; d.setDate(d.getDate() + 1)) if (d.getDay() !== 0 && d.getDay() !== 6) n++;
-      return n;
-    };
+  function periodRange(period, date) {
     let from, to;
-    if (period === "day") from = to = new Date(date);
+    if (period === "day") from = to = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     else if (period === "week") {
-      from = new Date(date);
-      from.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-      to = new Date(from);
-      to.setDate(from.getDate() + 6);
+      from = new Date(date.getFullYear(), date.getMonth(), date.getDate() - ((date.getDay() + 6) % 7));
+      to = new Date(from.getFullYear(), from.getMonth(), from.getDate() + 6);
     } else {
       from = new Date(date.getFullYear(), date.getMonth(), 1);
       to = new Date(date.getFullYear(), date.getMonth() + 1, 0);
     }
-    const plan = Math.max(1, Math.round(workdays(from, to) * 1.6)); // ~8 за неделю
-    const key = from.getFullYear() * 400 + from.getMonth() * 32 + from.getDate() + period.length * 1000;
-    const per = g.students.map((x) => {
-      const h = ((x.id * 2654435761 + key * 40503) >>> 0) % 1000;
-      const k = 0.25 + ((x.score || 0) / 100) * 0.75 + (h % 30) / 100 - 0.12;
-      return { x, done: Math.max(0, Math.round(plan * Math.min(1.25, k))) };
+    const days = [];
+    for (let d = new Date(from); d <= to && d <= AN_TODAY; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+    return { from, to, days };
+  }
+  function periodLabel(period, date) {
+    const { from, to } = periodRange(period, date);
+    const dm = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}`;
+    if (period === "day") return dmy(from);
+    if (period === "week") return `${dm(from)} – ${dm(to)}`;
+    return `${KZ_MONTHS[from.getMonth()].replace(/^./, (c) => c.toUpperCase())} ${from.getFullYear()}`;
+  }
+  /** Оқушының бір күні: кірді ме, неше сабақ, тест нәтижелері, конспект */
+  function studentDay(x, d) {
+    const k = dayKey(d);
+    const skill = (x.score || 0) / 100;
+    const weekend = d.getDay() === 0 || d.getDay() === 6;
+    const active = rnd(x.id, k, 1) < (0.3 + skill * 0.6) * (weekend ? 0.55 : 1);
+    if (!active) return { active: false, lessons: 0, tests: [], notes: 0, hour: 0 };
+    const lessons = 1 + (rnd(x.id, k, 2) < 0.35 + skill * 0.4 ? 1 : 0) + (rnd(x.id, k, 3) < 0.15 ? 1 : 0);
+    const tests = Array.from({ length: lessons }, (_, i) => Math.round((40 + skill * 45 + rnd(x.id, k, 10 + i) * 20) / 5) * 5);
+    const notes = rnd(x.id, k, 4) < 0.6 ? 1 : 0;
+    const hour = [8, 10, 12, 14, 16, 18, 20, 22][Math.min(7, Math.floor(Math.pow(rnd(x.id, k, 5), 0.6) * 8))];
+    return { active, lessons, tests, notes, hour };
+  }
+  /** Пробный ЕНТ — әр сенбі (29.08-ден бүгінге дейін) */
+  function entAttempts(x) {
+    if (!x.entAll) {
+      x.entAll = [];
+      const skill = (x.score || 0) / 100;
+      for (let d = new Date(2026, 7, 29), i = 0; d <= AN_TODAY; d.setDate(d.getDate() + 7), i++) {
+        if (rnd(x.id, i, 7) < 0.15) continue;
+        const score = Math.round(Math.min(140, 40 + skill * 70 + i * 2.5 + (rnd(x.id, i, 8) - 0.5) * 16));
+        x.entAll.push({ date: new Date(d), score });
+      }
+    }
+    return x.entAll;
+  }
+  function analyze(g, period, date) {
+    const R = periodRange(period, date);
+    const st = g.students;
+    const workdays = R.days.filter((d) => d.getDay() !== 0 && d.getDay() !== 6).length;
+    const plan = workdays ? Math.max(1, Math.round(workdays * 1.6)) : 0;
+    const per = st.map((x) => {
+      const days = R.days.map((d) => studentDay(x, d));
+      const tests = days.flatMap((d) => d.tests);
+      const inRange = entAttempts(x).filter((e) => e.date >= R.from && e.date <= R.to);
+      return {
+        x,
+        days,
+        active: days.some((d) => d.active),
+        activeDays: days.filter((d) => d.active).length,
+        lessons: days.reduce((t, d) => t + d.lessons, 0),
+        tests,
+        points: tests.reduce((t, v) => t + Math.round(v / 10), 0),
+        notes: days.reduce((t, d) => t + d.notes, 0),
+        pendingNotes: R.days.reduce((t, d, i) => t + (days[i].notes && (AN_TODAY - d) / 864e5 <= 2 ? 1 : 0), 0),
+        ent: inRange,
+      };
     });
-    const avg = per.length ? per.reduce((t, r) => t + r.done, 0) / per.length : 0;
+    const avg = (arr) => (arr.length ? arr.reduce((t, v) => t + v, 0) / arr.length : 0);
+    // Алдыңғы кезең (ЕНТ салыстыру үшін)
+    const prevDate = new Date(R.from);
+    if (period === "day") prevDate.setDate(prevDate.getDate() - 1);
+    else if (period === "week") prevDate.setDate(prevDate.getDate() - 7);
+    else prevDate.setMonth(prevDate.getMonth() - 1);
+    const P = periodRange(period, prevDate);
+    const entNow = per.flatMap((r) => r.ent.map((e) => e.score));
+    const entPrev = st.flatMap((x) => entAttempts(x).filter((e) => e.date >= P.from && e.date <= P.to).map((e) => e.score));
+    const allTests = per.flatMap((r) => r.tests);
+    let series;
+    if (period === "day") {
+      const hours = [8, 10, 12, 14, 16, 18, 20, 22];
+      series = hours.map((h, i) => ({ label: pad(h), tip: `${pad(h)}:00–${pad(hours[i + 1] || 24)}:00`, v: per.filter((r) => r.days[0]?.active && r.days[0].hour === h).length }));
+    } else {
+      const all = [];
+      for (let d = new Date(R.from); d <= R.to; d.setDate(d.getDate() + 1)) all.push(new Date(d));
+      series = all.map((d, i) => {
+        const idx = R.days.findIndex((x) => dayKey(x) === dayKey(d));
+        const v = idx < 0 ? null : per.filter((r) => r.days[idx].active).length;
+        const wd = ["Жс", "Дс", "Сс", "Ср", "Бс", "Жм", "Сб"][d.getDay()];
+        const label = period === "week" ? wd : (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "";
+        return { label, tip: `${wd}, ${pad(d.getDate())}.${pad(d.getMonth() + 1)}`, v };
+      });
+    }
+    const attention = per
+      .map((r) => {
+        const reasons = [];
+        if (!r.active) reasons.push("не заходил за период");
+        else if (plan && r.lessons < plan * 0.5) reasons.push(`прошёл ${r.lessons} из ${plan} уроков`);
+        if (r.tests.length && avg(r.tests) < 55) reasons.push(`ср. тест ${Math.round(avg(r.tests))}`);
+        return { x: r.x, reasons };
+      })
+      .filter((r) => r.reasons.length);
     return {
-      plan,
-      avg: Math.round(avg * 10) / 10,
-      pct: Math.round((avg / plan) * 100),
-      met: per.filter((r) => r.done >= plan).length,
+      R,
       per,
+      plan,
+      future: !R.days.length,
+      active: per.filter((r) => r.active).length,
+      avgPoints: Math.round(avg(per.map((r) => r.points))),
+      avgTest: Math.round(avg(allTests)),
+      testsCount: allTests.length,
+      notes: per.reduce((t, r) => t + r.notes, 0),
+      pending: per.reduce((t, r) => t + r.pendingNotes, 0),
+      avgLessons: Math.round(avg(per.map((r) => r.lessons)) * 10) / 10,
+      met: per.filter((r) => plan && r.lessons >= plan).length,
+      entAvg: entNow.length ? Math.round(avg(entNow)) : null,
+      entPrev: entPrev.length ? Math.round(avg(entPrev)) : null,
+      entCount: per.filter((r) => r.ent.length).length,
+      entGrant: per.filter((r) => r.ent.length && r.ent[r.ent.length - 1].score >= 50).length,
+      series,
+      attention,
     };
   }
 
-  /** Белсенділік: күн → сағаттар, апта → күндер, ай → күндер */
-  function activitySeries(g, period, date) {
-    const n = g.students.length;
-    const h = (k) => ((g.id * 7919 + k * 104729) >>> 0) % 1000;
-    const seed = date.getFullYear() * 400 + date.getMonth() * 32 + date.getDate();
-    if (period === "day") {
-      const hours = ["08", "10", "12", "14", "16", "18", "20", "22"];
-      const shape = [0.15, 0.25, 0.2, 0.35, 0.5, 0.65, 0.8, 0.45];
-      return hours.map((t, i) => ({ label: t, tip: `${t}:00–${hours[i + 1] || "24"}:00`, v: Math.min(n, Math.round(n * shape[i] * (0.7 + (h(seed + i) % 50) / 100))) }));
-    }
-    if (period === "week") {
-      const mon = new Date(date);
-      mon.setDate(date.getDate() - ((date.getDay() + 6) % 7));
-      return ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб", "Жс"].map((d, i) => {
-        const day = new Date(mon);
-        day.setDate(mon.getDate() + i);
-        const k = day.getFullYear() * 400 + day.getMonth() * 32 + day.getDate();
-        return { label: d, tip: `${d}, ${pad(day.getDate())}.${pad(day.getMonth() + 1)}`, v: Math.min(n, Math.round(n * (i >= 5 ? 0.45 : 0.62) + (h(k) % Math.max(2, Math.ceil(n * 0.35))))) };
-      });
-    }
-    const days = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    return Array.from({ length: days }, (_, i) => {
-      const day = new Date(date.getFullYear(), date.getMonth(), i + 1);
-      const k = day.getFullYear() * 400 + day.getMonth() * 32 + day.getDate();
-      const wk = day.getDay() === 0 || day.getDay() === 6;
-      return { label: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", tip: `${pad(i + 1)}.${pad(date.getMonth() + 1)}`, v: Math.min(n, Math.round(n * (wk ? 0.4 : 0.6) + (h(k) % Math.max(2, Math.ceil(n * 0.35))))) };
-    });
-  }
-
   function openGroupAnalytics(g) {
-    const A = { period: "week", date: new Date(2026, 9, 3), attAll: false };
-    let gpOpen = false;
+    const A = { period: "week", date: new Date(AN_TODAY), attAll: false, who: false };
+    const word = () => ({ day: "день", week: "неделю", month: "месяц" })[A.period];
     const build = () => {
-      const a = groupStats(g);
-      const ents = g.students.map((x) => ({ x, list: studentEnt(x) }));
-      const last = ents.map((e) => e.list[e.list.length - 1].score);
-      const prev = ents.map((e) => e.list[e.list.length - 2].score);
-      const avg = (arr) => (arr.length ? Math.round(arr.reduce((t, v) => t + v, 0) / arr.length) : 0);
-      const entAvg = avg(last);
-      const diff = entAvg - avg(prev);
-      const grant = last.filter((v) => v >= 50).length;
-      const series = activitySeries(g, A.period, A.date);
-      const P = periodProgress(g, A.period, A.date);
-      const maxV = Math.max(1, ...series.map((p) => p.v));
-      const peak = series.findIndex((p) => p.v === maxV);
-      const dateLabel =
-        A.period === "day"
-          ? dmy(A.date)
-          : A.period === "week"
-            ? (() => {
-                const mon = new Date(A.date);
-                mon.setDate(A.date.getDate() - ((A.date.getDay() + 6) % 7));
-                const sun = new Date(mon);
-                sun.setDate(mon.getDate() + 6);
-                return `${pad(mon.getDate())}.${pad(mon.getMonth() + 1)} – ${pad(sun.getDate())}.${pad(sun.getMonth() + 1)}`;
-              })()
-            : `${KZ_MONTHS[A.date.getMonth()].replace(/^./, (c) => c.toUpperCase())} ${A.date.getFullYear()}`;
-      const ranked = [...ents].sort((p, q) => q.list[q.list.length - 1].score - p.list[p.list.length - 1].score);
-      return `
-      <div class="ga">
+      const a = analyze(g, A.period, A.date);
+      const n = g.students.length;
+      const head = `
         <div class="ga-head">
           <div class="ga-title">${g.name}</div>
-          <div class="ga-sub">${g.courseLabel} · ${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</div>
+          <div class="ga-sub">${g.courseLabel} · ${n} ${plural(n, "ученик", "ученика", "учеников")}</div>
         </div>
-
-        <div class="ga-ent">
-          <div class="ga-ent-l">Пробный ЕНТ · средний балл группы</div>
-          <div class="ga-ent-v"><b>${entAvg}</b><span> / 140</span>
-            <em class="${diff >= 0 ? "up" : "down"}">${icon(diff >= 0 ? "arrow_upward" : "arrow_downward")}${diff >= 0 ? "+" : ""}${diff} с прошлого пробного</em>
-          </div>
-          <div class="ga-ent-bar"><i style="width:${(entAvg / 140) * 100}%"></i><s style="left:${(50 / 140) * 100}%" title="Порог гранта 50"></s></div>
-          <div class="ga-ent-meta"><span>Последний пробный: 26.09</span><span>≥ 50 баллов: ${grant} из ${g.students.length}</span></div>
-        </div>
-
-        <div class="ga-tiles">
-          <div class="ga-tile"><span>Средний балл за неделю</span><b>${a.avgScore}</b></div>
-          <div class="ga-tile"><span>Средний результат тестов</span><b>${a.avgTest}<small> из 100</small></b></div>
-          <div class="ga-tile"><span>Активны сегодня</span><b>${a.active}<small> / ${g.studentsCount}</small></b></div>
-          <div class="ga-tile ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "check_circle", "material-icons-outlined")}Конспекты</span><b>${a.pending}<small> на проверке</small></b></div>
-        </div>
-
-        <div class="ga-card">
-          <div class="seg-tabs seg-3 ga-seg" style="margin-top:0">
+        <div class="ga-period">
+          <div class="seg-tabs seg-3 ga-seg" style="margin:0">
             ${[["day", "День"], ["week", "Неделя"], ["month", "Месяц"]].map(([k, l]) => `<button type="button" data-ga-period="${k}" class="${A.period === k ? "on" : ""}">${l}</button>`).join("")}
           </div>
           <div class="ga-dnav">
             <button type="button" class="sch-arrow" data-ga-shift="-1">${icon("chevron_left")}</button>
-            <button type="button" class="ga-date" id="gaDate">${icon("calendar_today")}${dateLabel}</button>
-            <button type="button" class="sch-arrow" data-ga-shift="1">${icon("chevron_right")}</button>
+            <button type="button" class="ga-date" id="gaDate">${icon("calendar_today")}${periodLabel(A.period, A.date)}</button>
+            <button type="button" class="sch-arrow" data-ga-shift="1" ${a.R.to >= AN_TODAY ? "disabled" : ""}>${icon("chevron_right")}</button>
           </div>
+        </div>`;
+      if (a.future) return `<div class="ga">${head}<div class="efir-empty" style="min-height:300px">Данных за этот период пока нет</div></div>`;
+      const diff = a.entAvg != null && a.entPrev != null ? a.entAvg - a.entPrev : null;
+      const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
+      const maxV = Math.max(1, ...a.series.map((p) => p.v || 0));
+      const peak = a.series.findIndex((p) => p.v === maxV);
+      const ranked = a.per.filter((r) => r.ent.length).sort((p, q) => q.ent[q.ent.length - 1].score - p.ent[p.ent.length - 1].score);
+      return `
+      <div class="ga">
+        ${head}
 
-          <div class="ga-ctitle ga-sec">Прогресс за ${{ day: "день", week: "неделю", month: "месяц" }[A.period]}</div>
-          <div class="gp-row">
-            <div class="gp-big"><b>+${P.avg}</b><span>${plural(Math.round(P.avg), "урок", "урока", "уроков")} в среднем на ученика</span></div>
-            <div class="gp-pct ${P.pct >= 100 ? "ok" : P.pct >= 70 ? "mid" : "low"}">${P.pct}%</div>
-          </div>
-          <div class="gp-bar"><i style="width:${Math.min(100, P.pct)}%"></i></div>
-          <div class="gp-meta"><span>План: ${P.plan} ${plural(P.plan, "урок", "урока", "уроков")} · выполнен на ${P.pct}%</span><span>Выполнили план: ${P.met} из ${g.students.length}</span></div>
-          <button type="button" class="ga-more gp-who" id="gpWho">${gpOpen ? "Скрыть" : "Кто сколько прошёл"}</button>
+        <div class="ga-ent">
+          <div class="ga-ent-l">Пробный ЕНТ · средний балл группы за ${word()}</div>
           ${
-            gpOpen
-              ? `<div class="ga-hbars">${[...P.per]
-                  .sort((p, q) => q.done - p.done)
-                  .map(
-                    (r) => `
-                <button type="button" class="ga-hrow" data-ga-student="${r.x.id}" data-tip="${r.x.name}: ${r.done} из ${P.plan}">
+            a.entAvg == null
+              ? `<div class="ga-ent-none">${icon("event_busy", "material-icons-outlined")}За этот период пробных ЕНТ не было</div>`
+              : `
+          <div class="ga-ent-v"><b>${a.entAvg}</b><span> / 140</span>
+            ${diff != null ? `<em class="${diff >= 0 ? "up" : "down"}">${icon(diff >= 0 ? "arrow_upward" : "arrow_downward")}${diff >= 0 ? "+" : ""}${diff} к прошлому периоду</em>` : ""}
+          </div>
+          <div class="ga-ent-bar"><i style="width:${(a.entAvg / 140) * 100}%"></i><s style="left:${(50 / 140) * 100}%" title="Порог гранта 50"></s></div>
+          <div class="ga-ent-meta"><span>Сдавали: ${a.entCount} из ${n}</span><span>≥ 50 баллов: ${a.entGrant} из ${a.entCount}</span></div>`
+          }
+        </div>
+
+        <div class="ga-tiles">
+          <div class="ga-tile"><span>Средний балл за ${word()}</span><b>${a.avgPoints}</b></div>
+          <div class="ga-tile"><span>Средний результат тестов</span><b>${a.testsCount ? a.avgTest : "—"}<small> ${a.testsCount ? "из 100" : ""}</small></b></div>
+          <div class="ga-tile"><span>Активны за ${word()}</span><b>${a.active}<small> / ${n}</small></b></div>
+          <div class="ga-tile ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "description", "material-icons-outlined")}Конспекты</span><b>${a.notes}<small> сдано${a.pending ? ` · ${a.pending} на проверке` : ""}</small></b></div>
+        </div>
+
+        <div class="ga-card">
+          <div class="ga-ctitle">Прогресс за ${word()}</div>
+          <div class="gp-row">
+            <div class="gp-big"><b>+${a.avgLessons}</b><span>${plural(Math.round(a.avgLessons), "урок", "урока", "уроков")} в среднем на ученика</span></div>
+            ${a.plan ? `<div class="gp-pct ${pct >= 100 ? "ok" : pct >= 70 ? "mid" : "low"}">${pct}%</div>` : ""}
+          </div>
+          ${
+            a.plan
+              ? `<div class="gp-bar"><i style="width:${Math.min(100, pct)}%"></i></div>
+          <div class="gp-meta"><span>План${a.R.to > AN_TODAY ? " на сегодня" : ""}: ${a.plan} ${plural(a.plan, "урок", "урока", "уроков")} · выполнен на ${pct}%</span><span>Выполнили: ${a.met} из ${n}</span></div>`
+              : `<div class="gp-meta"><span>Выходной — план не задан</span></div>`
+          }
+          <button type="button" class="ga-more gp-who" id="gpWho">${A.who ? "Скрыть" : "Кто сколько прошёл"}</button>
+          ${
+            A.who
+              ? `<div class="ga-hbars">${[...a.per]
+                  .sort((p, q) => q.lessons - p.lessons)
+                  .map((r) => {
+                    const ok = a.plan && r.lessons >= a.plan;
+                    const w = a.plan ? Math.min(100, (r.lessons / a.plan) * 100) : r.lessons * 30;
+                    return `
+                <button type="button" class="ga-hrow" data-ga-student="${r.x.id}" data-tip="${r.x.name}: ${r.lessons} ${plural(r.lessons, "урок", "урока", "уроков")}">
                   <span class="ga-hname">${r.x.name}</span>
-                  <span class="ga-htrack"><i style="width:${Math.min(100, (r.done / P.plan) * 100)}%;${r.done >= P.plan ? "" : "background:color-mix(in srgb,var(--primary) 55%,#1e1e1e)"}"></i></span>
-                  <span class="ga-hval">${r.done}/${P.plan}</span>
-                </button>`
-                  )
+                  <span class="ga-htrack"><i style="width:${Math.max(2, w)}%;${ok ? "" : "background:color-mix(in srgb,var(--primary) 55%,#1e1e1e)"}"></i></span>
+                  <span class="ga-hval">${r.lessons}${a.plan ? `/${a.plan}` : ""}</span>
+                </button>`;
+                  })
                   .join("")}</div>`
               : ""
           }
+        </div>
 
-          <div class="ga-ctitle ga-sec">Активность</div>
-          <div class="ga-csub">Сколько учеников заходили в приложение</div>
-          <div class="ga-bars ${A.period === "month" ? "month" : ""}" style="grid-template-columns:repeat(${series.length},1fr)">
-            ${series
+        <div class="ga-card">
+          <div class="ga-ctitle">Активность</div>
+          <div class="ga-csub">Сколько учеников заходили в приложение${A.period === "day" ? " · по часам" : ""}</div>
+          <div class="ga-bars ${A.period === "month" ? "month" : ""}" style="grid-template-columns:repeat(${a.series.length},1fr)">
+            ${a.series
               .map(
                 (p, i) => `
-              <button type="button" class="ga-bar ${i === peak ? "today" : ""}" data-tip="${p.tip}: ${p.v} из ${g.studentsCount}">
+              <button type="button" class="ga-bar ${i === peak ? "today" : ""} ${p.v == null ? "none" : ""}" data-tip="${p.tip}: ${p.v == null ? "ещё не наступил" : `${p.v} из ${n}`}">
                 ${i === peak && A.period !== "month" ? `<em>${p.v}</em>` : ""}
-                <i style="height:${Math.max(3, (p.v / g.studentsCount) * 100)}%"></i>
+                <i style="height:${p.v == null ? 0 : Math.max(3, (p.v / n) * 100)}%"></i>
                 <span>${p.label}</span>
               </button>`
               )
               .join("")}
           </div>
-          <div class="ga-peak">Пик: ${series[peak].tip} · ${series[peak].v} из ${g.studentsCount}</div>
+          <div class="ga-peak">${maxV ? `Пик: ${a.series[peak].tip} · ${maxV} из ${n}` : "Никто не заходил"}</div>
         </div>
 
         <div class="ga-card">
           <div class="ga-ctitle">Пробный ЕНТ по ученикам</div>
-          <div class="ga-csub">Последний результат из 140 · нажмите, чтобы открыть профиль</div>
-          <div class="ga-hbars">
-            ${ranked
-              .map((e) => {
-                const v = e.list[e.list.length - 1].score;
-                const d = v - e.list[e.list.length - 2].score;
-                return `
-              <button type="button" class="ga-hrow" data-ga-student="${e.x.id}" data-tip="${e.list.map((r) => `${r.date}: ${r.score}`).join(" · ")}">
-                <span class="ga-hname">${e.x.name}</span>
+          <div class="ga-csub">Результат за ${word()} из 140 · нажмите, чтобы открыть профиль</div>
+          ${
+            ranked.length
+              ? `<div class="ga-hbars">${ranked
+                  .map((r) => {
+                    const v = r.ent[r.ent.length - 1].score;
+                    const all = entAttempts(r.x);
+                    const i = all.indexOf(r.ent[r.ent.length - 1]);
+                    const d = i > 0 ? v - all[i - 1].score : null;
+                    return `
+              <button type="button" class="ga-hrow" data-ga-student="${r.x.id}" data-tip="${r.ent.map((e) => `${pad(e.date.getDate())}.${pad(e.date.getMonth() + 1)}: ${e.score}`).join(" · ")}">
+                <span class="ga-hname">${r.x.name}</span>
                 <span class="ga-htrack"><i style="width:${(v / 140) * 100}%"></i></span>
-                <span class="ga-hval">${v}<small class="${d >= 0 ? "up" : "down"}">${d >= 0 ? "+" : ""}${d}</small></span>
+                <span class="ga-hval">${v}${d != null ? `<small class="${d >= 0 ? "up" : "down"}">${d >= 0 ? "+" : ""}${d}</small>` : ""}</span>
               </button>`;
-              })
-              .join("")}
-          </div>
+                  })
+                  .join("")}</div>`
+              : `<div class="ga-csub" style="margin-top:12px">В этот период никто не сдавал пробный ЕНТ</div>`
+          }
         </div>
 
         <div class="ga-card">
@@ -3091,16 +3159,16 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             if (A.period === "day") d.setDate(d.getDate() + k);
             else if (A.period === "week") d.setDate(d.getDate() + 7 * k);
             else d.setMonth(d.getMonth() + k, 1);
-            A.date = d;
+            A.date = d > AN_TODAY ? new Date(AN_TODAY) : d;
             paintStack();
           };
         });
         $("#gaDate").onclick = () => openDatePicker(A.date, (d) => ((A.date = d), paintStack()));
         $("#gaMore")?.addEventListener("click", () => ((A.attAll = true), paintStack()));
-        $("#gpWho").onclick = () => ((gpOpen = !gpOpen), paintStack());
+        $("#gpWho")?.addEventListener("click", () => ((A.who = !A.who), paintStack()));
         $("[data-ga-pending]")?.addEventListener("click", () => {
-          const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0);
-          if (s) openStaffStudent(s, g);
+          const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0) || g.students[0];
+          openStaffStudent(s, g);
         });
       },
       { right: "<span></span>" }

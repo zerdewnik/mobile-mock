@@ -3185,3 +3185,12 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .gp-bar i { display: block; height: 100%; border-radius: 5px; background: var(--primary); }
 .gp-meta { margin-top: 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #8a8d9c; }
 .gp-who { margin-top: 12px; }
+
+/* Кезең таңдау — ең жоғарыда, жабысып тұрады */
+.ga-period { position: sticky; top: 0; z-index: 4; margin: 0 -15px 12px; padding: 8px 15px 10px; background: var(--bg); box-shadow: 0 6px 10px -8px rgba(0, 0, 0, 0.6); }
+.ga-period .ga-dnav { margin-top: 8px; }
+.ga-dnav .sch-arrow:disabled { opacity: 0.35; cursor: default; }
+.ga-ent-none { margin-top: 12px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #a9c7b6; }
+.ga-ent-none .material-icons-outlined { font-size: 20px; }
+.ga-bar.none span { opacity: 0.4; }
+.ga-tile b small { white-space: normal; }
