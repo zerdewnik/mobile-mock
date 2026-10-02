@@ -1124,10 +1124,12 @@
     const bank = MOCK.practice[t.id];
     const P = { i: 0, picked: null, checked: false, correct: 0, answered: 0, done: false };
     const total = bank.questions.length;
+    const mastery = () => Math.round((P.correct / total) * 100);
     const status = () => {
       if (!P.answered) return "Новая · 0%";
-      const pct = Math.round((P.correct / total) * 100);
-      return `${P.done && pct >= 80 ? "Закрыта" : "Изучается"} · ${pct}%`;
+      const pct = mastery();
+      if (P.done && pct >= 80) return `Закрыта · ${pct}%`;
+      return `${P.correct ? "В работе" : "Слабая"} · ${pct}%`;
     };
     const build = () => {
       if (P.done) {
@@ -1144,7 +1146,7 @@
       return `
         <div class="pr-head">
           <div class="pr-top"><span class="pr-badge">Умная практика</span><b>${P.correct} / ${P.answered}</b></div>
-          <div class="pr-bar"><i style="width:${(P.answered / total) * 100}%"></i></div>
+          <div class="pr-bar ${P.correct ? "warm" : ""}"><i style="width:${(P.answered / total) * 100}%"></i></div>
           <div class="pr-status">${status()}</div>
         </div>
         <div class="pr-body">
@@ -1158,10 +1160,23 @@
               return `<button type="button" class="pr-opt ${cls}" data-opt="${k}"><span class="pr-radio"></span><span>${o}</span></button>`;
             })
             .join("")}
+          ${P.checked ? feedbackHtml(item) : ""}
+        </div>`;
+    };
+    const feedbackHtml = (item) => {
+      const ok = P.picked === item.answer;
+      return `
+        <div class="pr-fb ${ok ? "ok" : "bad"}">
+          <div class="pr-fb-title">${ok ? "Верно" : "Неверно"}</div>
+          <div class="pr-fb-sub">Освоение темы: ${mastery()}%</div>
+          <div class="pr-explain">
+            ${ok ? "<b>Дұрыс!</b>" : `<b>Дұрыс емес.</b> Дұрыс жауабы: <b>${item.options[item.answer]}</b> — `}
+            ${item.explain || ""}
+          </div>
         </div>`;
     };
     const footer = () => {
-      const label = P.done ? "Готово" : !P.checked ? "Ответить" : P.i + 1 < total ? "Далее" : "Завершить";
+      const label = P.done ? "Готово" : !P.checked ? "Ответить" : P.i + 1 < total ? "Дальше" : "Завершить";
       return `<div class="sticky-foot"><button type="button" class="smart-btn pr-go ${!P.done && !P.checked && P.picked == null ? "off" : ""}" id="prGo">${label}</button></div>`;
     };
     pushScreen(
