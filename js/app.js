@@ -2621,11 +2621,28 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return list.filter((e) => matches(state.searchEnroll, e.student, e.phone, e.course));
   }
 
+  /** Чемпион фотосы: әзірге кез келген фото қоюға болады (сол құрылғыда сақталады) */
+  function champPhoto(id) {
+    try {
+      return localStorage.getItem(`champPhoto:${id}`) || MOCK.champPhotos?.[id] || null;
+    } catch {
+      return MOCK.champPhotos?.[id] || null;
+    }
+  }
+  const PERSON_SVG = `<svg class="champ-person" viewBox="0 0 160 170" aria-hidden="true">
+      <path d="M6 170c4-42 27-60 54-66l20 13 20-13c27 6 50 24 54 66z" fill="#4a4f5e"/>
+      <path d="M60 104l20 13 20-13 6 3-26 22-26-22z" fill="#3a3e4a"/>
+      <path d="M67 92h26v16l-13 9-13-9z" fill="#c99a74"/>
+      <ellipse cx="80" cy="60" rx="26" ry="32" fill="#ddb48f"/>
+      <path d="M53 56c0-23 12-35 28-35s28 10 28 32c-6-9-15-13-28-13s-21 6-28 16z" fill="#2a2420"/>
+    </svg>`;
+
   /** Өткен апта чемпионы — рейтингтің үстінде, апта бойы тұрады */
   function championHtml(g) {
     const c = g.lastChampion;
     const st = c && g.students.find((x) => x.id === c.id);
     if (!st) return "";
+    const photo = champPhoto(st.id);
     return `
       <div class="champ" data-student-id="${st.id}">
         <div class="champ-text">
@@ -2634,11 +2651,42 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="champ-sub">Чемпион · ${c.score} баллов</div>
           <div class="champ-week">${c.week}</div>
         </div>
-        <div class="champ-pic">
-          <div class="champ-avatar" style="background:${st.color}">${st.initials}</div>
-          <span class="champ-belt">${icon("emoji_events")}</span>
+        <div class="champ-pic" data-champ-photo="${st.id}" title="Поставить фото">
+          ${photo ? `<img class="champ-photo" src="${photo}" alt="" />` : PERSON_SVG}
+          <img class="champ-beltimg" src="assets/champion/belt.png" alt="Белбеу" />
+          <span class="champ-cam">${icon("photo_camera", "material-icons-outlined")}</span>
         </div>
       </div>`;
+  }
+
+  /** Фото таңдап, 480px-ке дейін кішірейтіп сақтау */
+  function pickChampPhoto(id) {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = "image/*";
+    input.onchange = () => {
+      const f = input.files[0];
+      if (!f) return;
+      const img = new Image();
+      img.onload = () => {
+        const k = Math.min(1, 480 / Math.max(img.width, img.height));
+        const cv = document.createElement("canvas");
+        cv.width = Math.round(img.width * k);
+        cv.height = Math.round(img.height * k);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        const url = cv.toDataURL("image/jpeg", 0.85);
+        try {
+          localStorage.setItem(`champPhoto:${id}`, url);
+        } catch {
+          toast("Фото не сохранится после обновления", "err");
+        }
+        MOCK.champPhotos = { ...(MOCK.champPhotos || {}), [id]: url };
+        render();
+        toast("Фото чемпиона обновлено");
+      };
+      img.src = URL.createObjectURL(f);
+    };
+    input.click();
   }
 
   function renderGroups() {
@@ -3652,6 +3700,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         e.stopPropagation();
         const group = MOCK.groups.find((g) => g.id === Number(btn.dataset.download));
         if (group) openRatingSheet(group);
+      };
+    });
+    $$("[data-champ-photo]").forEach((el) => {
+      el.onclick = (e) => {
+        e.stopPropagation();
+        pickChampPhoto(Number(el.dataset.champPhoto));
       };
     });
     $$("[data-student-id]").forEach((row) => {

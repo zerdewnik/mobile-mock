@@ -3064,3 +3064,21 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .champ-belt { position: absolute; right: 22px; bottom: 6px; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe08a, #d4a72c 55%, #8a6510); display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
 .champ-belt .material-icons-round { font-size: 26px; color: #3a2a06; }
 .champ-avatar { display: flex; align-items: flex-start; justify-content: center; padding: 24px 14px 0 0; font-size: 30px; }
+
+/* Чемпион: адам + белбеу (UFC стилі) */
+.champ { align-items: stretch; padding-top: 0; min-height: 168px; }
+.champ-text { padding: 18px 0 14px; align-self: center; }
+.champ-pic { position: relative; width: 150px; height: auto; min-height: 168px; flex-shrink: 0; cursor: pointer; }
+.champ-avatar, .champ-belt { display: none; }
+.champ-person { position: absolute; right: -6px; bottom: 0; width: 150px; height: 160px; }
+.champ-photo { position: absolute; right: 0; bottom: 0; width: 150px; height: 168px; object-fit: cover; object-position: center top;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 22%), linear-gradient(0deg, #000 70%, #000 100%);
+  mask-image: linear-gradient(90deg, transparent 0, #000 22%); }
+.champ-beltimg { position: absolute; left: -18px; bottom: 6px; width: 132px; transform: rotate(-14deg); filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.6)); pointer-events: none; }
+.champ-cam { position: absolute; right: 8px; top: 8px; width: 26px; height: 26px; border-radius: 50%; background: rgba(0, 0, 0, 0.55); color: #fff; display: grid; place-items: center; opacity: 0.85; }
+.champ-cam .material-icons-outlined { font-size: 15px; }
+.champ-name { font-size: 22px; }
+.champ-pic { width: 146px; background: radial-gradient(ellipse at 60% 70%, rgba(212, 167, 44, 0.18), transparent 65%); }
+.champ-person { right: -4px; width: 146px; height: 156px; }
+.champ-beltimg { left: 2px; bottom: 2px; width: 104px; transform: rotate(-12deg); }
+.champ-sub { letter-spacing: 1.5px; }
