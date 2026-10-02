@@ -3171,3 +3171,17 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .ga-hrow { grid-template-columns: 110px 1fr 52px; }
 .ga-hval { display: flex; gap: 4px; justify-content: flex-end; align-items: baseline; }
 .ga-hval small { font-size: 10px; }
+
+/* Прогресс за период */
+.ga-sec { margin-top: 18px; padding-top: 14px; border-top: 1px solid #2c2c33; }
+.gp-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; margin-top: 10px; }
+.gp-big b { font-size: 30px; font-weight: 800; line-height: 1; }
+.gp-big span { display: block; margin-top: 4px; font-size: 11.5px; color: #8a8d9c; }
+.gp-pct { font-size: 20px; font-weight: 700; }
+.gp-pct.ok { color: #5cb36d; }
+.gp-pct.mid { color: #e0a84a; }
+.gp-pct.low { color: #e06b5b; }
+.gp-bar { margin-top: 10px; height: 8px; border-radius: 5px; background: #2b2f2d; overflow: hidden; }
+.gp-bar i { display: block; height: 100%; border-radius: 5px; background: var(--primary); }
+.gp-meta { margin-top: 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 11px; color: #8a8d9c; }
+.gp-who { margin-top: 12px; }
