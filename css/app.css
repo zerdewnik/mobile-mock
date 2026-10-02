@@ -3040,3 +3040,14 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .lh-row b { font-weight: 400; color: #8a8d9c; font-size: 12px; }
 .rp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
 .rp-text { margin-top: 12px; font-size: 13px; color: #c8cad4; line-height: 1.5; }
+
+/* Звонок / Написать мәзірі */
+.ct-menu { position: absolute; background: #2c2c2e; border-radius: 14px; overflow: hidden; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5); animation: ctIn 0.14s ease-out; }
+@keyframes ctIn { from { opacity: 0; transform: scale(0.94); } to { opacity: 1; transform: none; } }
+.ct-head { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 10px 12px; font-size: 12px; color: #e6e6e6; border-bottom: 1px solid #3c3c40; }
+.ct-head .material-icons-outlined { font-size: 26px; color: #fff; }
+.ct-head .menu-brand, .ct-head .menu-brand svg { width: 26px; height: 26px; display: block; fill: #fff; }
+.ct-row { width: 100%; border: 0; border-bottom: 1px solid #3c3c40; background: transparent; color: #fff; font-family: inherit; font-size: 15px; display: flex; align-items: center; gap: 14px; padding: 12px 16px; cursor: pointer; text-align: left; }
+.ct-row:last-child { border-bottom: 0; }
+.ct-row:active, .ct-row:hover { background: rgba(255, 255, 255, 0.06); }
+.ct-row .material-icons-round { font-size: 22px; }

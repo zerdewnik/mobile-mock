@@ -2326,8 +2326,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-seen">${s.lastSeen || ""}</div>
         </div>
         <div class="sp-actions">
-          <a class="sp-act" href="tel:${s.phone.replace(/\s/g, "")}">${icon("call", "material-icons-outlined")}<span>Звонок</span></a>
-          <a class="sp-act" href="https://wa.me/${s.phone.replace(/\D/g, "")}" target="_blank" rel="noopener">${waSvg()}<span>Написать</span></a>
+          <button type="button" class="sp-act" id="spCall">${icon("call", "material-icons-outlined")}<span>Звонок</span></button>
+          <button type="button" class="sp-act" id="spWa">${waSvg()}<span>Написать</span></button>
           <button type="button" class="sp-act" id="spReport">${icon("check_circle_outline", "material-icons-outlined")}<span>Отчёт</span></button>
           <button type="button" class="sp-act" id="spEdit">${icon("edit", "material-icons-outlined")}<span>Изменить</span></button>
         </div>
@@ -2354,12 +2354,48 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       build,
       () => {
         $("#spCourse").onclick = () => openStaffCourse(s, data);
+        $("#spCall").onclick = (e) => openContactMenu(e.currentTarget, s, "call");
+        $("#spWa").onclick = (e) => openContactMenu(e.currentTarget, s, "wa");
         $("#spHistory").onclick = () => openLoginHistory(s);
         $("#spReport").onclick = () => openStudentReport(s, data);
         $("#spEdit").onclick = () => openStudentEdit(s);
       },
       { screenCls: "sp-screen", right: `<button type="button" class="sp-hist" id="spHistory">История входа</button>` }
     );
+  }
+
+  /** «Звонок» / «Написать» → Ученику | Родителю */
+  function openContactMenu(anchor, s, kind) {
+    closeMenu();
+    const phone = $(".phone .app").getBoundingClientRect();
+    const rect = anchor.getBoundingClientRect();
+    const w = 190;
+    const left = Math.max(12, Math.min(rect.left - phone.left + rect.width / 2 - w / 2, phone.width - w - 12));
+    const top = rect.bottom - phone.top + 8;
+    const layer = $("#menuLayer");
+    layer.hidden = false;
+    layer.innerHTML = `
+      <div class="ct-menu" style="left:${left}px;top:${top}px;width:${w}px">
+        <div class="ct-head">${kind === "call" ? icon("call", "material-icons-outlined") : waSvg()}<span>${kind === "call" ? "Позвонить" : "Написать"}</span></div>
+        <button type="button" class="ct-row" data-ct="student">${icon("school")}<span>Ученику</span></button>
+        <button type="button" class="ct-row" data-ct="parent">${icon("groups")}<span>Родителю</span></button>
+      </div>`;
+    layer.onclick = (e) => e.target === layer && closeMenu();
+    $$("[data-ct]", layer).forEach((b) => {
+      b.onclick = () => {
+        closeMenu();
+        const who = b.dataset.ct;
+        const num = who === "student" ? s.phone : studentExtra(s).parentPhone;
+        const digits = String(num).replace(/\D/g, "");
+        if (digits.length < 10) {
+          toast("Номер родителя не указан", "err");
+          return;
+        }
+        const url = kind === "call" ? `tel:+${digits}` : `https://wa.me/${digits}`;
+        toast(`${kind === "call" ? "Звонок" : "WhatsApp"}: ${who === "student" ? "ученику" : "родителю"} ${num}`);
+        window.open(url, kind === "call" ? "_self" : "_blank", "noopener");
+      };
+    });
   }
 
   function openStaffCourse(s, data) {
