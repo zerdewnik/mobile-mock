@@ -151,10 +151,21 @@ window.MOCK = {
    */
   courseContent: {
     15: {
+      numbered: true,
+      accent: "#2a3647",
       current: "t:Гипербола. Кубтық парабола",
       sections: [
         { title: "Кіріспе", items: ["v:Кіріспе", "t:Кіріспе тест"] },
-        { title: "Теңдеулер", items: ["v:Сызықтық теңдеулер", "t:Сызықтық теңдеулер", "v:Квадрат теңдеулер", "t:Квадрат теңдеулер", "v:Теңдеулер. Әртүрлі теңдеулер", "t:Теңдеулер. Әртүрлі теңдеулер", "w:Апталық сынақ (3 - апта)"] },
+        {
+          title: "Теңдеулер",
+          items: [
+            "v:Теңдеулер. Әртүрлі теңдеулер", "t:Теңдеулер. Әртүрлі теңдеулер",
+            "v:Теңдеулер. Көбейтінді түріндегі және бөлшектік теңдеулер", "t:Теңдеулер. Көбейтінді түріндегі және бөлшектік теңдеулер",
+            "v:Жоғары дәрежелі және модульді теңдеулер", "t:Жоғары дәрежелі және модульді теңдеулер",
+            "v:Теңдеу құруға арналған мәтін есептер", "t:Теңдеу құруға арналған мәтін есептер",
+            "f:Бекіту тест (Теңдеулер)",
+          ],
+        },
         { title: "Теңсіздіктер", items: ["v:Сызықтық теңсіздіктер", "t:Сызықтық теңсіздіктер", "v:Интервалдар әдісі", "t:Интервалдар әдісі"] },
         { title: "Комбинаторика", items: ["v:Орналастыру, алмастыру", "t:Орналастыру, алмастыру", "v:Терулер", "t:Терулер", "w:Апталық сынақ (6 - апта)"] },
         { title: "Тізбектер", items: ["v:Арифметикалық прогрессия", "t:Арифметикалық прогрессия", "v:Геометриялық прогрессия", "t:Геометриялық прогрессия"] },
@@ -178,12 +189,24 @@ window.MOCK = {
       ],
     },
     10: {
-      current: "v:Prepositions",
+      accent: "#2c3156",
+      dimLocked: true,
+      current: "v:Noun",
       sections: [
-        { title: "Nouns & Articles", items: ["v:Noun", "t:Noun", "v:Article", "t:Article"] },
-        { title: "Adjectives & Adverbs", items: ["v:Adjective", "t:Adjective", "v:Adverb", "t:Adverb", "v:Homework 3"] },
-        { title: "Prepositions", items: ["v:Prepositions", "t:Prepositions", "w:Апталық сынақ (4 - апта)"] },
-        { title: "Tenses", items: ["v:Present Simple", "t:Present Simple", "v:Past Simple", "t:Past Simple", "f:Бекіту тест (Tenses)"] },
+        {
+          title: "Nouns, Pronouns & Basic Tenses",
+          items: [
+            "v:Noun", "t:Noun", "v:Adjective", "t:Adjective", "v:Homework", "v:Numerals", "t:Numerals",
+            "w:Апталық сынақ (1 - апта)", "v:Pronoun", "t:Pronoun", "v:Present Simple", "t:Present Simple",
+            "v:Past Simple and Continuous", "t:Past Simple and Continuous", "f:Бекіту тест (Nouns & Tenses)",
+          ],
+        },
+        { title: "Tenses System & Parts of Speech", items: ["v:Present Perfect", "t:Present Perfect", "v:Future Tenses", "t:Future Tenses", "v:Adverb", "t:Adverb", "v:Homework 3", "w:Апталық сынақ (4 - апта)"] },
+        { title: "Constructions, Modals & Determiners", items: ["v:Prepositions", "t:Prepositions", "v:Article", "t:Article", "v:Modal Verbs", "t:Modal Verbs"] },
+        { title: "Reported Speech, Conditionals & Passive Voice", items: ["v:Reported Speech", "t:Reported Speech", "v:Conditionals", "t:Conditionals", "v:Passive Voice", "t:Passive Voice"] },
+        { title: "Verbals & Complex Constructions", items: ["v:Gerund and Infinitive", "t:Gerund and Infinitive", "v:Complex Object", "t:Complex Object"] },
+        { title: "Sentence Structures & Clauses", items: ["v:Impersonal Sentences", "t:Impersonal Sentences", "v:Relative Clauses", "t:Relative Clauses"] },
+        { title: "Advanced Grammar, Vocabulary & Final Revision", items: ["v:Phrasal Verbs", "t:Phrasal Verbs", "v:Word Formation", "t:Word Formation", "f:Бекіту тест (Final)"] },
       ],
     },
     11: {
@@ -195,11 +218,29 @@ window.MOCK = {
       ],
     },
     12: {
-      current: "t:Жасуша құрылысы",
+      accent: "#2c4a33",
+      current: "v:Биологияға кіріспе. Вирустар",
       sections: [
-        { title: "Кіріспе", items: ["v:Биология ғылымы", "t:Биология ғылымы"] },
-        { title: "Жасуша", items: ["v:Жасуша құрылысы", "t:Жасуша құрылысы", "v:Жасушаның бөлінуі", "t:Жасушаның бөлінуі"] },
-        { title: "Ас қорыту", items: ["v:Ферменттер", "t:Ферменттер", "w:Апталық сынақ (3 - апта)"] },
+        { title: "Кіріспе", items: ["v:Кіріспе", "t:Кіріспе"] },
+        {
+          title: "Микробиология",
+          items: [
+            "v:Биологияға кіріспе. Вирустар", "t:Биологияға кіріспе. Вирустар",
+            "v:Бактериялар. 1 - Бөлімі", "t:Бактериялар. 1 - Бөлімі",
+            "v:Бактериялар. 2 - Бөлімі", "t:Бактериялар. 2 - Бөлімі",
+            "v:Саңырауқұлақтар", "t:Саңырауқұлақтар",
+            "f:Бекіту тест (Микробиология)",
+          ],
+        },
+        { title: "Жасушалық биология. Жасушалық цикл", items: ["v:Жасуша құрылысы", "t:Жасуша құрылысы", "v:Жасушалық цикл. Митоз", "t:Жасушалық цикл. Митоз", "v:Мейоз", "t:Мейоз"] },
+        { title: "Ботаника", items: ["v:Өсімдік ұлпалары", "t:Өсімдік ұлпалары", "v:Фотосинтез", "t:Фотосинтез"] },
+        { title: "Заттардың тасымалдануы", items: ["v:Қан айналым жүйесі", "t:Қан айналым жүйесі"] },
+        { title: "Тыныс алу", items: ["v:Тыныс алу мүшелері", "t:Тыныс алу мүшелері"] },
+        { title: "Қоректену", items: ["v:Ас қорыту. Ферменттер", "t:Ас қорыту. Ферменттер"] },
+        { title: "Бөліп шығару", items: ["v:Бүйрек құрылысы", "t:Бүйрек құрылысы"] },
+        { title: "Қозғалыс. Биофизика", items: ["v:Тірек-қимыл жүйесі", "t:Тірек-қимыл жүйесі"] },
+        { title: "Координация және реттелу", items: ["v:Жүйке жүйесі", "t:Жүйке жүйесі", "v:Гормондар", "t:Гормондар"] },
+        { title: "Көбею, өсу, даму", items: ["v:Жыныссыз көбею", "t:Жыныссыз көбею", "v:Жынысты көбею", "t:Жынысты көбею", "f:Бекіту тест (Көбею)"] },
       ],
     },
     13: {

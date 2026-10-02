@@ -816,16 +816,26 @@
       const head = `<div class="seg-tabs seg-3">${tabs
         .map(([k, l]) => `<button type="button" data-svctab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`)
         .join("")}</div>`;
+      const attempts = MOCK.entAttempts || [];
       if (tab === "history") {
         return `${head}<div class="list-pad" style="padding-top:16px">
-          <div class="news-card"><div class="n-title">Пробный ЕНТ</div><div class="n-body">86 баллов · 20 сентября</div></div>
-          <div class="news-card"><div class="n-title">Пробный ЕНТ</div><div class="n-body">79 баллов · 6 сентября</div></div>
+          ${
+            attempts
+              .map(
+                (a) => `<div class="news-card"><div class="n-title">Пробный ЕНТ · ${a.variant}-нұсқа <span class="eh-score">${a.total}</span></div>
+                <div class="n-body">${a.date}<br>${a.subjects.map((x) => `${x.title}: ${x.score}/${x.max}`).join(" · ")}</div></div>`
+              )
+              .join("") || `<div class="empty">Әзірге пробный ЕНТ тапсырылмаған.<br>«ЕНТ» қойындысынан бастаңыз.</div>`
+          }
         </div>`;
       }
       if (tab === "stats") {
-        return `${head}<div class="list-pad" style="padding-top:16px">
-          <div class="stat-tile"><div class="stat-val">86</div><div class="stat-lbl">лучший балл</div></div>
-          <div class="stat-tile" style="margin-top:8px"><div class="stat-val">2</div><div class="stat-lbl">попытки</div></div>
+        const best = attempts.reduce((m, a) => Math.max(m, a.total), 0);
+        const avg = attempts.length ? Math.round(attempts.reduce((t, a) => t + a.total, 0) / attempts.length) : 0;
+        return `${head}<div class="list-pad sch-stats" style="padding:16px 0 0;margin:0 15px">
+          <div class="sch-stat"><b style="color:#5CB36D">${best}</b><span>лучший балл</span></div>
+          <div class="sch-stat"><b style="color:#6C7FD8">${avg}</b><span>средний</span></div>
+          <div class="sch-stat"><b style="color:#E0A84A">${attempts.length}</b><span>попытки</span></div>
         </div>`;
       }
       return head + entPickerHtml();
@@ -1234,6 +1244,377 @@
     );
   }
 
+  /* —— Пробный ЕНТ: testcenter.kz нұсқалары (js/probnik.js, ент-банктен) —— */
+  const ENT_KEYS = {
+    math: "mathematics", phys: "physics", inf: "informatics", geo: "geography", bio: "biology", chem: "chemistry",
+    djt: "world_history", eng: "english", law: "law_basics", kz: "kazakh_language", kzlit: "kazakh_literature",
+  };
+  const ENT_SHORT = { history_kz: "Тарих", math_literacy: "Мат. сауат.", reading_literacy: "Оқу сауат." };
+  const ENT_MIN = { history_kz: 5, math_literacy: 3, reading_literacy: 3 };
+  MOCK.entAttempts = MOCK.entAttempts || [];
+
+  function loadScript(src) {
+    return new Promise((ok, fail) => {
+      const el = document.createElement("script");
+      el.src = src;
+      el.onload = ok;
+      el.onerror = fail;
+      document.head.appendChild(el);
+    });
+  }
+  function loadCss(href) {
+    const l = document.createElement("link");
+    l.rel = "stylesheet";
+    l.href = href;
+    document.head.appendChild(l);
+  }
+  let probnikReady = null;
+  function loadProbnik() {
+    if (!probnikReady) {
+      const v = ($('script[src*="js/app.js"]')?.src.split("?v=")[1]) || "1";
+      loadCss("https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css");
+      probnikReady = Promise.all([
+        loadScript(`js/probnik.js?v=${v}`),
+        loadScript("https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js")
+          .then(() => loadScript("https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"))
+          .catch(() => null),
+      ]);
+    }
+    return probnikReady;
+  }
+  /** Markdown (жуан, сурет, жол) + LaTeX ($…$ KaTeX арқылы кейін) */
+  function md(text) {
+    return String(text || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img class="md-img" src="$2" alt="$1" />')
+      .replace(/\*\*([^*]+)\*\*/g, "<b>$1</b>")
+      .replace(/\n/g, "<br>");
+  }
+  function renderMath(root) {
+    if (window.renderMathInElement && root)
+      window.renderMathInElement(root, {
+        delimiters: [
+          { left: "$$", right: "$$", display: true },
+          { left: "$", right: "$", display: false },
+        ],
+        throwOnError: false,
+      });
+  }
+  /** Сәйкестендіру: сұрақ мәтіні мен оң жақ нұсқаларын бөлу */
+  function splitMatching(stem) {
+    const i = stem.indexOf("Сәйкестендіру нұсқалары:");
+    if (i < 0) return { stem, right: [] };
+    const tail = stem.slice(i + "Сәйкестендіру нұсқалары:".length);
+    const right = [...tail.matchAll(/(\d+)\)\s*([\s\S]*?)(?=\s\d+\)\s|$)/g)].map((m) => ({ n: m[1], text: m[2].trim() }));
+    return { stem: stem.slice(0, i).trim(), right };
+  }
+  function matchingKey(q) {
+    const key = {};
+    (q.matching || "").split(",").forEach((p) => {
+      const [l, r] = p.trim().split("-");
+      if (l && r) key[l.trim()] = r.trim();
+    });
+    return key;
+  }
+  /** п.18 Правил: single 1 балл; multiple/matching макс 2 */
+  function scoreQ(q, ans) {
+    if (ans == null) return 0;
+    if (q.type === "single_choice") return q.options[ans]?.correct ? 1 : 0;
+    let k, c, w;
+    if (q.type === "matching") {
+      const key = matchingKey(q);
+      k = Object.keys(key).length;
+      c = Object.entries(ans).filter(([l, r]) => r && key[l] === r).length;
+      w = Object.entries(ans).filter(([l, r]) => r && key[l] !== r).length;
+    } else {
+      k = q.options.filter((o) => o.correct).length;
+      c = [...ans].filter((i) => q.options[i].correct).length;
+      w = [...ans].filter((i) => !q.options[i].correct).length;
+    }
+    if (w >= 2) return 0;
+    if (c === k && w === 0) return 2;
+    const need = k <= 2 ? 1 : k - 1;
+    return c >= need && c > 0 ? 1 : 0;
+  }
+  function maxQ(q) {
+    return q.type === "single_choice" ? 1 : 2;
+  }
+  function isAnswered(q, a) {
+    if (a == null) return false;
+    if (q.type === "multiple_choice") return a.size > 0;
+    if (q.type === "matching") return Object.values(a).some(Boolean);
+    return true;
+  }
+
+  function openEntStartSheet() {
+    const pair = MOCK.entPicker.selected.map((id) => MOCK.entPicker.electives.find((x) => x.id === id)?.title).join(" · ");
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Пробный ЕНТ</div>
+      <div class="sheet-sub">Қазақстан тарихы · Мат. сауаттылық · Оқу сауаттылығы · ${pair}<br>120 сұрақ · 140 балл · 4 сағат</div>
+      <div class="sheet-label">Нұсқаны таңдаңыз</div>
+      <div class="ent-vars">${[1, 2, 3].map((v) => `<button type="button" class="ent-var" data-entvar="${v}"><b>${v}</b><span>нұсқа</span></button>`).join("")}</div>
+      <div class="ent-src">Сұрақтар: testcenter.kz пробный ЕНТ, біздің ЕНТ банкінен</div>`);
+    $$("[data-entvar]").forEach((b) => {
+      b.onclick = async () => {
+        b.classList.add("loading");
+        try {
+          await loadProbnik();
+        } catch {
+          toast("Сұрақтар жүктелмеді", "err");
+          return;
+        }
+        closeSheet();
+        openEntTest(Number(b.dataset.entvar));
+      };
+    });
+  }
+
+  function openEntTest(variant) {
+    const P = window.PROBNIK;
+    const keys = ["history_kz", "math_literacy", "reading_literacy", ...MOCK.entPicker.selected.map((id) => ENT_KEYS[id])];
+    const subjects = keys.map((k) => {
+      const vs = P.subjects[k].variants;
+      const v = vs[variant] ? variant : Number(Object.keys(vs)[0]);
+      return { key: k, title: P.subjects[k].title, short: ENT_SHORT[k] || P.subjects[k].title, qs: vs[v], fallback: v !== variant ? v : null };
+    });
+    const E = { s: 0, q: subjects.map(() => 0), ans: {}, done: false, started: Date.now(), limit: 4 * 3600, ctxOpen: true, review: 0 };
+    const all = subjects.flatMap((sub) => sub.qs);
+    const answeredCount = () => all.filter((q) => isAnswered(q, E.ans[q.id])).length;
+    // Міндетті пәндерде (тарих, сауаттылық) әр сұрақ — 1 балл: толық дұрыс болса ғана
+    const core = (sub) => sub.key in ENT_MIN;
+    const qMax = (sub, q) => (core(sub) ? 1 : maxQ(q));
+    const qScore = (sub, q) => {
+      const sc = scoreQ(q, E.ans[q.id]);
+      return core(sub) ? (sc === maxQ(q) ? 1 : 0) : sc;
+    };
+    const subjScore = (sub) => sub.qs.reduce((t, q) => t + qScore(sub, q), 0);
+    const subjMax = (sub) => sub.qs.reduce((t, q) => t + qMax(sub, q), 0);
+    const leftSec = () => Math.max(0, E.limit - Math.floor((Date.now() - E.started) / 1000));
+    const fmtT = (t) => `${Math.floor(t / 3600)}:${String(Math.floor((t % 3600) / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+    let timer = null;
+
+    const questionHtml = (sub, q, qi) => {
+      const a = E.ans[q.id];
+      const ctx = q.ctx && P.contexts[q.ctx];
+      let body = "";
+      if (q.type === "matching") {
+        const { stem, right } = splitMatching(q.stem);
+        body = `
+          <div class="tq-q">${md(stem)}</div>
+          <div class="mt-hint">Сәйкестендіріңіз</div>
+          <div class="mt-right">${right.map((r) => `<div><b>${r.n})</b> ${md(r.text)}</div>`).join("")}</div>
+          ${q.options
+            .map(
+              (o) => `
+            <div class="mt-row">
+              <span class="mt-l"><b>${o.id}</b> ${md(o.content)}</span>
+              <span class="mt-picks">${right
+                .map((r) => `<button type="button" class="mt-pick ${a?.[o.id] === r.n ? "on" : ""}" data-mt="${o.id}:${r.n}">${r.n}</button>`)
+                .join("")}</span>
+            </div>`
+            )
+            .join("")}`;
+      } else {
+        const multi = q.type === "multiple_choice";
+        body = `
+          <div class="tq-q">${md(q.stem)}</div>
+          ${multi ? `<div class="mt-hint">Бір немесе бірнеше дұрыс жауап</div>` : ""}
+          ${q.options
+            .map((o, k) => {
+              const on = multi ? a?.has(k) : a === k;
+              return `<button type="button" class="tq-opt ${multi ? "multi" : ""} ${on ? "on" : ""}" data-eo="${k}"><span class="tq-radio"></span><span class="eo-id">${o.id}</span><span>${md(o.content)}</span></button>`;
+            })
+            .join("")}`;
+      }
+      return `
+        ${
+          ctx
+            ? `<div class="ent-ctx ${E.ctxOpen ? "open" : ""}">
+                <button type="button" class="ent-ctx-head" id="ctxToggle">${icon("article", "material-icons-outlined")}<span>${ctx.title || "Мәтін"}</span>${icon(E.ctxOpen ? "expand_less" : "expand_more")}</button>
+                ${E.ctxOpen ? `<div class="ent-ctx-body">${md(ctx.body)}</div>` : ""}
+              </div>`
+            : ""
+        }
+        <div class="tq-meta">${sub.title} · ${qi + 1} / ${sub.qs.length}${sub.fallback ? ` · ${sub.fallback}-нұсқа` : ""}</div>
+        ${body}`;
+    };
+
+    const resultHtml = () => {
+      const total = subjects.reduce((t, sub) => t + subjScore(sub), 0);
+      const max = subjects.reduce((t, sub) => t + subjMax(sub), 0);
+      const passAll = subjects.every((sub) => subjScore(sub) >= (ENT_MIN[sub.key] || 5));
+      const sub = subjects[E.review];
+      return `
+        <div class="er-head">
+          <div class="er-total"><b>${total}</b> / ${max}</div>
+          <div class="er-sub">${passAll && total >= 50 ? "Грантқа қатысуға болады (≥ 50 балл)" : passAll ? "Шекті балл өтті, грантқа 50 балл керек" : "Кейбір пән бойынша шекті балл жоқ"}</div>
+        </div>
+        <div class="list-pad">
+          ${subjects
+            .map((s2, i) => {
+              const sc = subjScore(s2);
+              const min = ENT_MIN[s2.key] || 5;
+              return `<button type="button" class="er-row ${i === E.review ? "on" : ""}" data-review="${i}">
+                <span class="er-name">${s2.title}</span>
+                <span class="er-min ${sc >= min ? "ok" : "bad"}">${icon(sc >= min ? "check_circle" : "error_outline", "material-icons-outlined")}мин ${min}</span>
+                <b>${sc}<small> / ${subjMax(s2)}</small></b>
+              </button>`;
+            })
+            .join("")}
+          <div class="er-title">${sub.title}: жауаптар</div>
+          ${sub.qs
+            .map((q, i) => {
+              const got = qScore(sub, q);
+              const max2 = qMax(sub, q);
+              const right =
+                q.type === "matching"
+                  ? q.matching
+                  : q.options
+                      .filter((o) => o.correct)
+                      .map((o) => `${o.id}) ${md(o.content)}`)
+                      .join("; ");
+              return `<div class="tr-item ${got === max2 ? "ok" : got > 0 ? "part" : "bad"}">
+                <div class="tr-q"><span class="tr-n">${i + 1}</span>${md(q.type === "matching" ? splitMatching(q.stem).stem : q.stem)}</div>
+                <div class="tr-a">${icon(got === max2 ? "check_circle" : got > 0 ? "remove_circle" : "cancel")}<span>Дұрыс жауабы: ${right}</span><b class="tr-pts">${got}/${max2}</b></div>
+                ${q.note ? `<div class="tr-note">${md(q.note)}</div>` : ""}
+              </div>`;
+            })
+            .join("")}
+        </div>`;
+    };
+
+    const build = () => {
+      if (E.done) return resultHtml();
+      const sub = subjects[E.s];
+      const qi = E.q[E.s];
+      return `
+        <div class="ent-subs">${subjects
+          .map((s2, i) => {
+            const n = s2.qs.filter((q) => isAnswered(q, E.ans[q.id])).length;
+            return `<button type="button" class="ent-sub ${i === E.s ? "on" : ""}" data-es="${i}">${s2.short}<small>${n}/${s2.qs.length}</small></button>`;
+          })
+          .join("")}</div>
+        <div class="tq-nums">${sub.qs
+          .map((q, k) => `<button type="button" class="tq-num ${k === qi ? "on" : isAnswered(q, E.ans[q.id]) ? "ans" : ""}" data-qn="${k}">${k + 1}</button>`)
+          .join("")}</div>
+        <div class="tq-body">${questionHtml(sub, sub.qs[qi], qi)}</div>`;
+    };
+
+    const footer = () => {
+      if (E.done) return `<div class="sticky-foot"><button type="button" class="save-btn" id="entExit">Тесттерге оралу</button></div>`;
+      const pct = Math.round((answeredCount() / all.length) * 100);
+      const sub = subjects[E.s];
+      const lastQ = E.q[E.s] === sub.qs.length - 1;
+      const lastAll = lastQ && E.s === subjects.length - 1;
+      return `
+        <div class="tq-foot">
+          <div class="tq-prog"><span class="tq-pill" style="left:calc(${pct}% * 0.88)">${pct}%</span><i style="width:${pct}%"></i></div>
+          <div class="tq-nav">
+            <button type="button" class="tq-btn" id="eqPrev" ${E.s === 0 && E.q[0] === 0 ? "disabled" : ""}>${icon("arrow_circle_left", "material-icons-outlined")}Назад</button>
+            <button type="button" class="tq-btn ${lastAll ? "finish" : ""}" id="eqNext">${lastAll ? "Аяқтау" : lastQ ? "Келесі пән" : "Вперёд"}${icon(lastAll ? "check_circle" : "arrow_circle_right", "material-icons-outlined")}</button>
+          </div>
+        </div>`;
+    };
+
+    const finish = async (auto) => {
+      if (!auto) {
+        const ok = await confirmDialog({
+          title: "Тестті аяқтау?",
+          message: `Жауап берілді: ${answeredCount()} / ${all.length}. Аяқтағаннан кейін жауаптарды өзгерту мүмкін емес.`,
+          confirmLabel: "Аяқтау",
+        });
+        if (!ok) return;
+      }
+      clearInterval(timer);
+      E.done = true;
+      E.review = 0;
+      const total = subjects.reduce((t, sub) => t + subjScore(sub), 0);
+      MOCK.entAttempts.unshift({
+        variant,
+        total,
+        date: new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
+        subjects: subjects.map((sub) => ({ title: sub.title, score: subjScore(sub), max: subjMax(sub) })),
+      });
+      paintStack();
+    };
+
+    pushScreen(
+      `Пробный ЕНТ · ${variant}-нұсқа`,
+      build,
+      () => {
+        const root = $("#screenOverlay");
+        renderMath(root);
+        $$("[data-review]").forEach((b) => (b.onclick = () => ((E.review = Number(b.dataset.review)), paintStack())));
+        if (E.done) $(".ent-timer")?.remove();
+        $("#entExit") &&
+          ($("#entExit").onclick = () => {
+            state.navStack.pop();
+            state.svc.tab = "history";
+            paintStack();
+          });
+        if (E.done) return;
+        const sub = subjects[E.s];
+        const q = sub.qs[E.q[E.s]];
+        $$("[data-es]").forEach((b) => (b.onclick = () => ((E.s = Number(b.dataset.es)), paintStack())));
+        $$("[data-qn]").forEach((b) => (b.onclick = () => ((E.q[E.s] = Number(b.dataset.qn)), paintStack())));
+        $("#ctxToggle") && ($("#ctxToggle").onclick = () => ((E.ctxOpen = !E.ctxOpen), paintStack()));
+        $$("[data-eo]").forEach((b) => {
+          b.onclick = () => {
+            const k = Number(b.dataset.eo);
+            if (q.type === "multiple_choice") {
+              const set = new Set(E.ans[q.id] || []);
+              set.has(k) ? set.delete(k) : set.add(k);
+              E.ans[q.id] = set;
+            } else E.ans[q.id] = E.ans[q.id] === k ? null : k;
+            paintStack();
+          };
+        });
+        $$("[data-mt]").forEach((b) => {
+          b.onclick = () => {
+            const [l, r] = b.dataset.mt.split(":");
+            const cur = { ...(E.ans[q.id] || {}) };
+            cur[l] = cur[l] === r ? null : r;
+            E.ans[q.id] = cur;
+            paintStack();
+          };
+        });
+        $("#eqPrev").onclick = () => {
+          if (E.q[E.s] > 0) E.q[E.s] -= 1;
+          else if (E.s > 0) {
+            E.s -= 1;
+            E.q[E.s] = subjects[E.s].qs.length - 1;
+          }
+          paintStack();
+        };
+        $("#eqNext").onclick = () => {
+          if (E.q[E.s] < sub.qs.length - 1) E.q[E.s] += 1;
+          else if (E.s < subjects.length - 1) E.s += 1;
+          else return finish(false);
+          paintStack();
+        };
+        $(".tq-num.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+        $(".ent-sub.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+        const t = $("#entTimer");
+        clearInterval(timer);
+        timer = setInterval(() => {
+          const el = $("#entTimer");
+          if (!el) return clearInterval(timer);
+          const left = leftSec();
+          el.textContent = fmtT(left);
+          if (!left) finish(true);
+        }, 1000);
+        if (t) t.textContent = fmtT(leftSec());
+      },
+      {
+        footer,
+        right: `<span class="ent-timer">${icon("timer", "material-icons-outlined")}<span id="entTimer">4:00:00</span></span>`,
+      }
+    );
+  }
+
   function entPickerHtml() {
     const P = MOCK.entPicker;
     const sel = state.entSel;
@@ -1419,18 +1800,7 @@
         paintStack();
         toast("Комбинация сохранена");
       });
-    $("#startEnt") &&
-      ($("#startEnt").onclick = () => {
-        openSheet(`
-          <div class="sheet-handle"></div>
-          <div class="sheet-title">Пробный ЕНТ</div>
-          <div class="sheet-sub">5 предметов · 120 вопросов. Время начнётся после старта.</div>
-          <div class="sheet-actions"><button type="button" class="btn btn-primary" id="entGo" style="width:100%">Начать</button></div>`);
-        $("#entGo").onclick = () => {
-          closeSheet();
-          pushScreen("Пробный ЕНТ", () => `<div class="empty">Вопрос 1 из 120<br><br>История</div>`);
-        };
-      });
+    $("#startEnt") && ($("#startEnt").onclick = openEntStartSheet);
   }
 
   function openService(id, title) {
@@ -2204,6 +2574,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   function lessonAction(x) {
     if (x.state === "locked") return icon("lock", "material-icons-outlined lk");
     if (x.kind === "video") return `<span class="ln-act teal">Смотреть</span>`;
+    if (x.kind === "final") return `<span class="ln-act red">Модульный зачёт</span>`;
     return x.state === "done" ? `<span class="ln-act green">Результат</span>` : `<span class="ln-act green">Пройти тест</span>`;
   }
 
@@ -2217,13 +2588,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const open = { [items[cc.cur]?.si ?? 0]: true };
     const build = () => {
       const flat = courseItems(cc);
-      return `<div class="list-pad course-secs">${cc.sections
+      return `<div class="list-pad course-secs" style="--acc:${cc.accent || "#2a3647"}">${cc.sections
         .map((sec, si) => {
           const rows = flat.map((x, i) => ({ ...x, i })).filter((x) => x.si === si);
+          const dim = cc.dimLocked && rows.every((x) => x.state === "locked");
           return `
-          <div class="csec ${open[si] ? "open" : ""}">
+          <div class="csec ${open[si] ? "open" : ""} ${dim ? "dim" : ""}">
             <button type="button" class="csec-head" data-csec="${si}">
-              <span>${si + 1}. ${sec.title}</span>${icon(open[si] ? "expand_less" : "expand_more")}
+              <span>${cc.numbered ? `${si + 1}. ` : ""}${sec.title}</span>${icon(open[si] ? "expand_less" : "expand_more")}
             </button>
             ${
               open[si]
