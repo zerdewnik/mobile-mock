@@ -2891,3 +2891,83 @@ button.sch-stat { border: 1px solid transparent; color: inherit; font-family: in
 .tr-pts { margin-left: auto; font-size: 12px; color: #c8cad4; }
 .tr-note { margin-top: 6px; font-size: 11.5px; color: #8a8d9c; line-height: 1.5; }
 .eh-score { float: right; color: #5cb36d; }
+
+/* ============================================================
+   STAFF (скриншоттар 23:06–23:10)
+   ============================================================ */
+html[data-mode="staff"] {
+  --primary: #58aa80;
+  --primary-dark: #3f8f68;
+  --appbar: #58aa80;
+}
+.nav-indicator { display: none; }
+html[data-mode="staff"] .fab-core { background: #3f8f68; }
+
+/* Зачисления — скоро */
+.soon-screen { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 24px 60px; text-align: center; }
+.soon-screen .material-icons-round { font-size: 52px; color: #7a7d8c; }
+.soon-title { margin-top: 6px; font-size: 15px; font-weight: 500; }
+.soon-sub { font-size: 13px; color: #6c6f84; }
+
+/* Эфир */
+.efir-tools { display: flex; gap: 10px; padding: 16px 15px 8px; }
+.efir-date { flex: 1; height: 40px; border: 1px solid #284a3a; background: #141816; color: var(--primary); border-radius: 12px; font-family: inherit; font-size: 13.5px; font-weight: 500; display: flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer; }
+.efir-date .material-icons-round { font-size: 20px; }
+.efir-add { height: 40px; border: 0; background: var(--primary); color: #fff; border-radius: 12px; font-family: inherit; font-size: 13.5px; font-weight: 500; display: flex; align-items: center; gap: 6px; padding: 0 20px 0 14px; cursor: pointer; }
+.efir-add .material-icons-round { font-size: 22px; }
+.efir-empty { min-height: calc(100% - 64px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding-bottom: 60px; font-size: 13px; color: #6c6f84; }
+.efir-empty button { border: 0; background: transparent; color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 500; cursor: pointer; }
+.efir-item { display: flex; gap: 14px; background: #1e1e1e; border-radius: 14px; padding: 14px; margin-bottom: 10px; }
+.efir-time { font-size: 15px; font-weight: 700; color: var(--primary); min-width: 44px; }
+.efir-title { font-size: 14.5px; font-weight: 600; }
+.efir-groups { margin-top: 4px; font-size: 12px; color: #8a8d9c; }
+.efir-link { margin-top: 8px; display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; color: var(--primary); text-decoration: none; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.efir-link .material-icons-round { font-size: 15px; }
+.efir-del { border: 0; background: transparent; color: #6c6f84; cursor: pointer; align-self: flex-start; padding: 0; }
+
+/* Күнтізбе (Material date picker, қазақша) */
+.dp { position: absolute; left: 14px; right: 14px; top: 50%; transform: translateY(-50%); background: #2b2b2d; border-radius: 26px; padding: 22px 0 14px; color: #fff; }
+.dp-label { padding: 0 24px; font-size: 12.5px; }
+.dp-head { display: flex; justify-content: space-between; align-items: center; padding: 26px 24px 14px; border-bottom: 1px solid #c8c8c8; font-size: 28px; }
+.dp-head .material-icons-outlined { font-size: 22px; }
+.dp-nav { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px 6px 24px; font-size: 13px; color: #c8c8c8; }
+.dp-nav > span:first-child { display: flex; align-items: center; }
+.dp-nav button { border: 0; background: transparent; color: #c8c8c8; cursor: pointer; padding: 4px 8px; }
+.dp-grid { display: grid; grid-template-columns: repeat(7, 1fr); row-gap: 6px; padding: 8px 10px; text-align: center; }
+.dp-wd { font-size: 13px; padding: 10px 0; }
+.dp-day { width: 40px; height: 40px; margin: 0 auto; border: 0; border-radius: 50%; background: transparent; color: #fff; font-family: inherit; font-size: 14px; cursor: pointer; }
+.dp-day.on { background: var(--primary); border: 1px solid #fff; }
+.dp-actions { display: flex; justify-content: flex-end; gap: 6px; padding: 18px 16px 4px; }
+.dp-actions button { border: 0; background: transparent; color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 500; padding: 8px 14px; cursor: pointer; }
+
+/* Эфир қосу формасы */
+.ef-head { display: flex; justify-content: space-between; align-items: center; font-size: 16px; margin: 2px 0 12px; }
+.ef-head button { border: 0; background: transparent; color: #fff; cursor: pointer; padding: 0; }
+.ef-label { margin: 14px 0 8px; font-size: 13px; font-weight: 500; }
+.ef-label i { color: #e86b6b; font-style: normal; }
+.ef-input { width: 100%; height: 44px; border: 0; border-radius: 12px; background: #181818; color: #fff; font-family: inherit; font-size: 13.5px; padding: 0 14px; outline: none; }
+.ef-input::placeholder { color: #6c6f84; }
+.ef-select { position: relative; width: 100%; height: 44px; border: 0; border-radius: 12px; background: #181818; color: #fff; font-family: inherit; font-size: 13.5px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 14px; cursor: pointer; text-align: left; }
+.ef-select.ph { color: #8a8d9c; }
+.ef-select select { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.ef-select > span:first-child, .ef-select select + .material-icons-round { pointer-events: none; }
+.ef-select span:first-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ef-select .material-icons-round { color: #8a8d9c; font-size: 22px; }
+.ef-note { margin-top: 10px; font-size: 11px; color: #8a8d9c; }
+.ef-submit { margin-top: 16px; width: 100%; height: 46px; border: 0; border-radius: 12px; background: var(--primary); color: #fff; font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; }
+.ef-gsub { display: block; font-size: 11px; color: #8a8d9c; font-weight: 400; margin-top: 2px; }
+
+/* Хабарлама */
+.push-list { padding-top: 14px; }
+.spush { background: #1e1e1e; border-radius: 16px; padding: 18px 18px 16px; margin-bottom: 12px; }
+.spush-top { display: flex; gap: 10px; align-items: flex-start; }
+.spush-title { flex: 1; font-size: 15px; font-weight: 600; line-height: 1.5; }
+.spush-time { font-size: 11px; color: #6c6f84; padding-top: 3px; white-space: nowrap; }
+.spush-type { margin-top: 8px; font-size: 11.5px; color: var(--primary); }
+.spush-body { margin-top: 10px; font-size: 13.5px; line-height: 1.45; }
+.spush-foot { margin-top: 14px; display: flex; justify-content: space-between; font-size: 11.5px; color: #6c6f84; }
+.spush-foot b { color: #fff; font-size: 12px; }
+
+/* Мои группы */
+.groups-list { padding-top: 10px; }
+.groups-list .card { border-radius: 16px; }

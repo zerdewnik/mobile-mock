@@ -4,12 +4,20 @@ window.MOCK = {
   courses: [
     { id: 0, title: "Все", short: "Все" },
     { id: 10, title: "Дизайн и живопись техники", short: "ДЖТ" },
-    { id: 11, title: "Математика", short: "Математика" },
+    { id: 11, title: "Математика", short: "мат" },
+    { id: 12, title: "Құқық негіздері", short: "құқық" },
+    { id: 13, title: "Қазақстан тарихы", short: "тарих" },
+    { id: 14, title: "Химия", short: "Химия" },
+    { id: 15, title: "Биология", short: "био" },
+    { id: 16, title: "Ағылшын тілі", short: "ағылшын" },
   ],
   curators: [
     { id: 1, name: "Диана Куратор", courseId: 10, isChief: false },
     { id: 2, name: "Айгерим", courseId: 11, isChief: false },
     { id: 3, name: "Главный куратор", courseId: null, isChief: true },
+    { id: 4, name: "Назгүл", courseId: 13, isChief: false },
+    { id: 5, name: "Еркебұлан", courseId: 11, isChief: false },
+    { id: 6, name: "Балайым", courseId: 15, isChief: false },
   ],
   pickerStudents: [
     { id: 11, name: "Томирис Досымхан", phone: "+7 778 215 35 57" },
@@ -26,50 +34,34 @@ window.MOCK = {
     { id: 31, name: "Алина Тест", phone: "+7 777 000 00 01" },
     { id: 32, name: "Болат Тест", phone: "+7 777 000 00 02" },
   ],
+  /** Мои группы. students жоқ топтарға тізім data.js соңында генерацияланады */
   groups: [
+    { id: 1, name: "құқық", courseId: 12, courseLabel: "құқық · Назгүл", curatorId: 4, studentsCount: 8 },
+    { id: 2, name: "Math Empire", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 9 },
+    { id: 3, name: "Хронос 3", courseId: 13, courseLabel: "тарих · Назгүл", curatorId: 4, studentsCount: 29 },
+    { id: 4, name: "Нейрондар 2", courseId: 14, courseLabel: "Химия · Балайым", curatorId: 6, studentsCount: 7 },
+    { id: 5, name: "Пифагор ұрпақтары", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 15 },
+    { id: 6, name: "Хронос 2", courseId: 13, courseLabel: "тарих · Диана", curatorId: 1, studentsCount: 31 },
+    { id: 7, name: "НЕЙРОНДАР", courseId: 15, courseLabel: "био · Балайым", curatorId: 6, studentsCount: 17 },
+    { id: 8, name: "СИНАПСТАР", courseId: 15, courseLabel: "био · Балайым", curatorId: 6, studentsCount: 12 },
     {
-      id: 1,
+      id: 9,
       name: "Викингтер",
       courseId: 10,
-      courseLabel: "ДЖТ • Диана",
+      courseLabel: "ДЖТ · Диана",
       curatorId: 1,
       studentsCount: 7,
       students: [
-        { id: 11, name: "Томирис Досымхан", phone: "+7 778 215 35 57", initials: "ТД", color: "#5B6EC2", rank: 1, medal: "gold", score: 95, progress: "48/77", lastSeen: "был 25.09.26", pointsToday: 12, rankChange: 1 },
-        { id: 12, name: "Ибраһим Орысбаев", phone: "+7 778 603 89 20", initials: "ИО", color: "#25AB7C", rank: 2, medal: "silver", score: 90, progress: "48/77", lastSeen: "был 3 часа назад", pointsToday: 8, rankChange: 0 },
-        { id: 13, name: "Ерман Нұрлыбек", phone: "+7 775 161 20 51", initials: "ЕН", color: "#F28C28", rank: 3, medal: "bronze", score: 90, progress: "56/77", lastSeen: "был 3 часа назад", pointsToday: 5, rankChange: -1 },
-        { id: 14, name: "Іңкәр Жақсылық", phone: "+7 777 595 80 03", initials: "ІЖ", color: "#9BB8DA", rank: 4, medal: null, score: 89, progress: "44/77", lastSeen: "был 3 часа назад", pointsToday: 3, rankChange: 2 },
-        { id: 15, name: "динара исенбай", phone: "+7 778 294 84 81", initials: "ДИ", color: "#CD7F32", rank: 5, medal: null, score: 78, progress: "20/77", lastSeen: "был 3 часа назад", pointsToday: 0, rankChange: 0 },
-        { id: 16, name: "Kausar Duisenbai", phone: "+7 701 179 56 58", initials: "KD", color: "#85899A", rank: 6, medal: null, score: 75, progress: "52/77", lastSeen: "был 3 часа назад", pointsToday: 1, rankChange: -2 },
-        { id: 17, name: "Сабыржан Жарылқасын", phone: "+7 771 498 87 10", initials: "СЖ", color: "#FF6767", rank: 7, medal: null, score: 0, progress: "8/77", lastSeen: "был 24.09.26", pointsToday: 0, rankChange: 0 },
+        { id: 14, name: "Іңкәр Жақсылық", phone: "+7 777 595 80 03", initials: "ІЖ", color: "#D9707A", rank: 1, medal: "gold", score: 82, progress: "48/77", lastSeen: "был 1 час назад", pointsToday: 0, rankChange: 0 },
+        { id: 15, name: "динара исенбай", phone: "+7 778 294 84 81", initials: "ДИ", color: "#E8A070", rank: 2, medal: "silver", score: 65, progress: "24/77", lastSeen: "был 1 час назад", pointsToday: 0, rankChange: 0 },
+        { id: 13, name: "Ерман Нұрлыбек", phone: "+7 775 161 20 51", initials: "ЕН", color: "#7CC8C8", rank: 3, medal: "bronze", score: 56, progress: "60/77", lastSeen: "был 12 часов назад", pointsToday: 6, rankChange: 0 },
+        { id: 11, name: "Томирис Досымхан", phone: "+7 778 215 35 57", initials: "ТД", color: "#A48EE0", rank: 4, medal: null, score: 47, progress: "51/77", lastSeen: "был 4 минуты назад", pointsToday: 41, rankChange: 1 },
+        { id: 12, name: "Ибраһим Орысбаев", phone: "+7 778 603 89 20", initials: "ИО", color: "#6A9FD8", rank: 5, medal: null, score: 44, progress: "51/77", lastSeen: "был 5 часов назад", pointsToday: 0, rankChange: -1 },
+        { id: 16, name: "Kausar Duisenbai", phone: "+7 701 179 56 58", initials: "KD", color: "#7CC8C8", rank: 6, medal: null, score: 0, progress: "52/77", lastSeen: "был 29.09.26", pointsToday: 0, rankChange: 0 },
+        { id: 17, name: "Сабыржан Жарылқасын", phone: "+7 771 498 87 10", initials: "СЖ", color: "#E8A070", rank: 7, medal: null, score: 0, progress: "8/77", lastSeen: "был 24.09.26", pointsToday: 0, rankChange: 0 },
       ],
     },
-    {
-      id: 2,
-      name: "Nomad 11",
-      courseId: 11,
-      courseLabel: "Математика • Айгерим",
-      curatorId: 2,
-      studentsCount: 4,
-      students: [
-        { id: 21, name: "Аружан Бек", phone: "+7 707 111 22 33", initials: "АБ", color: "#5B6EC2", rank: 1, medal: "gold", score: 88, progress: "30/50", lastSeen: "онлайн", pointsToday: 10, rankChange: 0 },
-        { id: 22, name: "Нұрлан Сат", phone: "+7 707 444 55 66", initials: "НС", color: "#25AB7C", rank: 2, medal: "silver", score: 71, progress: "22/50", lastSeen: "был час назад", pointsToday: 4, rankChange: 1 },
-        { id: 23, name: "Меруерт Қали", phone: "+7 708 777 88 99", initials: "МҚ", color: "#F28C28", rank: 3, medal: "bronze", score: 54, progress: "15/50", lastSeen: "был вчера", pointsToday: 0, rankChange: -1 },
-        { id: 24, name: "Данияр Ом", phone: "+7 701 000 11 22", initials: "ДО", color: "#85899A", rank: 4, medal: null, score: 12, progress: "3/50", lastSeen: "был 20.09.26", pointsToday: 0, rankChange: 0 },
-      ],
-    },
-    {
-      id: 3,
-      name: "Старт А",
-      courseId: 0,
-      courseLabel: "Все • Главный куратор",
-      curatorId: 3,
-      studentsCount: 2,
-      students: [
-        { id: 31, name: "Алина Тест", phone: "+7 777 000 00 01", initials: "АТ", color: "#9BB8DA", rank: 1, medal: "gold", score: 40, progress: "10/40", lastSeen: "был 2 часа назад", pointsToday: 2, rankChange: 0 },
-        { id: 32, name: "Болат Тест", phone: "+7 777 000 00 02", initials: "БТ", color: "#CD7F32", rank: 2, medal: "silver", score: 18, progress: "4/40", lastSeen: "был 5 часов назад", pointsToday: 0, rankChange: 0 },
-      ],
-    },
+    { id: 10, name: "Future Leaders", courseId: 16, courseLabel: "ағылшын · Диана", curatorId: 1, studentsCount: 11 },
   ],
   students: [
     { id: 11, name: "Томирис Досымхан", phone: "+7 778 215 35 57", initials: "ТД", color: "#5B6EC2", status: "online", course: "ДЖТ", progress: "48/77", blocked: false },
@@ -84,14 +76,20 @@ window.MOCK = {
     { id: 103, student: "Нұрлан Сат", phone: "+7 707 444 55 66", course: "Математика", courseId: 11, status: "freeze", statusLabel: "Заморозка", date: "05.08.2026", daysLeft: null },
     { id: 104, student: "Данияр Ом", phone: "+7 701 000 11 22", course: "ДЖТ", courseId: 10, status: "pending", statusLabel: "Ожидает", date: "27.09.2026", daysLeft: 90 },
   ],
+  /** Хабарлама (пуштар). stats = «получили / прочитали» */
   pushes: [
-    { id: 1, title: "Напоминание: конспект", body: "Ребята, сдайте конспекты за эту неделю до пятницы.", time: "сегодня, 10:24", audience: "Викингтер" },
-    { id: 2, title: "Эфир в 19:00", body: "Разбор сложных задач. Ссылка уже в группе.", time: "вчера, 18:02", audience: "Все кураторские" },
-    { id: 3, title: "Поздравляем топ‑3!", body: "Томирис, Ибраһим и Ерман — лучшие за неделю", time: "25.09.2026", audience: "Викингтер" },
+    { id: 1, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтап қалмаймыз,бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:31", audience: "Хронос 3", stats: "27 / 2" },
+    { id: 2, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтай қалмаймыз,бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:30", audience: "Хронос 2", stats: "30 / 1" },
+    { id: 3, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтап қалмаймыз, бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:21", audience: "Хронос", stats: "30 / 0" },
+    { id: 4, title: "БИО эфирге 20 МИНУТ қалдыы🔥 🔥 🔥", type: "Объявление", body: "жасушамызды бірге зерттейік", time: "30.09.26 17:39", audience: "СИНАПСТАР", stats: "12 / 0" },
+    { id: 5, title: "Ертең 19:00-де тарих эфирі", type: "Напоминание", body: "Хронос 2, сілтемені группадан аласыздар", time: "29.09.26 20:05", audience: "Хронос 2", stats: "31 / 18" },
   ],
+  /** Эфир: date = YYYY-MM-DD */
   efirs: [
-    { id: 1, title: "Разбор ДЖТ", when: "сегодня 19:00", status: "planned" },
-    { id: 2, title: "Математика: модуль 3", when: "вчера 18:00", status: "done" },
+    { id: 1, title: "Тарих: Қазақ хандығы", link: "https://meet.google.com/abc-defg-hij", date: "2026-10-03", time: "19:00", groups: [6] },
+    { id: 2, title: "ДЖТ разбор апталық сынақ", link: "https://zoom.us/j/123456789", date: "2026-10-03", time: "20:30", groups: [9] },
+    { id: 3, title: "Тарих: Алаш қозғалысы", link: "https://meet.google.com/xyz-abcd-efg", date: "2026-10-05", time: "19:00", groups: [6, 3] },
+    { id: 4, title: "Разбор ЕНТ", link: "https://meet.google.com/ent-rzbr-001", date: "2026-10-01", time: "18:00", groups: [9, 10] },
   ],
   pushTypes: [
     { value: "announcement", label: "Объявление" },
@@ -482,3 +480,32 @@ window.MOCK = {
   },
   _nextId: 1000,
 };
+
+/* Топтарға студенттер тізімін генерациялау (скриншотта көрінбейтін топтар үшін) */
+(() => {
+  const first = ["Айгерім", "Нұрсұлтан", "Әлихан", "Дана", "Ерасыл", "Жансая", "Мадина", "Арман", "Аружан", "Бекзат", "Інжу", "Санжар", "Асель", "Темірлан", "Ақбота", "Нұрислам", "Камила", "Даулет", "Мерей", "Алдияр"];
+  const last = ["Серікқызы", "Ахметов", "Жұмабай", "Қайратқызы", "Нұрланов", "Сапарова", "Омаров", "Бекова", "Тұрсын", "Әбілда"];
+  const colors = ["#D9707A", "#E8A070", "#7CC8C8", "#A48EE0", "#6A9FD8", "#8CC07A", "#E0B04A"];
+  const seen = ["был 4 минуты назад", "был 1 час назад", "был 3 часа назад", "был 12 часов назад", "был вчера", "был 29.09.26"];
+  let id = 500;
+  window.MOCK.groups.forEach((g, gi) => {
+    if (g.students) return;
+    g.students = Array.from({ length: g.studentsCount }, (_, i) => {
+      const name = `${first[(i * 7 + gi * 3) % first.length]} ${last[(i * 3 + gi) % last.length]}`;
+      return {
+        id: id++,
+        name,
+        phone: `+7 7${((gi * 13 + i * 7) % 90) + 10} ${100 + ((i * 37 + gi * 11) % 900)} ${10 + ((i * 17) % 90)} ${10 + ((i * 29 + gi) % 90)}`,
+        initials: name.split(" ").map((w) => w[0]).join("").toUpperCase(),
+        color: colors[(i + gi) % colors.length],
+        rank: i + 1,
+        medal: i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : null,
+        score: Math.max(0, 95 - i * Math.ceil(90 / g.studentsCount) - (gi % 4)),
+        progress: `${Math.max(2, 77 - i * 3 - gi)}/77`,
+        lastSeen: seen[(i + gi) % seen.length],
+        pointsToday: i % 4 === 1 ? 3 + ((i + gi) % 9) : 0,
+        rankChange: i % 5 === 2 ? 1 : i % 5 === 4 ? -1 : 0,
+      };
+    });
+  });
+})();

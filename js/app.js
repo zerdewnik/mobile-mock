@@ -4,8 +4,8 @@
 
   const NAV_STAFF = [
     { out: "assignment", fill: "assignment", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисления" },
-    { out: "people_outline", fill: "people", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Студенты" },
-    { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Уведомления" },
+    { out: "live_tv", fill: "live_tv", outClass: "material-icons-outlined", fillClass: "material-icons-outlined", label: "Эфир" },
+    { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Хабарлама" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои группы" },
   ];
   const NAV_STUDENT = [
@@ -14,13 +14,14 @@
     { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Уведомление" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Зачисления", "Студенты", "Уведомления", "Мои группы"];
+  const CHIPS_STAFF = ["Зачисления", "Эфир", "Хабарлама", "Мои группы"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Уведомления", "Мои курсы"];
 
   const state = {
     mode: "staff",
     tab: 3,
-    expandedGroupId: 1,
+    expandedGroupId: 9,
+    efirDate: new Date(2026, 9, 2),
     expandedEnrollmentId: null,
     profileStudent: null,
     periodStart: null,
@@ -145,6 +146,7 @@
     const layer = $("#dialogLayer");
     layer.hidden = true;
     layer.innerHTML = "";
+    layer.onclick = null;
   }
   function closeScreen() {
     const el = $("#screenOverlay");
@@ -276,14 +278,8 @@
     const slot = state.tab < 2 ? state.tab : state.tab + 1;
     $("#navIndicator").style.transform = `translateX(${slot * 100}%)`;
     const fabCore = $(".fab-core");
-    if (state.mode === "student") {
-      if (fabCore) {
-        fabCore.innerHTML = `<img src="assets/logo/ai3.png" alt="" width="22" height="22" />`;
-      }
-    } else if (fabCore) {
-      fabCore.innerHTML = `<span class="material-icons-round" id="fabIcon">live_tv</span>`;
-    }
-    $("#navFab").title = state.mode === "student" ? "AI" : "Эфир";
+    if (fabCore) fabCore.innerHTML = `<img src="assets/logo/ai3.png" alt="" width="22" height="22" />`;
+    $("#navFab").title = "AI";
   }
 
   function paintTabChips() {
@@ -698,12 +694,16 @@
         const g = MOCK.groups.find((x) => x.id === Number($("#pGroup")?.value));
         audienceLabel = g?.name || audienceLabel;
       }
+      const now = new Date();
+      const grp = audience === "group" ? MOCK.groups.find((x) => x.id === Number($("#pGroup")?.value)) : null;
       MOCK.pushes.unshift({
         id: nextId(),
         title,
         body,
-        time: "сейчас",
+        type: MOCK.pushTypes.find((t) => t.value === $("#pType").value)?.label || "Объявление",
+        time: `Сегодня ${pad(now.getHours())}:${pad(now.getMinutes())}`,
         audience: audienceLabel,
+        stats: `${grp ? grp.studentsCount : 0} / 0`,
       });
       closeSheet();
       toast("Пуш отправлен", "ok");
@@ -1912,8 +1912,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
 
   function openCenterAction() {
-    if (state.mode === "student") openAiScreen();
-    else openEfirScreen();
+    openAiScreen();
   }
 
   function igSvg() {
@@ -2260,8 +2259,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
   function renderGroups() {
     return `
-      <div class="longpress-hint">Долгое нажатие / ПКМ — меню</div>
-      <div class="list-pad">
+      <div class="list-pad groups-list">
         ${MOCK.groups
           .map((g) => {
             const open = state.expandedGroupId === g.id;
@@ -2272,7 +2270,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
                   <div class="group-name">${g.name}</div>
                   <div class="group-course">${g.courseLabel}</div>
                 </div>
-                <span class="pill">${g.studentsCount} учеников</span>
+                <span class="pill">${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</span>
                 <span class="chevron">${icon("keyboard_arrow_down")}</span>
               </div>
               <div class="group-body">
@@ -2379,23 +2377,186 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  function renderEnrollSoon() {
+    return `
+      <div class="soon-screen">
+        ${icon("handyman")}
+        <div class="soon-title">Зачисления</div>
+        <div class="soon-sub">Скоро будет доступно</div>
+      </div>`;
+  }
+
   function renderPushes() {
     return `
-      <div class="list-pad">
-        <button type="button" class="btn btn-primary" id="sendPush" style="width:100%;margin-bottom:12px">
-          ${icon("add")} Отправить пуш
-        </button>
+      <div class="list-pad push-list">
         ${MOCK.pushes
           .map(
             (p) => `
-          <div class="card push-card">
-            <div class="push-title">${p.title}</div>
-            <div class="push-body">${p.body}</div>
-            <div class="push-time">${p.time} · ${p.audience}</div>
+          <div class="spush">
+            <div class="spush-top"><div class="spush-title">${p.title}</div><div class="spush-time">${p.time}</div></div>
+            <div class="spush-type">${p.type || "Объявление"}</div>
+            <div class="spush-body">${p.body}</div>
+            <div class="spush-foot"><span>Группа: ${p.audience}</span><b title="получили / прочитали">${p.stats || "0 / 0"}</b></div>
           </div>`
           )
           .join("")}
       </div>`;
+  }
+
+  /* —— Эфир —— */
+  const KZ_MONTHS = ["қаңтар", "ақпан", "наурыз", "сәуір", "мамыр", "маусым", "шілде", "тамыз", "қыркүйек", "қазан", "қараша", "желтоқсан"];
+  const KZ_MON_SHORT = ["қаң.", "ақп.", "нау.", "сәу.", "мам.", "мау.", "шіл.", "там.", "қыр.", "қаз.", "қар.", "жел."];
+  const KZ_WD_SHORT = ["жс", "дс", "сс", "ср", "бс", "жм", "сб"];
+  const dmy = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+  const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+  function renderEfir() {
+    const list = MOCK.efirs.filter((e) => e.date === iso(state.efirDate)).sort((a, b) => a.time.localeCompare(b.time));
+    return `
+      <div class="efir-tools">
+        <button type="button" class="efir-date" id="efirDate">${icon("calendar_today")}${dmy(state.efirDate)}</button>
+        <button type="button" class="efir-add" id="efirAdd">${icon("add")}Добавить</button>
+      </div>
+      ${
+        list.length
+          ? `<div class="list-pad">${list
+              .map(
+                (e) => `
+            <div class="efir-item">
+              <div class="efir-time">${e.time}</div>
+              <div style="flex:1;min-width:0">
+                <div class="efir-title">${e.title}</div>
+                <div class="efir-groups">${e.groups.map((id) => MOCK.groups.find((g) => g.id === id)?.name).filter(Boolean).join(", ")}</div>
+                <a class="efir-link" href="${e.link}" target="_blank" rel="noopener">${icon("link")}${e.link.replace(/^https?:\/\//, "")}</a>
+              </div>
+              <button type="button" class="efir-del" data-efir-del="${e.id}" title="Удалить">${icon("delete_outline", "material-icons-outlined")}</button>
+            </div>`
+              )
+              .join("")}</div>`
+          : `<div class="efir-empty"><div>На эту дату эфиров нет</div><button type="button" id="efirCreate">Создать эфир</button></div>`
+      }`;
+  }
+
+  function openDatePicker(value, onPick) {
+    let sel = new Date(value);
+    let view = new Date(sel.getFullYear(), sel.getMonth(), 1);
+    const layer = $("#dialogLayer");
+    const paint = () => {
+      const first = (view.getDay() + 6) % 7;
+      const days = new Date(view.getFullYear(), view.getMonth() + 1, 0).getDate();
+      const cells = [...Array(first).fill(""), ...Array.from({ length: days }, (_, i) => i + 1)];
+      layer.hidden = false;
+      layer.innerHTML = `
+        <div class="dp">
+          <div class="dp-label">Күнді таңдау</div>
+          <div class="dp-head"><span>${sel.getDate()} ${KZ_MON_SHORT[sel.getMonth()]}, ${KZ_WD_SHORT[sel.getDay()]}</span>${icon("edit", "material-icons-outlined")}</div>
+          <div class="dp-nav">
+            <span>${view.getFullYear()} ж. ${KZ_MONTHS[view.getMonth()]} ${icon("arrow_drop_down")}</span>
+            <span><button type="button" data-dpm="-1">${icon("chevron_left")}</button><button type="button" data-dpm="1">${icon("chevron_right")}</button></span>
+          </div>
+          <div class="dp-grid">
+            ${["Д", "С", "С", "Б", "Ж", "С", "Ж"].map((w) => `<span class="dp-wd">${w}</span>`).join("")}
+            ${cells
+              .map((d) => {
+                if (!d) return "<span></span>";
+                const on = d === sel.getDate() && view.getMonth() === sel.getMonth() && view.getFullYear() === sel.getFullYear();
+                return `<button type="button" class="dp-day ${on ? "on" : ""}" data-dpd="${d}">${d}</button>`;
+              })
+              .join("")}
+          </div>
+          <div class="dp-actions"><button type="button" id="dpCancel">Бас тарту</button><button type="button" id="dpOk">Иә</button></div>
+        </div>`;
+      $$("[data-dpm]", layer).forEach((b) => (b.onclick = () => ((view = new Date(view.getFullYear(), view.getMonth() + Number(b.dataset.dpm), 1)), paint())));
+      $$("[data-dpd]", layer).forEach((b) => (b.onclick = () => ((sel = new Date(view.getFullYear(), view.getMonth(), Number(b.dataset.dpd))), paint())));
+      $("#dpCancel").onclick = closeDialog;
+      $("#dpOk").onclick = () => {
+        closeDialog();
+        onPick(sel);
+      };
+    };
+    paint();
+    layer.onclick = (e) => e.target === layer && closeDialog();
+  }
+
+  function openEfirForm() {
+    const f = { title: "", link: "", time: "", groups: new Set() };
+    const times = [];
+    for (let h = 8; h <= 22; h++) ["00", "30"].forEach((m) => times.push(`${pad(h)}:${m}`));
+    const groupsLabel = () =>
+      f.groups.size ? [...f.groups].map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ") : "Выбрать группы";
+    const draw = () => {
+      openSheet(
+        `
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Добавить эфир</span><button type="button" id="efClose">${icon("close")}</button></div>
+        <div class="ef-label">Название <i>*</i></div>
+        <input class="ef-input" id="efTitle" placeholder="Например: Разбор ЕНТ" value="${f.title.replace(/"/g, "&quot;")}" />
+        <div class="ef-label">Ссылка <i>*</i></div>
+        <input class="ef-input" id="efLink" placeholder="https://..." value="${f.link.replace(/"/g, "&quot;")}" />
+        <div class="ef-label">Время <i>*</i></div>
+        <label class="ef-select ${f.time ? "" : "ph"}">
+          <span id="efTimeLabel">${f.time || "Выбери время"}</span>
+          <select id="efTime">
+            <option value="" ${f.time ? "" : "selected"} disabled>Выбери время</option>
+            ${times.map((t) => `<option ${t === f.time ? "selected" : ""}>${t}</option>`).join("")}
+          </select>${icon("expand_more")}
+        </label>
+        <div class="ef-label">Группы <i>*</i></div>
+        <button type="button" class="ef-select ${f.groups.size ? "" : "ph"}" id="efGroups"><span>${groupsLabel()}</span>${icon("expand_more")}</button>
+        <div class="ef-note">Спикер — ты. Курс подставится из группы.</div>
+        <button type="button" class="ef-submit" id="efCreate">Создать</button>`,
+        { tall: true }
+      );
+      const keep = () => {
+        f.title = $("#efTitle").value;
+        f.link = $("#efLink").value;
+        f.time = $("#efTime").value;
+      };
+      $("#efClose").onclick = closeSheet;
+      $("#efTime").onchange = () => {
+        keep();
+        $("#efTime").closest(".ef-select").classList.toggle("ph", !f.time);
+        $("#efTimeLabel").textContent = f.time || "Выбери время";
+      };
+      $("#efGroups").onclick = () => {
+        keep();
+        openSheet(`
+          <div class="sheet-handle"></div>
+          <div class="ef-head"><span>Группы</span></div>
+          <div class="pick-list">${MOCK.groups
+            .map(
+              (g) => `<button type="button" class="pick-opt ${f.groups.has(g.id) ? "on" : ""}" data-efg="${g.id}">
+                <span>${g.name}<small class="ef-gsub">${g.courseLabel}</small></span>${icon(f.groups.has(g.id) ? "check_box" : "check_box_outline_blank")}</button>`
+            )
+            .join("")}</div>
+          <div class="sheet-actions"><button type="button" class="ef-submit" id="efgDone">Готово</button></div>`);
+        $$("[data-efg]").forEach((b) => {
+          b.onclick = () => {
+            const id = Number(b.dataset.efg);
+            f.groups.has(id) ? f.groups.delete(id) : f.groups.add(id);
+            b.classList.toggle("on", f.groups.has(id));
+            b.querySelector(".material-icons-round").textContent = f.groups.has(id) ? "check_box" : "check_box_outline_blank";
+          };
+        });
+        $("#efgDone").onclick = draw;
+      };
+      $("#efCreate").onclick = () => {
+        keep();
+        if (!f.title.trim() || !f.link.trim() || !f.time || !f.groups.size) {
+          toast("Заполните все обязательные поля", "err");
+          return;
+        }
+        if (!/^https?:\/\//.test(f.link.trim())) {
+          toast("Ссылка должна начинаться с https://", "err");
+          return;
+        }
+        MOCK.efirs.push({ id: nextId(), title: f.title.trim(), link: f.link.trim(), date: iso(state.efirDate), time: f.time, groups: [...f.groups] });
+        closeSheet();
+        toast("Эфир создан");
+        render();
+      };
+    };
+    draw();
   }
 
   function renderProfile(student) {
@@ -2977,23 +3138,13 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="appbar-title" style="flex:1">${titles[state.tab] || "Главная"}</div>
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
-    if (state.tab === 3) {
-      return `
-        <div class="appbar-title-row" id="addGroup">${icon("add")}<span class="appbar-title">добавить группу</span></div>
-        <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
-    }
-    if (state.tab === 0) {
-      return `
-        <div class="appbar-title-row" id="addEnroll">${icon("add")}<span class="appbar-title">добавить</span></div>
-        <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
-    }
     if (state.tab === 2) {
       return `
-        <div class="appbar-title-row" id="addPush">${icon("add")}<span class="appbar-title">уведомление</span></div>
+        <div class="appbar-title-row" id="addPush">${icon("add")}<span class="appbar-title">Отправить пуш</span></div>
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
     return `
-      <div class="appbar-title" style="flex:1">Студенты</div>
+      <div class="appbar-title" style="flex:1">${["Зачисления", "Эфир", "", "Мои группы"][state.tab]}</div>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
 
@@ -3020,8 +3171,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       return;
     }
 
-    if (state.tab === 0) content.innerHTML = renderEnrollments();
-    else if (state.tab === 1) content.innerHTML = renderStudents();
+    if (state.tab === 0) content.innerHTML = renderEnrollSoon();
+    else if (state.tab === 1) content.innerHTML = renderEfir();
     else if (state.tab === 2) content.innerHTML = renderPushes();
     else content.innerHTML = renderGroups();
 
@@ -3183,6 +3334,22 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
     $("#sendPush")?.addEventListener("click", openPushSheet);
     $("#addPush")?.addEventListener("click", openPushSheet);
+    $("#efirDate")?.addEventListener("click", () =>
+      openDatePicker(state.efirDate, (d) => {
+        state.efirDate = d;
+        render();
+      })
+    );
+    $("#efirAdd")?.addEventListener("click", openEfirForm);
+    $("#efirCreate")?.addEventListener("click", openEfirForm);
+    $$("[data-efir-del]").forEach((b) => {
+      b.onclick = async () => {
+        const ok = await confirmDialog({ title: "Удалить эфир?", message: "Студенты больше не увидят этот эфир.", confirmLabel: "Удалить", danger: true });
+        if (!ok) return;
+        MOCK.efirs = MOCK.efirs.filter((e) => e.id !== Number(b.dataset.efirDel));
+        render();
+      };
+    });
     $("#addGroup")?.addEventListener("click", () => openGroupForm());
     $("#addEnroll")?.addEventListener("click", () => openEnrollmentForm());
     $("#curatorAvatar")?.addEventListener("click", openUserProfile);
