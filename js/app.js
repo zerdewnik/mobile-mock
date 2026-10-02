@@ -2945,8 +2945,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </div>
 
         <div class="ga-tiles">
+          <div class="ga-tile"><span>Средний балл за неделю</span><b>${a.avgScore}</b></div>
+          <div class="ga-tile"><span>Средний прогресс</span><b>${a.avgProgress}%</b></div>
+          <div class="ga-tile"><span>Средний результат тестов</span><b>${a.avgTest}<small> из 100</small></b></div>
           <div class="ga-tile"><span>Активны сегодня</span><b>${a.active}<small> / ${g.studentsCount}</small></b></div>
-          <div class="ga-tile ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "check_circle", "material-icons-outlined")}Конспекты</span><b>${a.pending}<small> на проверке</small></b></div>
+          <div class="ga-tile wide ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "check_circle", "material-icons-outlined")}Конспекты на проверке</span><b>${a.pending}</b></div>
         </div>
 
         <div class="ga-card">
