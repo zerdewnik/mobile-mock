@@ -2621,6 +2621,26 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return list.filter((e) => matches(state.searchEnroll, e.student, e.phone, e.course));
   }
 
+  /** Өткен апта чемпионы — рейтингтің үстінде, апта бойы тұрады */
+  function championHtml(g) {
+    const c = g.lastChampion;
+    const st = c && g.students.find((x) => x.id === c.id);
+    if (!st) return "";
+    return `
+      <div class="champ" data-student-id="${st.id}">
+        <div class="champ-text">
+          <div class="champ-over">Чемпион прошлой недели</div>
+          <div class="champ-name">${st.name}</div>
+          <div class="champ-sub">Чемпион · ${c.score} баллов</div>
+          <div class="champ-week">${c.week}</div>
+        </div>
+        <div class="champ-pic">
+          <div class="champ-avatar" style="background:${st.color}">${st.initials}</div>
+          <span class="champ-belt">${icon("emoji_events")}</span>
+        </div>
+      </div>`;
+  }
+
   function renderGroups() {
     return `
       <div class="list-pad groups-list">
@@ -2638,6 +2658,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
                 <span class="chevron">${icon("keyboard_arrow_down")}</span>
               </div>
               <div class="group-body">
+                ${championHtml(g)}
                 <div class="rating-head">
                   ${icon("emoji_events", "material-icons-outlined")}
                   <span class="label">Рейтинг за неделю</span>

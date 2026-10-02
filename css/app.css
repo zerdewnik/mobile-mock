@@ -3051,3 +3051,16 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .ct-row:last-child { border-bottom: 0; }
 .ct-row:active, .ct-row:hover { background: rgba(255, 255, 255, 0.06); }
 .ct-row .material-icons-round { font-size: 22px; }
+
+/* Өткен апта чемпионы (UFC стилі) */
+.champ { position: relative; display: flex; align-items: flex-end; gap: 8px; margin: 14px 16px 4px; padding: 16px 0 0 16px; border-radius: 14px; background: linear-gradient(135deg, #2a2418 0%, #1e1e1e 55%); border: 1px solid #4a3d1e; overflow: hidden; cursor: pointer; }
+.champ-text { flex: 1; min-width: 0; padding-bottom: 14px; }
+.champ-over { font-family: "Oswald", "Roboto", sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; color: #e0453a; }
+.champ-name { margin-top: 10px; font-family: "Oswald", "Roboto", sans-serif; font-size: 24px; font-weight: 700; line-height: 1.05; letter-spacing: 0.5px; text-transform: uppercase; color: #fff; }
+.champ-sub { margin-top: 10px; font-family: "Oswald", "Roboto", sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: #b9a46a; }
+.champ-week { margin-top: 4px; font-size: 10.5px; color: #7a7d8c; }
+.champ-pic { position: relative; width: 104px; height: 112px; flex-shrink: 0; }
+.champ-avatar { position: absolute; right: -14px; bottom: -14px; width: 118px; height: 118px; border-radius: 50%; display: grid; place-items: center; padding-bottom: 22px; font-size: 32px; font-weight: 700; color: #fff; box-shadow: 0 0 0 3px #d4a72c, 0 8px 30px rgba(212, 167, 44, 0.25); }
+.champ-belt { position: absolute; right: 22px; bottom: 6px; width: 46px; height: 46px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #ffe08a, #d4a72c 55%, #8a6510); display: grid; place-items: center; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5); }
+.champ-belt .material-icons-round { font-size: 26px; color: #3a2a06; }
+.champ-avatar { display: flex; align-items: flex-start; justify-content: center; padding: 24px 14px 0 0; font-size: 30px; }

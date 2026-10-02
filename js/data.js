@@ -508,4 +508,11 @@ window.MOCK = {
       };
     });
   });
+  /* Өткен апта чемпионы (21–27 қыркүйек): апта бойы ауыспайды */
+  const champ = { 9: { id: 13, score: 91 } };
+  window.MOCK.groups.forEach((g, gi) => {
+    const c = champ[g.id];
+    const s = c ? g.students.find((x) => x.id === c.id) : g.students[Math.min(g.students.length - 1, 1 + (gi % 3))];
+    g.lastChampion = { id: s.id, score: c ? c.score : 88 + (gi % 9), week: "21–27 сентября" };
+  });
 })();
