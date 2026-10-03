@@ -3229,3 +3229,42 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
   .phone-stage { transform: none !important; }
   .phone { cursor: auto; }
 }
+
+/* Деңгей жолы */
+.lvl-btn { border: 0; background: transparent; padding: 0; margin-top: 10px; display: inline-flex; align-items: center; gap: 2px; cursor: pointer; color: #8a8d9c; }
+.lvl-btn .material-icons-round { font-size: 20px; }
+.road-head { display: flex; align-items: center; gap: 12px; margin: 4px 0 10px; }
+.road-head .sheet-title { color: var(--lc); }
+.road-scroll { max-height: 520px; overflow-y: auto; margin: 0 -4px; padding: 0 4px; }
+.road { display: flex; flex-direction: column; }
+.road-step { display: flex; gap: 14px; }
+.road-rail { position: relative; width: 44px; flex-shrink: 0; display: flex; justify-content: center; }
+.road-rail::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 3px; margin-left: -1.5px; background: #2e2e34; }
+.road-step:first-child .road-rail::before { top: 50%; }
+.road-step:last-child .road-rail::before { bottom: 50%; }
+.road-step.done .road-rail::before, .road-step.cur .road-rail::before { background: color-mix(in srgb, var(--lc) 60%, #2e2e34); }
+.road-dot { position: relative; z-index: 1; margin: 10px 0; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: #262628; border: 2px solid #34343c; }
+.road-step.done .road-dot { border-color: color-mix(in srgb, var(--lc) 70%, transparent); background: color-mix(in srgb, var(--lc) 14%, #1e1e1e); }
+.road-step.cur .road-dot { width: 52px; height: 52px; margin: 6px -4px; border: 3px solid var(--lc); background: color-mix(in srgb, var(--lc) 25%, #1e1e1e); box-shadow: 0 0 18px color-mix(in srgb, var(--lc) 45%, transparent); font-size: 26px; }
+.road-step.locked .road-dot { color: #6c6f84; }
+.road-step.locked .road-dot .material-icons-round { font-size: 20px; }
+.road-body { flex: 1; min-width: 0; align-self: center; padding: 8px 0; }
+.road-name { font-size: 14.5px; font-weight: 600; }
+.road-name span { color: #8a8d9c; font-weight: 400; }
+.road-step.cur .road-name { color: var(--lc); font-size: 16px; font-weight: 800; }
+.road-step.locked .road-name { color: #8a8d9c; }
+.road-sub { margin-top: 3px; font-size: 11.5px; color: #8a8d9c; }
+.road-step.cur .road-sub { color: #e6e6e6; }
+.road-bar { margin-top: 8px; height: 6px; border-radius: 4px; background: #2a2a2e; overflow: hidden; }
+.road-bar i { display: block; height: 100%; background: var(--lc); }
+
+/* Студент · аналитика · курстар деңгейі */
+.cl-list { padding-top: 14px; }
+.cl-row { width: 100%; border: 1px solid #3a3a52; background: #2e2e44; color: #fff; font-family: inherit; text-align: left; border-radius: 14px; padding: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; cursor: pointer; }
+.cl-row > .material-icons-round { color: #9a9cb2; }
+.cl-title { font-size: 14.5px; font-weight: 600; }
+.cl-lvl { margin-top: 4px; font-size: 13px; font-weight: 700; color: var(--lc); }
+.cl-lvl span { color: #9a9cb2; font-weight: 400; font-size: 11.5px; }
+.cl-row .lvl-bar { margin-top: 8px; height: 6px; background: #44465e; }
+.cl-row .lvl-bar i { background: var(--lc); }
+.cl-meta { margin-top: 6px; font-size: 11px; color: #9a9cb2; }

@@ -941,7 +941,7 @@
             <button type="button" class="an-goal-btn" id="setGoal">${icon("add_circle_outline", "material-icons-outlined")}Установить цель</button>
           </div>`
           }
-          ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${A.courses.done} из ${A.courses.total}`, bar: pct(A.courses.done, A.courses.total), meta: "Осталось посмотреть: 0 тестов", open: "courses" })}
+          ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${MOCK.myCourses.length}`, meta: MOCK.myCourses.map((c) => levelOf(c.done, c.total).level.emoji).join(" ") + " · уровни по предметам", open: "courses" })}
           ${card({ emoji: "👆", tint: "#4f4834", label: "Просмотрено всего уроков", value: `${A.lessons.done} из ${A.lessons.total}`, meta: `Осталось посмотреть: ${A.lessons.total - A.lessons.done} уроков` })}
           ${card({ emoji: "📝", tint: "#34485a", label: "Пройдено всего тестов", value: `${A.tests.done} из ${A.tests.total}`, meta: `Осталось сдать: ${A.tests.total - A.tests.done} тестов` })}
           ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${A.mockTests}`, open: "mock" })}
@@ -1761,8 +1761,7 @@
     $$("[data-an]").forEach((b) => {
       b.onclick = () => {
         if (b.dataset.an === "courses") {
-          state.courseSeg = "courses";
-          setTab(3);
+          openCourseLevels();
         } else {
           pushScreen(
             "Пробные тесты",
@@ -2335,7 +2334,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-avatar" style="background:${s.color}">${s.initials}</div>
           <div class="sp-name">${s.name.toUpperCase()}</div>
           <div class="sp-seen">${s.lastSeen || ""}</div>
-          <div style="margin-top:10px">${levelBadge(data.done, data.total)}</div>
+          <button type="button" class="lvl-btn" id="spLevel">${levelBadge(data.done, data.total)}${icon("expand_more")}</button>
         </div>
         <div class="sp-actions">
           <button type="button" class="sp-act" id="spCall">${icon("call", "material-icons-outlined")}<span>Звонок</span></button>
@@ -2366,6 +2365,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       build,
       () => {
         $("#spCourse").onclick = () => openStaffCourse(s, data);
+        $("#spLevel").onclick = () => openLevelRoad(data.done, data.total, data.poster.title);
         $("#spCall").onclick = (e) => openContactMenu(e.currentTarget, s, "call");
         $("#spWa").onclick = (e) => openContactMenu(e.currentTarget, s, "wa");
         $("#spHistory").onclick = () => openLoginHistory(s);
@@ -2402,6 +2402,83 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       pct: i < 9 ? Math.min(100, ((done - step * i) / step) * 100) : 100,
     };
   }
+  /** Деңгей жолы: өтілгені ашық, қазіргісі белгіленген, қалғаны құлыпта */
+  function levelRoadHtml(done, total) {
+    const L = levelOf(done, total);
+    const startOf = (k) => (k === 0 ? 0 : Math.floor((total / 10) * k) + 1);
+    return `
+      <div class="road">
+        ${LEVELS.map((lv, k) => {
+          const st = k < L.i ? "done" : k === L.i ? "cur" : "locked";
+          const need = Math.max(0, startOf(k) - done);
+          const sub =
+            st === "done"
+              ? `Пройден · с ${startOf(k)} урока`
+              : st === "cur"
+                ? L.next
+                  ? `Текущий уровень · до ${L.next.name} ещё ${L.toNext} ${plural(L.toNext, "урок", "урока", "уроков")}`
+                  : "Максимальный уровень"
+                : `Откроется с ${startOf(k)} урока · ещё ${need} ${plural(need, "урок", "урока", "уроков")}`;
+          return `
+          <div class="road-step ${st}" style="--lc:${lv.color}">
+            <div class="road-rail"><span class="road-dot">${st === "locked" ? icon("lock", "material-icons-round") : lv.emoji}</span></div>
+            <div class="road-body">
+              <div class="road-name"><span>${k + 1}.</span> ${lv.name}</div>
+              <div class="road-sub">${sub}</div>
+              ${st === "cur" && L.next ? `<div class="road-bar"><i style="width:${L.pct}%"></i></div>` : ""}
+            </div>
+          </div>`;
+        })
+          .reverse()
+          .join("")}
+      </div>`;
+  }
+  function openLevelRoad(done, total, title) {
+    const L = levelOf(done, total);
+    openSheet(
+      `
+      <div class="sheet-handle"></div>
+      <div class="road-head" style="--lc:${L.level.color}">
+        <span class="lvl-emoji">${L.level.emoji}</span>
+        <div><div class="sheet-title">${L.level.name} · уровень ${L.i + 1} из 10</div><div class="sheet-sub">${title ? `${title} · ` : ""}пройдено ${done} из ${total} уроков</div></div>
+      </div>
+      <div class="road-scroll">${levelRoadHtml(done, total)}</div>`,
+      { tall: true }
+    );
+    $(".road-step.cur")?.scrollIntoView({ block: "center" });
+  }
+
+  function openCourseLevels() {
+    pushScreen(
+      "Мои курсы · уровни",
+      () => `<div class="list-pad cl-list">${MOCK.myCourses
+        .map((c) => {
+          const L = levelOf(c.done, c.total);
+          return `
+          <button type="button" class="cl-row" data-cl="${c.id}" style="--lc:${L.level.color}">
+            <div class="cl-poster">${posterHtml(c.poster, "sq")}</div>
+            <div style="flex:1;min-width:0">
+              <div class="cl-title">${c.title}</div>
+              <div class="cl-lvl">${L.level.emoji} ${L.level.name} <span>· уровень ${L.i + 1}/10</span></div>
+              <div class="lvl-bar"><i style="width:${L.pct}%"></i></div>
+              <div class="cl-meta">${L.next ? `До ${L.next.name}: ещё ${L.toNext} ${plural(L.toNext, "урок", "урока", "уроков")}` : "Максимальный уровень"} · ${c.done}/${c.total}</div>
+            </div>
+            ${icon("chevron_right")}
+          </button>`;
+        })
+        .join("")}</div>`,
+      () => {
+        $$("[data-cl]").forEach((b) => {
+          b.onclick = () => {
+            const c = MOCK.myCourses.find((x) => x.id === Number(b.dataset.cl));
+            openLevelRoad(c.done, c.total, c.title);
+          };
+        });
+      },
+      { screenCls: "an-screen", centered: true }
+    );
+  }
+
   function levelBadge(done, total, small) {
     const L = levelOf(done, total);
     return `<span class="lvl-badge ${small ? "sm" : ""}" style="--lc:${L.level.color}">${L.level.emoji} ${L.level.name}</span>`;
@@ -3968,7 +4045,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
                   <div class="purchase-title">${c.title}</div>
                   <div class="purchase-meta">Всего ${c.total} ${plural(c.total, "урок", "урока", "уроков")}</div>
                   <div class="purchase-meta">Пройдено ${c.done} ${plural(c.done, "урок", "урока", "уроков")}</div>
-                  <div style="margin-top:8px">${levelBadge(c.done, c.total, true)}</div>
                 </div>
               </div>
               <div class="purchase-bar"><i style="width:${(c.done / c.total) * 100}%"></i></div>
