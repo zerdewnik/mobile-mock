@@ -306,7 +306,6 @@
 
   function setMode(mode, { toastMsg } = {}) {
     state.mode = mode;
-    $("#palettePick").hidden = mode !== "staff";
     document.documentElement.dataset.mode = mode;
     $$(".chip-mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
     state.profileStudent = null;
@@ -2778,7 +2777,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const me = MOCK.me;
     const L = PROFILE_T[state.lang] || PROFILE_T.ru;
     const inStaff = state.mode === "staff";
-    const accent = inStaff ? "#5B6EC2" : "#25AB7C";
+    const accent = inStaff ? "#5B6EC2" : "#8B5CF6";
     const staffToggle = me.canStaff
       ? `
       <div class="menu-block">
@@ -5687,44 +5686,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
   }
 
-  /* —— Staff түсін таңдау (варианттар) —— */
-  const STAFF_PALETTES = [
-    { id: "green", name: "Жасыл (қазіргі)", primary: "#58AA80", dark: "#3F8F68", bar: "#58AA80" },
-    { id: "indigo", name: "Индиго", primary: "#5468E0", dark: "#3B4BB5", bar: "#2A3366" },
-    { id: "violet", name: "Күлгін", primary: "#8B5CF6", dark: "#6D3FD8", bar: "#36245E" },
-    { id: "teal", name: "Теңіз", primary: "#14A3B8", dark: "#0E7F90", bar: "#123E47" },
-    { id: "ocean", name: "Мұхит көк", primary: "#2F8CF0", dark: "#1F6CC2", bar: "#16304F" },
-    { id: "amber", name: "Қызғылт сары", primary: "#F08A24", dark: "#C96A12", bar: "#3D2814" },
-    { id: "rose", name: "Таңқурай", primary: "#E0457B", dark: "#B8305F", bar: "#3F1A2A" },
-    { id: "graphite", name: "Графит", primary: "#9AA4B8", dark: "#6E788C", bar: "#262A33" },
-  ];
-  function applyStaffPalette(id) {
-    const p = STAFF_PALETTES.find((x) => x.id === id) || STAFF_PALETTES[0];
-    const r = document.documentElement.style;
-    r.setProperty("--staff-primary", p.primary);
-    r.setProperty("--staff-dark", p.dark);
-    r.setProperty("--staff-bar", p.bar);
-    $$("[data-pal]").forEach((b) => b.classList.toggle("on", b.dataset.pal === p.id));
-    try {
-      localStorage.setItem("staffPalette", p.id);
-    } catch {}
-  }
-  function initPalettePick() {
-    const box = $("#palettePick");
-    box.insertAdjacentHTML(
-      "beforeend",
-      STAFF_PALETTES.map((p) => `<button type="button" class="pal" data-pal="${p.id}" title="${p.name}"><i style="background:linear-gradient(135deg,${p.bar} 0 50%,${p.primary} 50%)"></i><small>${p.name}</small></button>`).join("")
-    );
-    $$("[data-pal]").forEach((b) => (b.onclick = () => applyStaffPalette(b.dataset.pal)));
-    let saved = "green";
-    try {
-      saved = localStorage.getItem("staffPalette") || "green";
-    } catch {}
-    applyStaffPalette(saved);
-  }
-
   function init() {
-    initPalettePick();
     try {
       const p = JSON.parse(localStorage.getItem("prefs") || "{}");
       if (typeof p.dark === "boolean") state.darkTheme = p.dark;

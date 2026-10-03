@@ -1,7 +1,7 @@
 :root {
-  --primary: #25ab7c;
-  --primary-dark: #1a8560;
-  --appbar: #25ab7c;
+  --primary: #8b5cf6;
+  --primary-dark: #6d3fd8;
+  --appbar: #36245e;
   --bg: #121212;
   --card: #1e1e1e;
   --hint: #6c6f84;
@@ -2896,12 +2896,12 @@ button.sch-stat { border: 1px solid transparent; color: inherit; font-family: in
    STAFF (скриншоттар 23:06–23:10)
    ============================================================ */
 html[data-mode="staff"] {
-  --primary: #58aa80;
-  --primary-dark: #3f8f68;
-  --appbar: #58aa80;
+  --primary: #8b5cf6;
+  --primary-dark: #6d3fd8;
+  --appbar: #36245e;
 }
 .nav-indicator { display: none; }
-html[data-mode="staff"] .fab-core { background: #3f8f68; }
+html[data-mode="staff"] .fab-core { background: #8b5cf6; }
 
 /* Зачисления — скоро */
 .soon-screen { min-height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; padding: 0 24px 60px; text-align: center; }
@@ -3603,7 +3603,7 @@ html[data-theme="light"] .phone .app .sp-badge { filter: invert(1) hue-rotate(18
 
 /* ============================================================
    ТУРНИР v2 — 3D стиль, I4U түстері
-   Негізгі: --primary (студент #5B6EC2 / staff #58AA80), терең #3B4089,
+   Негізгі: --primary (студент #5B6EC2 / staff #8B5CF6), терең #3B4089,
    бет #1E1E1E, алтын тек кубок/жеңіс үшін #FFD24D → #E0A21B
    3D ережесі: жоғарғы жарық жиек (inset 0 1px 0 rgba(255,255,255,.08)),
    төменгі «қалыңдық» (0 4px 0 #0c0c10) және жұмсақ көлеңке (0 10px 24px rgba(0,0,0,.35))
@@ -3708,9 +3708,9 @@ img.tr-vs-x { width: 54px; height: 54px; filter: drop-shadow(0 6px 8px rgba(0, 0
 
 /* Staff түсі айнымалы арқылы (варианттар) */
 html[data-mode="staff"] {
-  --primary: var(--staff-primary, #58aa80);
-  --primary-dark: var(--staff-dark, #3f8f68);
-  --appbar: var(--staff-bar, #58aa80);
+  --primary: var(--staff-primary, #8b5cf6);
+  --primary-dark: var(--staff-dark, #6d3fd8);
+  --appbar: var(--staff-bar, #36245e);
 }
 html[data-mode="staff"] .fab-core { background: var(--primary); }
 html[data-mode="staff"] .efir-date { border-color: color-mix(in srgb, var(--primary) 35%, #141816); }

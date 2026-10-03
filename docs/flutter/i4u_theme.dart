@@ -10,8 +10,9 @@ class I4UColors {
   static const studentAppBar = Color(0xFF2B3553);
   static const studentLight = Color(0xFF8A8FD6);
   // Staff (куратор)
-  static const staffPrimary = Color(0xFF58AA80);
-  static const staffDeep = Color(0xFF3F8F68);
+  static const staffPrimary = Color(0xFF8B5CF6); // күлгін
+  static const staffDeep = Color(0xFF6D3FD8);
+  static const staffAppBar = Color(0xFF36245E);
   // Беттер
   static const background = Color(0xFF121212);
   static const card = Color(0xFF1E1E1E);
@@ -178,5 +179,5 @@ class I4UTheme {
         ),
       );
   static ThemeData student() => _base(I4UColors.studentPrimary, I4UColors.studentAppBar);
-  static ThemeData staff() => _base(I4UColors.staffPrimary, I4UColors.staffPrimary);
+  static ThemeData staff() => _base(I4UColors.staffPrimary, I4UColors.staffAppBar);
 }

@@ -4,7 +4,7 @@
   "device": { "width": 390, "height": 844, "statusBar": 44, "appBar": 48, "bottomNav": 58, "sidePadding": 15 },
   "color": {
     "student": { "primary": "#5B6EC2", "primaryDeep": "#3B4089", "appBar": "#2B3553", "primaryLight": "#8A8FD6" },
-    "staff": { "primary": "#58AA80", "primaryDeep": "#3F8F68", "appBar": "#58AA80" },
+    "staff": { "primary": "#8B5CF6", "primaryDeep": "#6D3FD8", "appBar": "#36245E", "name": "Күлгін (бекітілді 03.10.2026)" },
     "surface": { "background": "#121212", "card": "#1E1E1E", "cardRaised": "#262628", "cardTop": "#26262C", "cardBottom": "#1E1E22", "input": "#181818", "border": "#2C2C33", "borderStrong": "#34343C", "divider": "rgba(255,255,255,0.12)", "bottomEdge3d": "#0C0C10" },
     "text": { "primary": "#FFFFFF", "secondary": "#C8CAD4", "hint": "#8A8D9C", "muted": "#6C6F84", "onLight": "#1C1C22" },
     "status": { "success": "#5CB36D", "successBg": "#1F2E24", "warning": "#E0A84A", "orange": "#E0873A", "danger": "#E06B5B", "dangerBg": "#3A2020", "info": "#6C7FD8" },

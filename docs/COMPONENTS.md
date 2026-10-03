@@ -13,14 +13,14 @@
 | Компонент | Не үшін | Өлшемі | Түсі | CSS | Flutter |
 |---|---|---|---|---|---|
 | Status bar | Уақыт, желі | биіктігі 44 | app bar түсімен бірдей | `.status-bar` | жүйелік, `SystemUiOverlayStyle.light` |
-| App bar | Беттің атауы, профиль, қоңырау | биіктігі 48, padding 0 16 | студент `#2B3553`, staff `#58AA80` | `.appbar` | `AppBar(toolbarHeight: 48)` |
+| App bar | Беттің атауы, профиль, қоңырау | биіктігі 48, padding 0 16 | студент `#2B3553`, staff `#36245E` | `.appbar` | `AppBar(toolbarHeight: 48)` |
 | App bar · атауы | Беттің атауы | 18 / w700 | ақ | `.appbar-title` | `I4UText.appBarTitle` |
 | Профиль батырмасы | Профильді ашу | 38×38, radius 12 | ақ фон, иконка студентте қара / staff-та жасыл | `.appbar-profile` | `Container` + `Icons.person_rounded` 22 |
 | Қоңырау (студент) | Хабарламалар | 40×40, иконка 26; бейдж 17×17 | бейдж `#E5484D`, мәтін 10/w700 | `.appbar-bell` | `Badge(label: Text('3'))` |
 | Артқа батырмасы | Ішкі беттен шығу | 28×28 дөңгелек | ақ фон, иконка primaryDeep | `.appbar-back` | `IconButton` + `CircleAvatar` |
 | Bottom nav | 4 қойынды + AI | биіктігі 58 | фон `#1E1E1E`, белсенді primary, белсенді емес `#9E9E9E` 72% | `.bottom-nav` | `BottomAppBar` + `notchMargin` |
 | Nav элементі | Қойынды | иконка 24, мәтін 10 (белсенді w700) | — | `.nav-item` | `NavigationDestination` |
-| AI батырмасы (орта) | AI for you | сақина 46, ядро 40 | студент `#5B6EC2`, staff `#3F8F68`, иконка `assets/logo/ai3.png` 22 (ақ) | `.nav-fab` | `FloatingActionButton` 40 |
+| AI батырмасы (орта) | AI for you | сақина 46, ядро 40 | студент `#5B6EC2`, staff `#8B5CF6`, иконка `assets/logo/ai3.png` 22 (ақ) | `.nav-fab` | `FloatingActionButton` 40 |
 
 **Навбар құрамы.** Студент: Главная (`home`) · Новости (`newspaper`) · AI · Группы (`groups`) · Мои курсы (`menu_book`).
 Staff: Аналитика (`insert_chart`) · Эфир (`live_tv`) · AI · Хабарлама (`notifications_none`) · Мои группы (`groups`).
