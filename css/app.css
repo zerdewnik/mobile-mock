@@ -3335,3 +3335,8 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .ent-dlg-actions button { height: 48px; border-radius: 24px; font-family: inherit; font-size: 15px; cursor: pointer; }
 .ent-dlg-cancel { background: #fff; border: 1px solid #b8b8bf; color: #1c1c22; }
 .ent-dlg-go { background: #3b4089; border: 0; color: #fff; }
+
+/* Пробный ЕНТ: 5 пән қойындысы бір экранға сыйсын */
+.ent-light .ent-subs { padding: 8px 4px 0; overflow-x: hidden; }
+.ent-light .ent-sub { flex: 1 1 auto; min-width: 0; padding: 6px 4px 8px; font-size: 12px; white-space: nowrap; }
+.ent-light .ent-sub small { font-size: 11px; }
