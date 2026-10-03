@@ -28,6 +28,15 @@
 
 «Турнирді жариялау» → мәртебе `registration`, топ оқушыларына пуш: «Жаңа турнир: {атауы}. Тіркелу {күні} дейін».
 
+## 2а. Өшіру, тоқтату, архив (куратор)
+| Мәртебе | Әрекет | Нәтиже |
+|---|---|---|
+| `registration` | «Турнирді өшіру» (растау) | Турнир жойылады, тіркелгендерге пуш |
+| `running` | «Турнирді тоқтату» (растау) | `cancelled`, ойналмаған матчтар жабылады, архивке түседі |
+| `finished` / `cancelled` | «Архивтен өшіру» (растау) | Нәтижелерімен біржола жойылады |
+
+**Өткен турнирлер:** куратордың тізімінде «Өткен турнирлер · архив» (аяқталған + тоқтатылған), студентте «Өткен турнирлер» (тек аяқталған: чемпион, күні, толық кесте).
+
 ## 3. Тіркелу (оқушы)
 - Турнир карточкасы «Тіркелу ашық» бөлімінде; ішінде: ұйымдастырушы, топтар, модуль, тақырыптар, тіркелгендер саны, кесте, ереже.
 - «Тіркелу» → `participants`-ке қосылады; «Тіркелуден бас тарту» — тіркелу жабылғанша.
@@ -73,7 +82,7 @@ Tournament {
   "registrationEndsAt": "2026-09-30T23:59:00+05:00",
   "startsAt": "2026-10-01T19:00:00+05:00",
   "stageDays": 1,
-  "status": "registration | running | finished",
+  "status": "registration | running | finished | cancelled",
   "participantIds": [0, 11, 12],
   "championId": null
 }
@@ -88,7 +97,7 @@ DuelAnswer { "matchId": 501, "userId": 11, "qIndex": 0, "option": 2, "correct": 
 ```
 
 **Endpoint-тер:**
-`POST /tournaments` (куратор) · `GET /tournaments?groupId=` · `GET /tournaments/{id}` · `POST /tournaments/{id}/register` · `DELETE /tournaments/{id}/register` · `POST /tournaments/{id}/start` · `GET /matches/{id}` · `POST /matches/{id}/answers` · `POST /duels` (шақыру) · `POST /duels/{id}/accept`.
+`POST /tournaments` (куратор) · `GET /tournaments?groupId=` · `GET /tournaments/{id}` · `POST /tournaments/{id}/register` · `DELETE /tournaments/{id}/register` · `POST /tournaments/{id}/start` · `POST /tournaments/{id}/cancel` · `DELETE /tournaments/{id}` · `GET /matches/{id}` · `POST /matches/{id}/answers` · `POST /duels` (шақыру) · `POST /duels/{id}/accept`.
 
 **Фон тапсырмалары (cron):** тіркелу мерзімі өткенде бастау; кезең мерзімі өткенде ойналмаған матчтарды жабу және келесі кезеңді құру; пуш хабарламалар.
 

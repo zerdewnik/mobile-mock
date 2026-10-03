@@ -32,6 +32,7 @@
     darkTheme: true,
     courseSeg: "courses",
     schedPeriod: "day",
+    staffRole: "curator",
     trainerOpen: {},
     navStack: [],
     svc: { id: "", tab: "ent" },
@@ -308,6 +309,7 @@
     state.mode = mode;
     document.documentElement.dataset.mode = mode;
     $$(".chip-mode").forEach((b) => b.classList.toggle("active", b.dataset.mode === mode));
+    $("#roleSwitch").hidden = mode !== "staff";
     state.profileStudent = null;
     closeSheet();
     closeMenu();
@@ -1905,6 +1907,17 @@
       if (meIn) return;
     }
   }
+  /** Барлық кезеңді аяғына дейін ойнату (архив үшін) */
+  function finishAll(T) {
+    for (;;) {
+      const cur = T.rounds[T.rounds.length - 1];
+      cur.forEach((m) => !m.w && simMatch(m));
+      if (cur.length === 1) return void ((T.champion = cur[0].w), (T.status = "finished"));
+      const next = [];
+      for (let i = 0; i < cur.length; i += 2) next.push({ a: cur[i].w, b: cur[i + 1].w, sa: null, sb: null, w: null });
+      T.rounds.push(next);
+    }
+  }
   function startTournament(T) {
     T.status = "running";
     buildBracket(T);
@@ -1944,7 +1957,23 @@
         participants: g.students.filter((_, i) => i % 2 === 0),
         status: "registration",
       };
-      MOCK.tournaments = [T2, T1];
+      const T0 = {
+        id: 3,
+        title: "Қыркүйек кубогы",
+        organizer: "Диана · куратор",
+        groups: [g.id],
+        courseId: 10,
+        module: "Француз революциясы және XIX ғ. империялар",
+        topics: ["Француз революциясы", "Наполеон империясы"],
+        regTo: "2026-09-10T23:59",
+        start: "2026-09-12T19:00",
+        stageDays: 2,
+        participants: [me, ...g.students],
+        status: "registration",
+      };
+      startTournament(T0);
+      finishAll(T0);
+      MOCK.tournaments = [T2, T1, T0];
     }
     return MOCK.tournaments;
   }
@@ -1994,20 +2023,21 @@
         .map((p) => `<div class="br-pair ${p.length === 2 ? "two" : ""}">${p.map(box).join("")}</div>`)
         .join("")}</div></div>`);
     }
-    cols.push(`<div class="br-col champ-col"><div class="br-h">Чемпион</div><div class="br-body" style="height:${Math.max(160, (T.size / 2) * 92)}px"><div class="br-pair"><div class="br-m champ ${T.champion ? "" : "br-empty"}"><img src="assets/tournament/trophy.svg" alt="" /><span>${T.champion ? firstName(T.champion) : "?"}</span></div></div></div></div>`);
+    cols.push(`<div class="br-col champ-col"><div class="br-h">Чемпион</div><div class="br-body" style="height:${Math.max(160, (T.size / 2) * 92)}px"><div class="br-pair"><div class="br-m champ ${T.champion ? "" : "br-empty"}"><img src="assets/tournament/belt_icon.png" alt="" /><span>${T.champion ? firstName(T.champion) : "?"}</span></div></div></div></div>`);
     return `<div class="br">${cols.join("")}</div>`;
   }
 
   function tourCard(T, staff = false) {
-    const st = { registration: ["reg", "Тіркелу ашық"], running: ["live", "Өтіп жатыр"], finished: ["done", "Аяқталды"] }[T.status];
+    const st = { registration: ["reg", "Тіркелу ашық"], running: ["live", "Өтіп жатыр"], finished: ["done", "Аяқталды"], cancelled: ["off", "Тоқтатылды"] }[T.status];
     const cur = T.rounds?.[T.rounds.length - 1];
     let line;
     if (T.status === "registration") line = `${icon("event", "material-icons-outlined")}Тіркелу ${fmtDT(T.regTo)} дейін · ${T.participants.length} тіркелді`;
     else if (T.status === "running") line = `${icon("bolt")}${stageName(cur.length)} · ${staff ? `${cur.filter((m) => m.w).length}/${cur.length} жекпе-жек өтті` : myMatch(T) ? "сенің кезегің!" : "жұптар ойнап жатыр"}`;
-    else line = `${icon("emoji_events", "material-icons-outlined")}Чемпион: ${T.champion?.me ? "Сен" : T.champion?.name}`;
+    else if (T.status === "cancelled") line = `${icon("block", "material-icons-outlined")}Куратор тоқтатты · ${fmtDT(T.start)}`;
+    else line = `${icon("emoji_events", "material-icons-outlined")}Чемпион: ${T.champion?.me ? "Сен" : T.champion?.name} · ${fmtDT(T.start)}`;
     return `
       <button type="button" class="t3-card" data-tour="${T.id}">
-        <img class="t3-ico" src="assets/tournament/${T.status === "registration" ? "register" : T.status === "running" ? "duel" : "trophy"}.svg" alt="" />
+        <img class="t3-ico ${T.status === "cancelled" ? "off" : ""}" src="assets/tournament/belt_icon.png" alt="" />
         <div class="t3-body">
           <div class="t3-top"><span class="t3-badge ${st[0]}">${st[1]}</span>${isReg(T) && T.status === "registration" ? `<span class="t3-badge ok">${icon("check")}Тіркелдің</span>` : ""}</div>
           <div class="t3-title">${T.title}</div>
@@ -2026,7 +2056,7 @@
       <div class="list-pad tour">
         ${sec("Тіркелу ашық", list.filter((t) => t.status === "registration"))}
         ${sec("Өтіп жатыр", list.filter((t) => t.status === "running"))}
-        ${sec("Аяқталған", list.filter((t) => t.status === "finished"))}
+        ${sec("Өткен турнирлер", list.filter((t) => t.status === "finished"))}
         <div class="t3-panel">
           <div class="t3-panel-h"><img src="assets/tournament/duel.svg" alt="" /><div><b>Сыныптасыңды жарысқа шақыр</b><span>Тренажёр пәндері бойынша достық жекпе-жек</span></div></div>
           <button type="button" class="btn3d" id="duelInvite">${icon("person_add", "material-icons-outlined")}Жарысқа шақыру</button>
@@ -2050,14 +2080,18 @@
       if (staff) {
         action =
           T.status === "registration"
-            ? `<button type="button" class="btn3d gold" id="tStart">${icon("play_arrow")}Тіркелуді жабу және бастау</button>`
-            : "";
+            ? `<button type="button" class="btn3d gold" id="tStart">${icon("play_arrow")}Тіркелуді жабу және бастау</button>
+               <button type="button" class="btn3d ghost danger" id="tDel">${icon("delete_outline", "material-icons-outlined")}Турнирді өшіру</button>`
+            : T.status === "running"
+              ? `<button type="button" class="btn3d ghost danger" id="tStop">${icon("block", "material-icons-outlined")}Турнирді тоқтату</button>`
+              : `<div class="t3-ok out">${icon("inventory_2", "material-icons-outlined")}<div><b>Архивте</b><span>${T.status === "cancelled" ? "Турнир тоқтатылған" : `Чемпион: ${T.champion?.name || "—"}`}</span></div></div>
+                 <button type="button" class="btn3d ghost danger" id="tDel">${icon("delete_outline", "material-icons-outlined")}Архивтен өшіру</button>`;
       } else if (T.status === "registration") {
         action = isReg(T)
           ? `<div class="t3-ok">${icon("check_circle")}<div><b>Сен тіркелдің</b><span>Турнир ${fmtDT(T.start)} басталады. 1/8 жұбың сол күні шығады.</span></div></div>
              <button type="button" class="btn3d ghost" id="tUnreg">Тіркелуден бас тарту</button>`
           : `<button type="button" class="btn3d gold" id="tReg">${icon("how_to_reg", "material-icons-outlined")}Тіркелу</button>`;
-      } else if (T.champion?.me) action = `<div class="t3-ok gold"><img src="assets/tournament/trophy.svg" alt="" /><div><b>Сен чемпионсың!</b><span>${T.title} сенікі</span></div></div>`;
+      } else if (T.champion?.me) action = `<div class="t3-ok gold"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>Сен чемпионсың!</b><span>${T.title} сенікі</span></div></div>`;
       else if (mm)
         action = `
           <div class="tr-vs">
@@ -2077,7 +2111,7 @@
       return `
         <div class="list-pad tour">
           <div class="t3-hero">
-            <img src="assets/tournament/trophy.svg" alt="" />
+            <img class="t3-belt" src="assets/tournament/belt.png" alt="" />
             <div class="t3-title lg">${T.title}</div>
             <div class="t3-sub">${COURSE_TITLE[T.courseId]}</div>
           </div>
@@ -2136,6 +2170,26 @@
         toast("Турнир басталды, жұптар құрылды");
         paintStack();
       });
+      $("#tDel")?.addEventListener("click", async () => {
+        const ok = await confirmDialog({
+          title: T.status === "registration" ? "Турнирді өшіру?" : "Архивтен өшіру?",
+          message: T.status === "registration" ? `«${T.title}» өшіріледі. Тіркелген ${T.participants.length} оқушыға хабарлама кетеді.` : `«${T.title}» нәтижелерімен бірге біржола өшіріледі.`,
+          confirmLabel: "Өшіру",
+          danger: true,
+        });
+        if (!ok) return;
+        MOCK.tournaments = tournaments().filter((x) => x !== T);
+        state.navStack.pop();
+        paintStack();
+        toast("Турнир өшірілді");
+      });
+      $("#tStop")?.addEventListener("click", async () => {
+        const ok = await confirmDialog({ title: "Турнирді тоқтату?", message: "Ойналмаған жекпе-жектер жабылады, турнир «Тоқтатылды» болып архивке түседі.", confirmLabel: "Тоқтату", danger: true });
+        if (!ok) return;
+        T.status = "cancelled";
+        toast("Турнир тоқтатылды — архивте");
+        paintStack();
+      });
       $("#tourPlay")?.addEventListener("click", () => {
         const m = myMatch(T);
         startDuel({ opp: m.a.me ? m.b : m.a, subject: STAFF_SUBJ[T.courseId], subjectTitle: COURSE_TITLE[T.courseId], match: m, T });
@@ -2150,8 +2204,13 @@
     pushScreen(
       "Турнирлер",
       () => `<div class="list-pad tour">
-        <button type="button" class="btn3d" id="tNew" style="margin:0 0 18px">${icon("add")}Турнир құру</button>
-        ${tournaments().map((t) => tourCard(t, true)).join("")}
+        <button type="button" class="btn3d" id="tNew" style="margin:0 0 6px">${icon("add")}Турнир құру</button>
+        ${[["Тіркелу ашық", ["registration"]], ["Өтіп жатыр", ["running"]], ["Өткен турнирлер · архив", ["finished", "cancelled"]]]
+          .map(([t, sts]) => {
+            const arr = tournaments().filter((x) => sts.includes(x.status));
+            return arr.length ? `<div class="t3-sec">${t}</div>${arr.map((x) => tourCard(x, true)).join("")}` : "";
+          })
+          .join("")}
       </div>`,
       () => {
         $("#tNew").onclick = openTourForm;
@@ -2328,7 +2387,7 @@
         const per = DUEL_ROUNDS.map((r, ri) => ({ r, my: D.res.filter((x) => x.ri === ri && x.ok).length * r.pts, op: D.res.filter((x) => x.ri === ri && x.opOk).length * r.pts }));
         return `
           <div class="du-res ${D.win ? "win" : "lose"}">
-            <div class="du-res-ico">${D.win ? `<img src="assets/tournament/trophy.svg" alt="" />` : icon("sentiment_dissatisfied", "material-icons-outlined")}</div>
+            <div class="du-res-ico">${D.win ? `<img src="assets/tournament/belt.png" alt="" class="du-belt" />` : icon("sentiment_dissatisfied", "material-icons-outlined")}</div>
             <div class="du-res-t">${D.win ? "Жеңіс!" : "Бұл жолы жеңіліс"}</div>
             <div class="du-res-s">${avatarHtml(me)}<b>${D.my}</b><span>:</span><b>${D.op}</b>${avatarHtml(opp)}</div>
             ${D.my === D.op ? `<div class="du-res-n">Ұпай тең — ${D.win ? "сен" : opp.name.split(" ")[0]} жылдамырақ жауап берді</div>` : ""}
@@ -4548,28 +4607,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const services = [
       { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { sub: "efir", label: "Эфир", icon: "live_tv" },
-      { sub: "tours", label: "Турнирлер", svg: "assets/tournament/trophy.svg" },
+      { sub: "tours", label: "Турнирлер", svg: "assets/tournament/belt_icon.png" },
     ];
     return `
-      <div class="banner-wrap">
-        <div class="banner-track">
-          <div class="banner-slide">
-            <span class="banner-logo">!4U</span>
-            <div class="banner-pic">
-              <span class="bp-board">${icon("lightbulb")}</span>
-              <span class="bp-cap">${icon("school")}</span>
-              <span class="bp-cal">${icon("calendar_month")}</span>
-              <span class="bp-list">${icon("checklist")}</span>
-              <span class="bp-doc">${icon("description", "material-icons-outlined")}</span>
-            </div>
-            <div class="banner-copy">
-              <strong>"БІР ПЛАТФОРМА –<br><em>БАРЛЫҚ ПӘНДЕР!"</em></strong>
-              <small>"АРМАНЫҢДАҒЫ БАЛЛҒА ЖЕТУ ҮШІН,<br><em>БАРЛЫҚ ПӘНДЕРГЕ СЕНІМЕН!"</em></small>
-            </div>
-          </div>
-        </div>
-        <div class="banner-dots">${MOCK.stories.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
-      </div>
+      ${bannerHtml()}
       <div class="section-title">Сервисы</div>
       <div class="service-grid">
         ${services
@@ -4846,25 +4887,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png", soon: true },
     ];
     return `
-      <div class="banner-wrap">
-        <div class="banner-track">
-          <button type="button" class="banner-slide" id="openBanner">
-            <span class="banner-logo">!4U</span>
-            <div class="banner-pic">
-              <span class="bp-board">${icon("lightbulb")}</span>
-              <span class="bp-cap">${icon("school")}</span>
-              <span class="bp-cal">${icon("calendar_month")}</span>
-              <span class="bp-list">${icon("checklist")}</span>
-              <span class="bp-doc">${icon("description", "material-icons-outlined")}</span>
-            </div>
-            <div class="banner-copy">
-              <strong>"БІР ПЛАТФОРМА –<br><em>БАРЛЫҚ ПӘНДЕР!"</em></strong>
-              <small>"АРМАНЫҢДАҒЫ БАЛЛҒА ЖЕТУ ҮШІН,<br><em>БАРЛЫҚ ПӘНДЕРГЕ СЕНІМЕН!"</em></small>
-            </div>
-          </button>
-        </div>
-        <div class="banner-dots">${MOCK.stories.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
-      </div>
+      ${bannerHtml()}
       <div class="section-title">Сервисы</div>
       <div class="service-grid">
         ${services
@@ -4906,20 +4929,241 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /* ============================================================
+     ЖАҢАЛЫҚТАР: куратор жазады → тексеру (бас куратор / академ. бөлім басшысы)
+     → жарияланады (баннер болса — басты беттегі баннерге шығады) немесе қайтарылады
+     ============================================================ */
+  const NEWS_ST = { pending: ["warn", "Тексеруде"], published: ["ok", "Жарияланды"], rejected: ["bad", "Қайтарылды"] };
+  const isHead = () => state.staffRole === "head";
+  const myName = () => `${MOCK.me.firstName} ${MOCK.me.lastName}`;
+  const publishedNews = () => MOCK.news.filter((n) => (n.status || "published") === "published");
+
+  /** Басты беттегі баннерлер: тұрақты I4U баннері + баннер ретінде жарияланған жаңалықтар */
+  function bannerHtml() {
+    const news = publishedNews().filter((n) => n.banner);
+    const base = `
+      <div class="banner-slide" id="openBanner">
+        <span class="banner-logo">!4U</span>
+        <div class="banner-pic">
+          <span class="bp-board">${icon("lightbulb")}</span>
+          <span class="bp-cap">${icon("school")}</span>
+          <span class="bp-cal">${icon("calendar_month")}</span>
+          <span class="bp-list">${icon("checklist")}</span>
+          <span class="bp-doc">${icon("description", "material-icons-outlined")}</span>
+        </div>
+        <div class="banner-copy">
+          <strong>"БІР ПЛАТФОРМА –<br><em>БАРЛЫҚ ПӘНДЕР!"</em></strong>
+          <small>"АРМАНЫҢДАҒЫ БАЛЛҒА ЖЕТУ ҮШІН,<br><em>БАРЛЫҚ ПӘНДЕРГЕ СЕНІМЕН!"</em></small>
+        </div>
+      </div>`;
+    const slides = [
+      ...news.map((n) => newsBannerSlide(n, `data-news="${n.id}"`)),
+      base,
+    ];
+    return `
+      <div class="banner-wrap">
+        <div class="banner-track banner-scroll" id="bannerTrack">${slides.join("")}</div>
+        <div class="banner-dots">${slides.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
+      </div>`;
+  }
+  function newsBannerSlide(n, attr = "") {
+    return `<button type="button" class="banner-slide nb-slide" ${attr} style="${n.img ? `background-image:linear-gradient(90deg,rgba(0,0,0,.65),rgba(0,0,0,.1)),url(${n.img})` : `background:${n.bg || "linear-gradient(120deg,#3b4089,#5b6ec2 60%,#8a94f5)"}`}">
+      <span class="banner-logo">!4U</span>
+      <span class="nb-copy"><b>${n.title}</b><small>${n.body.slice(0, 70)}${n.body.length > 70 ? "…" : ""}</small></span>
+    </button>`;
+  }
+  function bindBanner() {
+    const tr = $("#bannerTrack");
+    if (!tr) return;
+    tr.onscroll = () => {
+      const i = Math.round(tr.scrollLeft / tr.clientWidth);
+      $$(".banner-dots i").forEach((d, k) => d.classList.toggle("on", k === i));
+    };
+  }
+
+  function newsRow(n, extra = "") {
+    const st = NEWS_ST[n.status || "published"];
+    return `
+      <button type="button" class="blog-row" ${extra}>
+        <div style="flex:1;min-width:0">
+          ${n.status && n.status !== "published" || extra.includes("nmine") ? `<div class="nw-meta"><span class="nw-st ${st[0]}">${st[1]}</span>${n.banner ? `<span class="nw-st ban">${icon("view_carousel", "material-icons-outlined")}Баннер</span>` : ""}</div>` : ""}
+          <div class="blog-title">${n.title}</div>
+          <div class="blog-body">${n.body}</div>
+          ${n.author ? `<div class="nw-author">${n.author}${n.date ? ` · ${n.date}` : ""}</div>` : ""}
+        </div>
+        ${n.img ? `<span class="news-thumb" style="background:url(${n.img}) center/cover"></span>` : newsThumb(n.thumb)}
+      </button>`;
+  }
+
+  function renderStaffNews() {
+    const seg = state.newsSeg || "all";
+    const pending = MOCK.news.filter((n) => n.status === "pending");
+    const mine = MOCK.news.filter((n) => n.author === myName());
+    const tabs = [["all", "Жаңалықтар"], ["mine", `Менікі${mine.length ? ` · ${mine.length}` : ""}`]];
+    if (isHead()) tabs.push(["review", `Тексеру${pending.length ? ` · ${pending.length}` : ""}`]);
+    let list = "";
+    if (seg === "all") list = publishedNews().map((n) => newsRow(n, `data-news="${n.id}"`)).join("");
+    else if (seg === "mine")
+      list = mine.length ? mine.map((n) => newsRow(n, `data-nmine="${n.id}"`)).join("") : `<div class="empty">Сіз әлі жаңалық жазбадыңыз</div>`;
+    else list = pending.length ? pending.map((n) => newsRow(n, `data-nreview="${n.id}"`)).join("") : `<div class="empty">Тексеретін жаңалық жоқ ✨</div>`;
+    return `
+      <div class="seg-tabs ${tabs.length === 3 ? "seg-3" : ""}" style="margin-top:12px">${tabs.map(([k, l]) => `<button type="button" data-nseg="${k}" class="${seg === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      <div class="list-pad news-list" style="padding-top:14px">
+        ${seg !== "review" ? `<button type="button" class="btn3d" id="newsNew" style="margin:0 0 16px">${icon("edit", "material-icons-outlined")}Жаңалық жазу</button>` : ""}
+        ${seg === "mine" && !isHead() ? `<div class="t3-note" style="margin:0 0 14px">${icon("info", "material-icons-outlined")}Жаңалық бас куратор немесе академиялық бөлім басшысы тексергеннен кейін жарияланады.</div>` : ""}
+        ${list}
+      </div>`;
+  }
+
+  function openNewsForm(edit = null) {
+    const f = edit ? { ...edit } : { title: "", body: "", img: null, banner: false, audience: "all" };
+    const draw = () => {
+      openSheet(
+        `
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>${edit ? "Жаңалықты түзету" : "Жаңалық жазу"}</span><button type="button" id="nfClose">${icon("close")}</button></div>
+        <div class="ef-label">Тақырып <i>*</i></div>
+        <input class="ef-input" id="nfTitle" maxlength="80" placeholder="Мысалы: Сенбіде сынақ ҰБТ" value="${f.title.replace(/"/g, "&quot;")}" />
+        <div class="ef-label">Мәтін <i>*</i></div>
+        <textarea class="ef-input nf-text" id="nfBody" placeholder="Жаңалықтың толық мәтіні">${f.body}</textarea>
+        <div class="ef-label">Сурет</div>
+        <button type="button" class="nf-img" id="nfImg" style="${f.img ? `background:url(${f.img}) center/cover` : ""}">${f.img ? "" : `${icon("add_photo_alternate", "material-icons-outlined")}<span>Сурет қосу (JPEG/PNG)</span>`}</button>
+        <div class="nf-toggle-row">
+          <div><b>Баннер ретінде көрсету</b><small>Жарияланғанда студенттердің басты бетіндегі баннерге шығады</small></div>
+          <button type="button" class="toggle ${f.banner ? "on" : ""}" id="nfBanner"></button>
+        </div>
+        ${f.banner ? `<div class="ef-label">Баннердің түрі</div><div class="nf-prev">${newsBannerSlide({ ...f, title: f.title || "Тақырып", body: f.body || "Мәтін" })}</div>` : ""}
+        <div class="ef-label">Кімге</div>
+        <div class="ent-chips">${[["all", "Барлық студенттер"], ["groups", "Менің топтарым"]].map(([k, l]) => `<button type="button" class="ent-chip ${f.audience === k ? "on" : ""}" style="--c:var(--primary)" data-nfa="${k}">${l}</button>`).join("")}</div>
+        <button type="button" class="ef-submit" id="nfSend">${isHead() ? "Жариялау" : "Тексеруге жіберу"}</button>`,
+        { tall: true }
+      );
+      const keep = () => {
+        f.title = $("#nfTitle").value;
+        f.body = $("#nfBody").value;
+      };
+      $("#nfClose").onclick = closeSheet;
+      $("#nfBanner").onclick = () => (keep(), (f.banner = !f.banner), draw());
+      $$("[data-nfa]").forEach((b) => (b.onclick = () => (keep(), (f.audience = b.dataset.nfa), draw())));
+      $("#nfImg").onclick = () => {
+        keep();
+        const inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "image/*";
+        inp.onchange = () => {
+          const file = inp.files[0];
+          if (!file) return;
+          const img = new Image();
+          img.onload = () => {
+            const k = Math.min(1, 900 / img.width);
+            const cv = document.createElement("canvas");
+            cv.width = img.width * k;
+            cv.height = img.height * k;
+            cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+            f.img = cv.toDataURL("image/jpeg", 0.85);
+            draw();
+          };
+          img.src = URL.createObjectURL(file);
+        };
+        inp.click();
+      };
+      $("#nfSend").onclick = () => {
+        keep();
+        if (!f.title.trim() || !f.body.trim()) return toast("Тақырып пен мәтінді толтырыңыз", "err");
+        const status = isHead() ? "published" : "pending";
+        const data = { ...f, title: f.title.trim(), body: f.body.trim(), author: myName(), date: dmy(new Date()), status, reason: null };
+        if (edit) Object.assign(edit, data);
+        else MOCK.news.unshift({ id: nextId(), thumb: null, ...data });
+        closeSheet();
+        state.newsSeg = "mine";
+        toast(isHead() ? "Жаңалық жарияланды" : "Тексеруге жіберілді — нәтижесі туралы хабарлама келеді");
+        render();
+      };
+    };
+    draw();
+  }
+
+  function newsPreviewHtml(n) {
+    return `
+      <div class="list-pad">
+        ${n.banner ? `<div class="ga-csub" style="margin:4px 2px 8px">Баннер (басты бет)</div><div class="nf-prev">${newsBannerSlide(n)}</div>` : ""}
+        <div class="ga-csub" style="margin:14px 2px 8px">Жаңалықтар тізімінде</div>
+        ${newsRow({ ...n, status: "published" })}
+        <div class="t3-panel" style="margin-top:6px">
+          <div class="t3-info"><span>${icon("person", "material-icons-outlined")}Авторы</span><b>${n.author}</b></div>
+          <div class="t3-info"><span>${icon("event", "material-icons-outlined")}Жіберілді</span><b>${n.date || "—"}</b></div>
+          <div class="t3-info"><span>${icon("groups", "material-icons-outlined")}Кімге</span><b>${n.audience === "groups" ? "Автордың топтары" : "Барлық студенттер"}</b></div>
+          ${n.reason ? `<div class="t3-info col"><span>${icon("feedback", "material-icons-outlined")}Қайтару себебі</span><b style="text-align:left;color:#e06b5b">${n.reason}</b></div>` : ""}
+        </div>
+        ${n.img ? `<img src="${n.img}" alt="" style="width:100%;border-radius:14px;margin-top:14px" />` : ""}
+        <div class="news-card" style="margin-top:14px"><div class="n-title">${n.title}</div><div class="n-body" style="white-space:pre-wrap">${n.body}</div></div>
+      </div>`;
+  }
+
+  function openNewsReview(n) {
+    pushScreen(
+      "Жаңалықты тексеру",
+      () => newsPreviewHtml(n),
+      () => {
+        $("#nrOk").onclick = () => {
+          n.status = "published";
+          n.reason = null;
+          state.navStack.pop();
+          paintStack();
+          toast(n.banner ? "Жарияланды — баннерге шықты" : "Жарияланды");
+          render();
+        };
+        $("#nrNo").onclick = () => {
+          openSheet(`
+            <div class="sheet-handle"></div>
+            <div class="ef-head"><span>Қайтару себебі</span></div>
+            <div class="ent-chips">${["Қате бар", "Сурет сапасы нашар", "Мазмұны сәйкес емес", "Баннерге келмейді"].map((r) => `<button type="button" class="ent-chip" style="--c:var(--primary)" data-nrr="${r}">${r}</button>`).join("")}</div>
+            <textarea class="ef-input nf-text" id="nrText" placeholder="Түсініктеме (автор көреді)" style="margin-top:12px"></textarea>
+            <button type="button" class="ef-submit" id="nrSend">Авторға қайтару</button>`);
+          $$("[data-nrr]").forEach((b) => (b.onclick = () => ($("#nrText").value = ($("#nrText").value ? $("#nrText").value + ". " : "") + b.dataset.nrr)));
+          $("#nrSend").onclick = () => {
+            const r = $("#nrText").value.trim();
+            if (!r) return toast("Себебін жазыңыз", "err");
+            n.status = "rejected";
+            n.reason = r;
+            closeSheet();
+            state.navStack.pop();
+            paintStack();
+            toast("Авторға қайтарылды");
+            render();
+          };
+        };
+      },
+      {
+        right: "<span></span>",
+        footer: () => `<div class="sticky-foot rp-foot"><button type="button" class="rp-pdf" id="nrNo">${icon("undo")}Қайтару</button><button type="button" class="ef-submit" id="nrOk" style="margin:0">${icon("check")}Жариялау</button></div>`,
+      }
+    );
+  }
+
+  function openMyNews(n) {
+    pushScreen(
+      "Менің жаңалығым",
+      () => `<div class="list-pad"><div class="nw-meta" style="margin:6px 2px 0"><span class="nw-st ${NEWS_ST[n.status][0]}">${NEWS_ST[n.status][1]}</span></div></div>${newsPreviewHtml(n)}`,
+      () => {
+        $("#nmEdit")?.addEventListener("click", () => {
+          state.navStack.pop();
+          paintStack();
+          openNewsForm(n);
+        });
+      },
+      {
+        right: "<span></span>",
+        footer: () => (n.status === "published" ? "" : `<div class="sticky-foot"><button type="button" class="ef-submit" id="nmEdit" style="margin:0">${icon("edit", "material-icons-outlined")}${n.status === "rejected" ? "Түзетіп қайта жіберу" : "Өңдеу"}</button></div>`),
+      }
+    );
+  }
+
   function renderNews() {
     return `
       <div class="list-pad news-list">
-        ${MOCK.news
-          .map(
-            (n) => `
-          <button type="button" class="blog-row" data-news="${n.id}">
-            <div style="flex:1;min-width:0">
-              <div class="blog-title">${n.title}</div>
-              <div class="blog-body">${n.body}</div>
-            </div>
-            ${newsThumb(n.thumb)}
-          </button>`
-          )
+        ${publishedNews()
+          .map((n) => newsRow(n, `data-news="${n.id}"`))
           .join("")}
       </div>`;
   }
@@ -5437,7 +5681,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     else if (state.sub === "efir") content.innerHTML = renderEfir();
     else if (state.sub === "pushes") content.innerHTML = renderPushes();
     else if (state.tab === 0) content.innerHTML = renderStaffHome();
-    else if (state.tab === 1) content.innerHTML = renderNews();
+    else if (state.tab === 1) content.innerHTML = renderStaffNews();
     else content.innerHTML = renderGroups();
 
     bindContent();
@@ -5466,9 +5710,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       btn.onclick = () => {
         const n = MOCK.news.find((x) => x.id === Number(btn.dataset.news));
         if (!n) return;
-        openInner(n.title, `<div class="list-pad news-open">${newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body">${n.body}</div></div></div>`);
+        openInner(n.title, `<div class="list-pad news-open">${n.img ? `<img src="${n.img}" alt="" style="width:100%;border-radius:15px" />` : newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body" style="white-space:pre-wrap">${n.body}</div>${n.author ? `<div class="nw-author">${n.author} · ${n.date || ""}</div>` : ""}</div></div>`);
       };
     });
+    bindBanner();
     $("#sgToggle")?.addEventListener("click", () => {
       state.sgClosed = !state.sgClosed;
       render();
@@ -5624,9 +5869,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $$("[data-news]").forEach((btn) => {
       btn.onclick = () => {
         const n = MOCK.news.find((x) => x.id === Number(btn.dataset.news));
-        if (n) openInner(n.title, `<div class="list-pad news-open">${newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body">${n.body}</div></div></div>`);
+        if (n) openInner(n.title, `<div class="list-pad news-open">${n.img ? `<img src="${n.img}" alt="" style="width:100%;border-radius:15px" />` : newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body" style="white-space:pre-wrap">${n.body}</div>${n.author ? `<div class="nw-author">${n.author} · ${n.date || ""}</div>` : ""}</div></div>`);
       };
     });
+    bindBanner();
+    $$("[data-nseg]").forEach((b) => (b.onclick = () => ((state.newsSeg = b.dataset.nseg), render())));
+    $("#newsNew")?.addEventListener("click", () => openNewsForm());
+    $$("[data-nmine]").forEach((b) => (b.onclick = () => ((state.navStack = []), openMyNews(MOCK.news.find((n) => n.id === Number(b.dataset.nmine))))));
+    $$("[data-nreview]").forEach((b) => (b.onclick = () => ((state.navStack = []), openNewsReview(MOCK.news.find((n) => n.id === Number(b.dataset.nreview))))));
     $("#subBack")?.addEventListener("click", () => {
       state.sub = null;
       render();
@@ -5815,6 +6065,15 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
     $$(".chip-mode").forEach((btn) => {
       btn.addEventListener("click", () => setMode(btn.dataset.mode));
+    });
+    $$(".chip-role").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        state.staffRole = btn.dataset.role;
+        $$(".chip-role").forEach((b) => b.classList.toggle("active", b === btn));
+        if (state.staffRole === "curator" && state.newsSeg === "review") state.newsSeg = "all";
+        toast(state.staffRole === "head" ? "Рөл: бас куратор / академ. бөлім басшысы" : "Рөл: куратор");
+        render();
+      });
     });
     // По умолчанию — студент; staff: .../mobile-mock/#staff
     setMode(location.hash === "#staff" ? "staff" : "student");

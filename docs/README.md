@@ -9,6 +9,7 @@
 | [ICONS.md](ICONS.md) | Әр иконка: Material атауы → Flutter `Icons.*`, өз файлдарымыз (өлшемі, қайда қолданылады, тікелей сілтеме), `pubspec.yaml` |
 | [COMPONENTS.md](COMPONENTS.md) | Әр компонент: не үшін, өлшемі, түсі, күйлері, CSS класы, Flutter виджеті |
 | [SCREENS.md](SCREENS.md) | Студент пен куратордың әр экраны және функциясы |
+| [features/NEWS.md](features/NEWS.md) | Жаңалық жазу, тексеру (бас куратор / академ. бөлім), баннер, API |
 | [features/TOURNAMENT.md](features/TOURNAMENT.md) | Турнир/жекпе-жек: рөлдер, тіркелу, кесте, ереже, деректер моделі, API |
 
 ## Макетпен жұмыс
