@@ -941,7 +941,7 @@
             <button type="button" class="an-goal-btn" id="setGoal">${icon("add_circle_outline", "material-icons-outlined")}Установить цель</button>
           </div>`
           }
-          ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${MOCK.myCourses.length}`, meta: MOCK.myCourses.map((c) => levelOf(c.done, c.total).level.emoji).join(" ") + " · уровни по предметам", open: "courses" })}
+          ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${A.courses.done} из ${A.courses.total}`, bar: pct(A.courses.done, A.courses.total), meta: "Осталось посмотреть: 0 тестов", open: "courses" })}
           ${card({ emoji: "👆", tint: "#4f4834", label: "Просмотрено всего уроков", value: `${A.lessons.done} из ${A.lessons.total}`, meta: `Осталось посмотреть: ${A.lessons.total - A.lessons.done} уроков` })}
           ${card({ emoji: "📝", tint: "#34485a", label: "Пройдено всего тестов", value: `${A.tests.done} из ${A.tests.total}`, meta: `Осталось сдать: ${A.tests.total - A.tests.done} тестов` })}
           ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${A.mockTests}`, open: "mock" })}
