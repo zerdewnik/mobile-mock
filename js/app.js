@@ -5408,7 +5408,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     return `
       <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", ""][state.tab]}</div>
-      ${state.tab === 2 ? `<button type="button" class="appbar-bell" id="staffTours" title="Турнирлер"><img src="assets/tournament/trophy.svg" alt="" style="width:30px;height:30px" /></button>` : ""}
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
