@@ -4503,6 +4503,95 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     };
   }
 
+  /* —— Көрсеткіштерге түсіндірме: не екені, қалай есептеледі, мысал —— */
+  function openMetricExplain(key, a, period, g) {
+    const W = { day: "күн", week: "апта", month: "ай" }[period];
+    const RU = { day: "день", week: "неделю", month: "месяц" }[period];
+    const n = g.students.length;
+    const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
+    const E = {
+      ent: {
+        t: "Пробный ЕНТ · средний балл группы",
+        what: `Таңдалған кезеңде (${W}) тапсырылған барлық сынақ ҰБТ нәтижелерінің орташасы. Максимум 140 балл.`,
+        how: ["Кезеңдегі әр оқушының әр пробный нәтижесі алынады", "Барлығы қосылып, нәтижелер санына бөлінеді", "«к прошлому периоду» — алдыңғы кезеңнің орташасымен айырмасы", "Жолақтағы сызық — грантқа қатысу шегі 50 балл", "«≥ 50 баллов» — соңғы пробныйда 50-ден жоғары жинағандар"],
+        ex: a.entAvg != null ? `${a.entCount} оқушы тапсырды → орташа ${a.entAvg} / 140. ${a.entGrant} оқушы ≥ 50.` : "Бұл кезеңде пробный болмады.",
+        src: "Студенттің «Тесты → ЕНТ» бөлімінде тапсырған сынақ ҰБТ-лары.",
+      },
+      points: {
+        t: `Средний балл за ${RU}`,
+        what: "Топ рейтингіндегі балдардың орташасы — оқушы кезең ішінде жинаған белсенділік ұпайы.",
+        how: ["Әр тапсырылған сабақ тесті: нәтиже / 10 ұпай (мысалы 80 из 100 → 8 ұпай)", "Оқушының кезеңдегі барлық ұпайы қосылады", "Топтағы барлық оқушының ұпайы қосылып, оқушы санына бөлінеді (тапсырмағандар 0 болып есептеледі)"],
+        ex: `${n} оқушы · орташа ${a.avgPoints} ұпай.`,
+        src: "Сабақ тесттерінің нәтижелері (курс беті → тест).",
+      },
+      tests: {
+        t: "Средний результат тестов",
+        what: "Кезеңде тапсырылған барлық сабақ тесттерінің орташа нәтижесі, 100 баллдық шкала.",
+        how: ["Кезеңдегі әр тест нәтижесі (0–100) алынады", "Барлығы қосылып, тест санына бөлінеді", "Тапсырылмаған тест есепке кірмейді"],
+        ex: a.testsCount ? `${a.testsCount} тест тапсырылды → орташа ${a.avgTest} из 100.` : "Бұл кезеңде тест тапсырылмады.",
+        src: "Курс ішіндегі сабақ тесттері (апталық сынақ пен пробный ЕНТ кірмейді).",
+      },
+      active: {
+        t: `Активны за ${RU}`,
+        what: "Кезең ішінде қосымшаға кем дегенде бір рет кіріп, бір әрекет жасаған (сабақ ашқан, тест тапсырған) оқушылар саны.",
+        how: ["Әр оқушының кезеңдегі әрекеттері тексеріледі", "Кемінде бір әрекеті болса — белсенді", "Белсенділер / топтағы барлық оқушы"],
+        ex: `${a.active} / ${n} оқушы белсенді (${Math.round((a.active / n) * 100)}%).`,
+        src: "Қосымшаға кіру және сабақ әрекеттері журналы.",
+      },
+      notes: {
+        t: "Конспекты",
+        what: "Кезеңде оқушылар тапсырған конспект саны және оның қаншасы куратордың тексеруін күтіп тұр.",
+        how: ["«сдано» — видеосабақтан кейін тіркелген конспекттер саны", "«на проверке» — куратор әлі «Принять / Вернуть» баспағандары", "Тексеру: оқушы профилі → курс → 🕒 конспект"],
+        ex: `${a.notes} сдано · ${a.pending} на проверке.`,
+        src: "Видеосабақтағы «Прикрепите конспект».",
+        btn: a.pending ? "Тексеруге өту" : null,
+      },
+      progress: {
+        t: `Прогресс за ${RU}`,
+        what: "Бір оқушы кезеңде орта есеппен неше сабақ өткені және кесте бойынша жоспардың орындалуы.",
+        how: ["Жоспар: әр жұмыс күні 1,6 сабақ (апта ≈ 8, ай ≈ 35); сенбі-жексенбі есептелмейді", "Ағымдағы кезеңде — тек бүгінге дейінгі күндер", "Орташа = оқушылардың өткен сабақтары қосындысы / оқушы саны", "Орындалу % = орташа / жоспар × 100", "«Выполнили» — жоспарды толық орындаған оқушылар"],
+        ex: a.plan ? `Жоспар ${a.plan} · орташа +${a.avgLessons} → ${pct}%. Орындағандар: ${a.met} из ${n}.` : "Бұл күні жоспар жоқ (демалыс).",
+        src: "Сабақтардың аяқталу күндері.",
+      },
+      activity: {
+        t: "Активность",
+        what: "Қосымшаға кірген оқушылар саны уақыт бойынша.",
+        how: ["Күн — 2 сағаттық аралықтар (08:00–24:00)", "Апта — күн сайын (Дс–Жс)", "Ай — айдың әр күні", "Бір оқушы бір аралықта бір рет саналады", "Ашық баған — ең көп кірген уақыт (пик)"],
+        ex: "Бағанның үстіне апарсаңыз, нақты сан шығады.",
+        src: "Қосымшаға кіру журналы.",
+      },
+      entStudents: {
+        t: "Пробный ЕНТ по ученикам",
+        what: "Кезеңде пробный тапсырған әр оқушының соңғы нәтижесі (140-тан), жоғарыдан төмен.",
+        how: ["Кезеңдегі оқушының соңғы пробныйы алынады", "Жасыл/қызыл сан — оның алдыңғы пробныйымен айырмасы", "Жолды басқанда — оқушы профилі"],
+        ex: `${a.entCount} оқушы тапсырды.`,
+        src: "Сынақ ҰБТ нәтижелері.",
+      },
+      attention: {
+        t: "Требуют внимания",
+        what: "Куратор назар аударуы керек оқушылар — себебімен.",
+        how: ["Кезеңде мүлдем кірмеген", "Жоспардың жартысынан аз сабақ өткен", "Тесттердің орташа нәтижесі 55-тен төмен", "Бір оқушыда бірнеше себеп болуы мүмкін"],
+        ex: `${a.attention.length} оқушы.`,
+        src: "Белсенділік, прогресс және тест нәтижелері.",
+      },
+    }[key];
+    if (!E) return;
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="ex-title">${E.t}</div>
+      <div class="ex-block"><div class="ex-l">${icon("help_outline", "material-icons-outlined")}Бұл не?</div><p>${E.what}</p></div>
+      <div class="ex-block"><div class="ex-l">${icon("calculate", "material-icons-outlined")}Қалай есептеледі?</div><ol>${E.how.map((h) => `<li>${h}</li>`).join("")}</ol></div>
+      <div class="ex-block ex-now"><div class="ex-l">${icon("insights", "material-icons-outlined")}Қазір (${g.name})</div><p>${E.ex}</p></div>
+      <div class="ex-src">${icon("storage", "material-icons-outlined")}Дереккөз: ${E.src}</div>
+      <div class="sheet-actions">${E.btn ? `<button type="button" class="ef-submit" id="exGo" style="margin:0">${E.btn}</button>` : `<button type="button" class="btn btn-ghost" id="exClose" style="width:100%">Түсінікті</button>`}</div>`);
+    $("#exClose")?.addEventListener("click", closeSheet);
+    $("#exGo")?.addEventListener("click", () => {
+      closeSheet();
+      const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0) || g.students[0];
+      openStaffStudent(s, g);
+    });
+  }
+
   function openGroupAnalytics(g) {
     const A = { period: "week", date: new Date(AN_TODAY), attAll: false, who: false };
     const word = () => ({ day: "день", week: "неделю", month: "месяц" })[A.period];
@@ -4534,7 +4623,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <div class="ga">
         ${head}
 
-        <div class="ga-ent">
+        <div class="ga-ent" data-ex="ent">
           <div class="ga-ent-l">Пробный ЕНТ · средний балл группы за ${word()}</div>
           ${
             a.entAvg == null
@@ -4549,14 +4638,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </div>
 
         <div class="ga-tiles">
-          <div class="ga-tile"><span>Средний балл за ${word()}</span><b>${a.avgPoints}</b></div>
-          <div class="ga-tile"><span>Средний результат тестов</span><b>${a.testsCount ? a.avgTest : "—"}<small> ${a.testsCount ? "из 100" : ""}</small></b></div>
-          <div class="ga-tile"><span>Активны за ${word()}</span><b>${a.active}<small> / ${n}</small></b></div>
-          <div class="ga-tile ${a.pending ? "warn" : ""}" ${a.pending ? 'data-ga-pending="1"' : ""}><span>${icon(a.pending ? "schedule" : "description", "material-icons-outlined")}Конспекты</span><b>${a.notes}<small> сдано${a.pending ? ` · ${a.pending} на проверке` : ""}</small></b></div>
+          <div class="ga-tile" data-ex="points"><span>Средний балл за ${word()}</span><b>${a.avgPoints}</b></div>
+          <div class="ga-tile" data-ex="tests"><span>Средний результат тестов</span><b>${a.testsCount ? a.avgTest : "—"}<small> ${a.testsCount ? "из 100" : ""}</small></b></div>
+          <div class="ga-tile" data-ex="active"><span>Активны за ${word()}</span><b>${a.active}<small> / ${n}</small></b></div>
+          <div class="ga-tile ${a.pending ? "warn" : ""}" data-ex="notes"><span>${icon(a.pending ? "schedule" : "description", "material-icons-outlined")}Конспекты</span><b>${a.notes}<small> сдано${a.pending ? ` · ${a.pending} на проверке` : ""}</small></b></div>
         </div>
 
         <div class="ga-card">
-          <div class="ga-ctitle">Прогресс за ${word()}</div>
+          <div class="ga-ctitle ex-h" data-ex="progress">Прогресс за ${word()}${icon("info", "material-icons-outlined")}</div>
           <div class="gp-row">
             <div class="gp-big"><b>+${a.avgLessons}</b><span>${plural(Math.round(a.avgLessons), "урок", "урока", "уроков")} в среднем на ученика</span></div>
             ${a.plan ? `<div class="gp-pct ${pct >= 100 ? "ok" : pct >= 70 ? "mid" : "low"}">${pct}%</div>` : ""}
@@ -4588,7 +4677,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </div>
 
         <div class="ga-card">
-          <div class="ga-ctitle">Активность</div>
+          <div class="ga-ctitle ex-h" data-ex="activity">Активность${icon("info", "material-icons-outlined")}</div>
           <div class="ga-csub">Сколько учеников заходили в приложение${A.period === "day" ? " · по часам" : ""}</div>
           <div class="ga-bars ${A.period === "month" ? "month" : ""}" style="grid-template-columns:repeat(${a.series.length},1fr)">
             ${a.series
@@ -4606,7 +4695,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </div>
 
         <div class="ga-card">
-          <div class="ga-ctitle">Пробный ЕНТ по ученикам</div>
+          <div class="ga-ctitle ex-h" data-ex="entStudents">Пробный ЕНТ по ученикам${icon("info", "material-icons-outlined")}</div>
           <div class="ga-csub">Результат за ${word()} из 140 · нажмите, чтобы открыть профиль</div>
           ${
             ranked.length
@@ -4629,7 +4718,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </div>
 
         <div class="ga-card">
-          <div class="ga-ctitle">Требуют внимания</div>
+          <div class="ga-ctitle ex-h" data-ex="attention">Требуют внимания${icon("info", "material-icons-outlined")}</div>
           ${
             a.attention.length
               ? a.attention
@@ -4668,10 +4757,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $("#gaDate").onclick = () => openDatePicker(A.date, (d) => ((A.date = d), paintStack()));
         $("#gaMore")?.addEventListener("click", () => ((A.attAll = true), paintStack()));
         $("#gpWho")?.addEventListener("click", () => ((A.who = !A.who), paintStack()));
-        $("[data-ga-pending]")?.addEventListener("click", () => {
-          const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0) || g.students[0];
-          openStaffStudent(s, g);
-        });
+        $$("[data-ex]").forEach((el) =>
+          el.addEventListener("click", (e) => {
+            if (e.target.closest("button")) return;
+            openMetricExplain(el.dataset.ex, analyze(g, A.period, A.date), A.period, g);
+          })
+        );
       },
       { right: "<span></span>" }
     );
