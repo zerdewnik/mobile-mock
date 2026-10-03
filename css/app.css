@@ -3874,3 +3874,37 @@ input[type="date"].ef-input { color-scheme: dark; }
 .ent-light .tr-a.mine { color: #c0392b; }
 .ent-light .tr-a.mine .material-icons-outlined { font-size: 18px; }
 .ent-light .er-row > .material-icons-round { color: #9aa0b4; font-size: 22px; margin-left: -4px; }
+/* Пробный разборы — тренажёрдағыдай */
+.rv-card { border-radius: 14px; padding: 14px; margin-bottom: 12px; border: 1.5px solid; }
+.rv-card.ok { background: #eaf6ed; border-color: #8fd0a0; }
+.rv-card.bad { background: #fbecea; border-color: #eda59b; }
+.rv-card.part { background: #fdf3e2; border-color: #ecc17a; }
+.rv-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.rv-n { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; font-size: 12.5px; font-weight: 700; color: #fff; }
+.rv-card.ok .rv-n { background: #2e8b4e; }
+.rv-card.bad .rv-n { background: #c0392b; }
+.rv-card.part .rv-n { background: #d08a1c; }
+.rv-pts { font-size: 12px; font-weight: 700; color: #4a4d5c; }
+.rv-q { font-size: 14.5px; line-height: 1.45; color: #1c1c22; margin-bottom: 10px; }
+.rv-right { background: #fff !important; }
+.rv-opt { display: flex; align-items: center; gap: 12px; padding: 10px 12px; margin-bottom: 8px; border-radius: 10px; background: #fff; border: 1.5px solid #e2e3ea; color: #1c1c22; font-size: 13.5px; }
+.rv-opt .pr-radio { border-color: #b6b9d0; }
+.rv-opt.ok { border-color: #2e8b4e; background: #f3fbf5; }
+.rv-opt.ok .pr-radio { border-color: #2e8b4e; color: #2e8b4e; }
+.rv-opt.bad { border-color: #c0392b; background: #fdf3f2; }
+.rv-opt.bad .pr-radio { border-color: #c0392b; color: #c0392b; }
+.rv-opt.mine .pr-radio::after, .rv-opt.ok .pr-radio::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; background: currentColor; }
+.rv-opt em { margin-left: auto; font-style: normal; font-size: 10.5px; font-weight: 700; color: #8a8d9c; flex-shrink: 0; }
+.rv-opt.ok.mine em { color: #2e8b4e; }
+.rv-opt.bad em { color: #c0392b; }
+.rv-fix { font-style: normal; font-size: 11.5px; color: #2e8b4e; font-weight: 600; }
+.rv-fb { margin-top: 10px; }
+.ent-light .rv-fb.ok { background: #fff; border-color: #8fd0a0; }
+.ent-light .rv-fb.bad { background: #fff; border-color: #eda59b; }
+.ent-light .rv-fb .pr-explain { color: #3a3d4a; }
+.ent-light .rv-fb .pr-explain b { color: #1c1c22; }
+.ent-light .rv-fb.ok .pr-explain b:first-child { color: #2e8b4e; }
+.ent-light .rv-fb.bad .pr-explain b:first-child { color: #c0392b; }
+.ent-light .rv-fb .pr-fb-title { color: inherit; }
+.ent-light .rv-fb.ok .pr-fb-title { color: #2e8b4e; }
+.ent-light .rv-fb.bad .pr-fb-title { color: #c0392b; }

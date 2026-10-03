@@ -3495,18 +3495,42 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             .map((q, i) => {
               const got = sub.qScore(q), mx = sub.qMax(q);
               const a = att.ans[q.id];
-              const right = q.type === "matching" ? q.matching : q.options.filter((o) => o.correct).map((o) => `${o.id}) ${md(o.content)}`).join("; ");
-              const mine =
-                q.type === "matching"
-                  ? Object.entries(a || {}).filter(([, r]) => r).map(([l, r]) => `${l}-${r}`).join(", ") || "—"
-                  : q.type === "multiple_choice"
-                    ? [...(a || [])].map((k) => q.options[k]?.id).join(", ") || "—"
-                    : a != null && a >= 0 ? `${q.options[a].id}) ${md(q.options[a].content)}` : "—";
-              return `<div class="tr-item ${got === mx ? "ok" : got > 0 ? "part" : "bad"}">
-                <div class="tr-q"><span class="tr-n">${i + 1}</span>${md(q.type === "matching" ? splitMatching(q.stem).stem : q.stem)}</div>
-                ${got !== mx ? `<div class="tr-a mine">${icon("person", "material-icons-outlined")}<span>Сенің жауабың: ${mine}</span></div>` : ""}
-                <div class="tr-a">${icon(got === mx ? "check_circle" : got > 0 ? "remove_circle" : "cancel")}<span>Дұрыс жауабы: ${right}</span><b class="tr-pts">${got}/${mx}</b></div>
-                ${q.note ? `<div class="tr-note">${md(q.note)}</div>` : ""}
+              const ok = got === mx;
+              const st = ok ? "ok" : got > 0 ? "part" : "bad";
+              let body;
+              if (q.type === "matching") {
+                const { stem, right } = splitMatching(q.stem);
+                const key = matchingKey(q);
+                body = `<div class="rv-q">${md(stem)}</div>
+                  <div class="mt-right rv-right">${right.map((r) => `<div><b>${r.n})</b> ${md(r.text)}</div>`).join("")}</div>
+                  ${q.options
+                    .map((o) => {
+                      const mine = a?.[o.id];
+                      const good = mine && mine === key[o.id];
+                      return `<div class="rv-opt ${good ? "ok" : "bad"}"><span class="pr-radio"></span><span><b>${o.id}</b> ${md(o.content)} → ${mine ? `<b>${mine}</b>` : "—"}${good ? "" : ` <i class="rv-fix">дұрысы: ${key[o.id]}</i>`}</span></div>`;
+                    })
+                    .join("")}`;
+              } else {
+                const picked = (k) => (q.type === "multiple_choice" ? a?.has?.(k) : a === k);
+                body = `<div class="rv-q">${md(q.stem)}</div>
+                  ${q.type === "multiple_choice" ? `<div class="mt-hint">Бір немесе бірнеше дұрыс жауап</div>` : ""}
+                  ${q.options
+                    .map((o, k) => {
+                      const cls = o.correct ? "ok" : picked(k) ? "bad" : "";
+                      return `<div class="rv-opt ${cls} ${picked(k) ? "mine" : ""}"><span class="pr-radio"></span><span>${md(o.content)}</span>${picked(k) ? `<em>сенің жауабың</em>` : ""}</div>`;
+                    })
+                    .join("")}`;
+              }
+              return `<div class="rv-card ${st}">
+                <div class="rv-top"><span class="rv-n">${i + 1}</span><span class="rv-pts">${got} / ${mx} балл</span></div>
+                ${body}
+                <div class="pr-fb ${ok ? "ok" : "bad"} rv-fb">
+                  <div class="pr-fb-title">${ok ? "Верно" : got > 0 ? "Частично верно" : "Неверно"}</div>
+                  <div class="pr-explain">
+                    ${ok ? "<b>Дұрыс!</b> " : `<b>Дұрыс емес.</b> Дұрыс жауабы: <b>${q.type === "matching" ? q.matching : q.options.filter((o) => o.correct).map((o) => md(o.content)).join("; ")}</b>${q.note ? " — " : ""}`}
+                    ${q.note ? md(q.note) : ""}
+                  </div>
+                </div>
               </div>`;
             })
             .join("")}
