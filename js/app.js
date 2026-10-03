@@ -777,18 +777,22 @@
     const student = state.mode === "student";
     el.className = `screen-overlay ${page.screenCls || ""}`;
     el.innerHTML = `
-      <div class="appbar ${student ? "appbar-inner" : ""} ${page.centered ? "appbar-centered" : ""}">
+      ${
+        page.bar
+          ? page.bar()
+          : `<div class="appbar ${student ? "appbar-inner" : ""} ${page.centered ? "appbar-centered" : ""}">
         <button type="button" class="appbar-back" id="innerBack">${icon("arrow_back")}</button>
         <div class="appbar-title" style="flex:1">${page.title}</div>
         ${page.right || (student ? "" : `<button type="button" class="appbar-profile" id="innerProfile">${icon("person")}</button>`)}
-      </div>
+      </div>`
+      }
       <div class="content ${page.cls || ""}">${page.build()}</div>
       ${page.footer ? page.footer() : ""}`;
-    $("#innerBack").onclick = () => {
+    $("#innerBack") && ($("#innerBack").onclick = () => {
       state.navStack.pop();
       if (!state.navStack.length) closeScreen();
       else paintStack();
-    };
+    });
     $("#innerProfile")?.addEventListener("click", openUserProfile);
     page.after?.();
   }
@@ -1263,7 +1267,7 @@
     math: "mathematics", phys: "physics", inf: "informatics", geo: "geography", bio: "biology", chem: "chemistry",
     djt: "world_history", eng: "english", law: "law_basics", kz: "kazakh_language", kzlit: "kazakh_literature",
   };
-  const ENT_SHORT = { history_kz: "Тарих", math_literacy: "Мат. сауат.", reading_literacy: "Оқу сауат." };
+  const ENT_SHORT = { history_kz: "Тарих", math_literacy: "Мат-сауат", reading_literacy: "Оқу сауат" };
   const ENT_MIN = { history_kz: 5, math_literacy: 3, reading_literacy: 3 };
   MOCK.entAttempts = MOCK.entAttempts || [];
 
@@ -1388,7 +1392,8 @@
 
   function openEntTest(variant) {
     const P = window.PROBNIK;
-    const keys = ["history_kz", "math_literacy", "reading_literacy", ...MOCK.entPicker.selected.map((id) => ENT_KEYS[id])];
+    // Қосымшадағыдай: алдымен бейіндік пәндер, сосын міндетті
+    const keys = [...MOCK.entPicker.selected.map((id) => ENT_KEYS[id]), "history_kz", "math_literacy", "reading_literacy"];
     const subjects = keys.map((k) => {
       const vs = P.subjects[k].variants;
       const v = vs[variant] ? variant : Number(Object.keys(vs)[0]);
@@ -1407,7 +1412,7 @@
     const subjScore = (sub) => sub.qs.reduce((t, q) => t + qScore(sub, q), 0);
     const subjMax = (sub) => sub.qs.reduce((t, q) => t + qMax(sub, q), 0);
     const leftSec = () => Math.max(0, E.limit - Math.floor((Date.now() - E.started) / 1000));
-    const fmtT = (t) => `${Math.floor(t / 3600)}:${String(Math.floor((t % 3600) / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+    const fmtT = (t) => `${pad(Math.floor(t / 3600))}:${String(Math.floor((t % 3600) / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
     let timer = null;
 
     const questionHtml = (sub, q, qi) => {
@@ -1527,8 +1532,8 @@
         <div class="tq-foot">
           <div class="tq-prog"><span class="tq-pill" style="left:calc(${pct}% * 0.88)">${pct}%</span><i style="width:${pct}%"></i></div>
           <div class="tq-nav">
-            <button type="button" class="tq-btn" id="eqPrev" ${E.s === 0 && E.q[0] === 0 ? "disabled" : ""}>${icon("arrow_circle_left", "material-icons-outlined")}Назад</button>
-            <button type="button" class="tq-btn ${lastAll ? "finish" : ""}" id="eqNext">${lastAll ? "Аяқтау" : lastQ ? "Келесі пән" : "Вперёд"}${icon(lastAll ? "check_circle" : "arrow_circle_right", "material-icons-outlined")}</button>
+            <button type="button" class="tq-btn" id="eqPrev" ${E.s === 0 && E.q[0] === 0 ? "disabled" : ""}>${icon("arrow_circle_left", "material-icons-outlined")}Артқа</button>
+            <button type="button" class="tq-btn ${lastAll ? "finish" : ""}" id="eqNext">${lastAll ? "Аяқтау" : "Алға"}${icon(lastAll ? "check_circle" : "arrow_circle_right", "material-icons-outlined")}</button>
           </div>
         </div>`;
     };
@@ -1562,7 +1567,11 @@
         const root = $("#screenOverlay");
         renderMath(root);
         $$("[data-review]").forEach((b) => (b.onclick = () => ((E.review = Number(b.dataset.review)), paintStack())));
-        if (E.done) $(".ent-timer")?.remove();
+        $("#entClose")?.addEventListener("click", () => {
+          state.navStack.pop();
+          paintStack();
+        });
+        $("#entFinish")?.addEventListener("click", () => finish(false));
         $("#entExit") &&
           ($("#entExit").onclick = () => {
             state.navStack.pop();
@@ -1624,7 +1633,11 @@
       },
       {
         footer,
-        right: `<span class="ent-timer">${icon("timer", "material-icons-outlined")}<span id="entTimer">4:00:00</span></span>`,
+        screenCls: "ent-light",
+        bar: () =>
+          E.done
+            ? `<div class="appbar ent-bar"><button type="button" class="appbar-back" id="entClose">${icon("arrow_back")}</button><div class="appbar-title" style="flex:1">Нәтиже · ${variant}-нұсқа</div></div>`
+            : `<div class="appbar ent-bar"><span class="ent-clock" id="entTimer">${fmtT(leftSec())}</span><span style="flex:1"></span><button type="button" class="ent-finish" id="entFinish">Аяқтау</button></div>`,
       }
     );
   }

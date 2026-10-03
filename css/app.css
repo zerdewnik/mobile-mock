@@ -3272,3 +3272,53 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .tl-title { font-size: 13.5px; font-weight: 500; }
 .tl-row b { font-size: 14px; }
 .tl-row b.mid { color: #e0a84a; }
+
+/* Пробный ЕНТ — қосымшадағыдай ашық тақырып */
+.screen-overlay.ent-light { background: #e9eaee; color: #1c1c22; }
+.app:has(.screen-overlay.ent-light:not([hidden])) .status-bar { background: #3b4089; }
+.ent-light .appbar.ent-bar { background: #3b4089; height: 54px; }
+.ent-clock { font-size: 20px; font-weight: 500; letter-spacing: 0.5px; color: #fff; font-variant-numeric: tabular-nums; }
+.ent-finish { border: 0; background: transparent; color: #fff; font-family: inherit; font-size: 14.5px; font-weight: 500; cursor: pointer; padding: 6px 0; }
+.ent-light .content { background: #e9eaee; }
+.ent-light .ent-subs { background: #fff; padding: 8px 6px 0; gap: 0; border-bottom: 1px solid #d6d7de; }
+.ent-light .ent-sub { border: 0; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; color: #2a2a32; font-size: 13px; font-weight: 500; align-items: center; padding: 6px 14px 8px; }
+.ent-light .ent-sub small { color: #2a2a32; font-size: 12px; }
+.ent-light .ent-sub.on { background: transparent; color: #3b4089; border-bottom-color: #3b4089; }
+.ent-light .ent-sub.on small { color: #3b4089; }
+.ent-light .tq-nums { padding-top: 14px; }
+.ent-light .tq-num { background: #b6b9d0; color: #fff; border-radius: 7px; width: 42px; height: 42px; }
+.ent-light .tq-num.ans { background: #7d82b8; }
+.ent-light .tq-num.on { background: #3b4089; }
+.ent-light .tq-meta { color: #8a8d9c; }
+.ent-light .tq-q { color: #1c1c22; font-size: 15px; }
+.ent-light .tq-opt { background: #fff; border: 1px solid #fff; color: #1c1c22; border-radius: 10px; min-height: 52px; }
+.ent-light .tq-opt .tq-radio { border-color: #1c1c22; }
+.ent-light .tq-opt.on { border-color: #3b4089; }
+.ent-light .tq-opt.on .tq-radio { border-color: #3b4089; }
+.ent-light .tq-opt.on .tq-radio::after { background: #3b4089; }
+.ent-light .eo-id { display: none; }
+.ent-light .mt-hint { color: #8a8d9c; }
+.ent-light .mt-right, .ent-light .mt-row { background: #fff; border-color: #fff; color: #1c1c22; }
+.ent-light .mt-l b { color: #3b4089; }
+.ent-light .mt-pick { background: #eef0f6; border-color: #d6d7de; color: #3b4089; }
+.ent-light .mt-pick.on { background: #3b4089; border-color: #3b4089; color: #fff; }
+.ent-light .ent-ctx { background: #fff; border-color: #d6d7de; }
+.ent-light .ent-ctx-head { color: #3b4089; }
+.ent-light .ent-ctx-body { color: #2a2a32; }
+.ent-light .tq-foot { background: #fff; border-radius: 16px 16px 0 0; }
+.ent-light .tq-prog { background: #dcdcea; height: 12px; }
+.ent-light .tq-prog i, .ent-light .tq-pill { background: #3b4089; }
+.ent-light .tq-btn { background: #fff; border: 1px solid #e4e5ea; color: #1c1c22; border-radius: 22px; padding: 0 26px; height: 50px; }
+.ent-light .tq-btn:disabled { color: #9aa0b4; opacity: 1; }
+.ent-light .tq-btn.finish { background: #3b4089; border-color: #3b4089; color: #fff; }
+.ent-light .katex { color: inherit; }
+/* Нәтиже бетінде де ашық */
+.ent-light .er-total, .ent-light .er-sub, .ent-light .tr-score { color: #6c6f84; }
+.ent-light .er-total b { color: #1c1c22; }
+.ent-light .er-row, .ent-light .tr-item { background: #fff; color: #1c1c22; }
+.ent-light .er-row.on { border-color: #3b4089; }
+.ent-light .er-title { color: #1c1c22; }
+.ent-light .tr-a { color: #4a4d5c; }
+.ent-light .tr-pts { color: #4a4d5c; }
+.ent-light .sticky-foot { background: #e9eaee; }
+.ent-light .save-btn { background: #3b4089; }
