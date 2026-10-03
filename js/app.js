@@ -972,7 +972,7 @@
           ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${pct(allDone, allTotal)}%`, bar: pct(allDone, allTotal), meta: `Пройдено ${allDone} из ${allTotal} уроков по ${MOCK.myCourses.length} предметам`, open: "courses" })}
           ${card({ emoji: "👆", tint: "#4f4834", label: "Просмотрено всего уроков", value: `${allDone} из ${allTotal}`, meta: `Осталось посмотреть: ${allTotal - allDone} уроков` })}
           ${card({ emoji: "📝", tint: "#34485a", label: "Пройдено всего тестов", value: `${T.done} из ${T.total}`, bar: pct(T.done, T.total), meta: `Средний результат: ${T.avg}% · осталось сдать ${T.total - T.done}`, open: "tests" })}
-          ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${A.mockTests}`, open: "mock" })}
+          ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${mockAttempts().length}`, meta: mockAttempts()[0]?.total != null ? `Последний: ${mockAttempts()[0].total} / 140` : "", open: "mock" })}
         </div>`;
     }
     return `<div class="empty">Скоро наш магазин откроется — запасы знаний готовы, и скидки на гениальность уже подвозят!</div>`;
@@ -1760,6 +1760,8 @@
       MOCK.entAttempts.unshift({
         variant,
         total,
+        keys,
+        ans: { ...E.ans },
         date: new Date().toLocaleDateString("ru-RU", { day: "numeric", month: "long" }),
         subjects: subjects.map((sub) => ({ title: sub.title, score: subjScore(sub), max: subjMax(sub) })),
       });
@@ -2680,15 +2682,7 @@
         } else if (b.dataset.an === "tests") {
           openTestsBySubject();
         } else {
-          pushScreen(
-            "Пробные тесты",
-            () => `<div class="list-pad" style="padding-top:16px">
-              <div class="news-card"><div class="n-title">Пробный ЕНТ</div><div class="n-body">86 баллов · 20 сентября</div></div>
-              <div class="news-card"><div class="n-title">Пробный ЕНТ</div><div class="n-body">79 баллов · 6 сентября</div></div>
-            </div>`,
-            null,
-            { screenCls: "an-screen", centered: true }
-          );
+          openMockAttempts();
         }
       };
     });
@@ -3389,6 +3383,151 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const done = all.filter((x) => x.done);
     return { done: done.length, total: all.length, avg: done.length ? Math.round(done.reduce((t, x) => t + x.score, 0) / done.length) : 0 };
   }
+  /* —— Пробный ЕНТ: тапсырылған нұсқалар тізімі → разбор + сертификат —— */
+  function mockAttempts() {
+    if (!MOCK.entSeeded) {
+      MOCK.entSeeded = true;
+      const sel = MOCK.entPicker.selected.map((id) => ENT_KEYS[id]);
+      const keys = [...sel, "history_kz", "math_literacy", "reading_literacy"];
+      MOCK.entAttempts.push(
+        { variant: 2, date: "20 сентября", keys, seed: 86, target: 86 },
+        { variant: 1, date: "6 сентября", keys, seed: 79, target: 79 }
+      );
+    }
+    return MOCK.entAttempts;
+  }
+  /** Нұсқаның пәндерін құрастыру; жауаптар жоқ болса (ескі тапсыру) — тұрақты түрде симуляция */
+  function attemptSubjects(att) {
+    const P = window.PROBNIK;
+    const subs = att.keys.map((k) => {
+      const vs = P.subjects[k].variants;
+      const v = vs[att.variant] ? att.variant : Number(Object.keys(vs)[0]);
+      return { key: k, title: P.subjects[k].title, qs: vs[v] };
+    });
+    if (!att.ans) {
+      att.ans = {};
+      const p = Math.min(0.95, (att.target || 70) / 140 + 0.08);
+      subs.forEach((sub) =>
+        sub.qs.forEach((q, i) => {
+          const ok = rnd(att.seed, i, sub.key.length) < p;
+          if (q.type === "matching") {
+            const key = matchingKey(q);
+            att.ans[q.id] = Object.fromEntries(Object.entries(key).map(([l, r], j) => [l, ok || j ? r : "9"]));
+          } else if (q.type === "multiple_choice") {
+            att.ans[q.id] = new Set(q.options.map((o, k) => (o.correct === ok ? k : -1)).filter((k) => k >= 0).slice(0, ok ? 9 : 1));
+          } else att.ans[q.id] = ok ? q.options.findIndex((o) => o.correct) : q.options.findIndex((o) => !o.correct);
+        })
+      );
+    }
+    const core = (sub) => sub.key in ENT_MIN;
+    subs.forEach((sub) => {
+      sub.qMax = (q) => (core(sub) ? 1 : maxQ(q));
+      sub.qScore = (q) => {
+        const sc = scoreQ(q, att.ans[q.id]);
+        return core(sub) ? (sc === maxQ(q) ? 1 : 0) : sc;
+      };
+      sub.score = sub.qs.reduce((t, q) => t + sub.qScore(q), 0);
+      sub.max = sub.qs.reduce((t, q) => t + sub.qMax(q), 0);
+    });
+    att.total = subs.reduce((t, s2) => t + s2.score, 0);
+    return subs;
+  }
+
+  async function openMockAttempts() {
+    try {
+      await loadProbnik();
+    } catch {
+      return toast("Сұрақтар жүктелмеді", "err");
+    }
+    const list = mockAttempts();
+    list.forEach((a) => attemptSubjects(a));
+    pushScreen(
+      "Пробные тесты",
+      () => `<div class="list-pad" style="padding-top:16px">${list
+        .map(
+          (a, i) => `
+        <button type="button" class="ma-row" data-att="${i}">
+          <span class="ma-score ${a.total >= 50 ? "ok" : "bad"}"><b>${a.total}</b><small>/140</small></span>
+          <span style="flex:1;min-width:0"><b>Пробный ЕНТ · ${a.variant}-нұсқа</b><small>${a.date}</small></span>
+          ${icon("chevron_right")}
+        </button>`
+        )
+        .join("") || `<div class="empty">Пробный ЕНТ әлі тапсырылмаған</div>`}</div>`,
+      () => $$("[data-att]").forEach((b) => (b.onclick = () => openAttemptReview(list[Number(b.dataset.att)]))),
+      { screenCls: "an-screen", centered: true }
+    );
+  }
+
+  function openAttemptReview(att) {
+    const subs = attemptSubjects(att);
+    let cur = 0;
+    const build = () => {
+      const sub = subs[cur];
+      const passAll = subs.every((s2) => s2.score >= (ENT_MIN[s2.key] || 5));
+      return `
+        <div class="er-head">
+          <div class="er-total"><b>${att.total}</b> / 140</div>
+          <div class="er-sub">${att.date} · ${att.variant}-нұсқа · ${passAll && att.total >= 50 ? "грантқа қатысуға болады" : passAll ? "шекті балл өтті" : "кейбір пәнде шекті балл жоқ"}</div>
+        </div>
+        <div class="list-pad">
+          <button type="button" class="cert-btn" id="maCert">${icon("workspace_premium", "material-icons-outlined")}Сертификат${icon("chevron_right")}</button>
+          <div class="er-title" style="margin-top:16px">Пәндер</div>
+          ${subs
+            .map((s2, i) => {
+              const min = ENT_MIN[s2.key] || 5;
+              return `<button type="button" class="er-row ${i === cur ? "on" : ""}" data-masub="${i}">
+                <span class="er-name">${s2.title}</span>
+                <span class="er-min ${s2.score >= min ? "ok" : "bad"}">${icon(s2.score >= min ? "check_circle" : "error_outline", "material-icons-outlined")}мин ${min}</span>
+                <b>${s2.score}<small> / ${s2.max}</small></b>
+              </button>`;
+            })
+            .join("")}
+          <div class="er-title">Разбор: ${sub.title}</div>
+          ${sub.qs
+            .map((q, i) => {
+              const got = sub.qScore(q), mx = sub.qMax(q);
+              const a = att.ans[q.id];
+              const right = q.type === "matching" ? q.matching : q.options.filter((o) => o.correct).map((o) => `${o.id}) ${md(o.content)}`).join("; ");
+              const mine =
+                q.type === "matching"
+                  ? Object.entries(a || {}).filter(([, r]) => r).map(([l, r]) => `${l}-${r}`).join(", ") || "—"
+                  : q.type === "multiple_choice"
+                    ? [...(a || [])].map((k) => q.options[k]?.id).join(", ") || "—"
+                    : a != null && a >= 0 ? `${q.options[a].id}) ${md(q.options[a].content)}` : "—";
+              return `<div class="tr-item ${got === mx ? "ok" : got > 0 ? "part" : "bad"}">
+                <div class="tr-q"><span class="tr-n">${i + 1}</span>${md(q.type === "matching" ? splitMatching(q.stem).stem : q.stem)}</div>
+                ${got !== mx ? `<div class="tr-a mine">${icon("person", "material-icons-outlined")}<span>Сенің жауабың: ${mine}</span></div>` : ""}
+                <div class="tr-a">${icon(got === mx ? "check_circle" : got > 0 ? "remove_circle" : "cancel")}<span>Дұрыс жауабы: ${right}</span><b class="tr-pts">${got}/${mx}</b></div>
+                ${q.note ? `<div class="tr-note">${md(q.note)}</div>` : ""}
+              </div>`;
+            })
+            .join("")}
+        </div>`;
+    };
+    pushScreen(
+      `Разбор · ${att.variant}-нұсқа`,
+      build,
+      () => {
+        renderMath($("#screenOverlay"));
+        $$("[data-masub]").forEach((b) => (b.onclick = () => ((cur = Number(b.dataset.masub)), paintStack(), $(".er-title:last-of-type")?.scrollIntoView({ block: "start" }))));
+        $("#maCert").onclick = () => {
+          const me = MOCK.me;
+          const grp = MOCK.groups.find((g) => g.students?.some((x) => x.phone === me.phone));
+          openCertificate({
+            name: `${me.firstName} ${me.lastName}`,
+            phone: me.phone,
+            group: grp ? grp.name : "—",
+            date: att.date,
+            lang: "Қазақ тілі / Казахский",
+            rows: subs.map((s2) => ({ key: s2.key, score: s2.score })),
+            total: att.total,
+          });
+        };
+      },
+      { screenCls: "ent-light" }
+    );
+  }
+
   function openTestsBySubject() {
     pushScreen(
       "Тесты по предметам",
@@ -3415,19 +3554,22 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $$("[data-tc]").forEach((b) => {
           b.onclick = () => {
             const c = MOCK.myCourses.find((x) => x.id === Number(b.dataset.tc));
-            const items = courseTests(c).filter((x) => x.done);
+            const items = courseTests(c);
+            const done = items.filter((x) => x.done);
+            const avg = done.length ? Math.round(done.reduce((t, x) => t + x.score, 0) / done.length) : null;
             pushScreen(
               c.title,
               () =>
                 items.length
-                  ? `<div class="list-pad cl-list">${items
-                      .reverse()
+                  ? `<div class="list-pad cl-list">
+                    <div class="tl-sum"><div><b>${done.length}</b><span>из ${items.length} сдано</span></div><div><b>${avg ?? "—"}${avg != null ? "%" : ""}</b><span>средний балл (по сданным)</span></div></div>
+                    ${items
                       .map(
                         (x) => `
-                  <div class="tl-row">
+                  <div class="tl-row ${x.done ? "" : "todo"}">
                     ${kindIcon(x.kind)}
                     <div style="flex:1;min-width:0"><div class="tl-title">${x.title}</div>${x.section ? `<div class="cl-meta">${x.section}</div>` : ""}</div>
-                    <b class="${x.score >= 80 ? "up" : x.score >= 60 ? "mid" : "down"}">${x.score}%</b>
+                    ${x.done ? `<b class="${x.score >= 80 ? "up" : x.score >= 60 ? "mid" : "down"}">${x.score}%</b>` : `<span class="tl-todo">Не сдан</span>`}
                   </div>`
                       )
                       .join("")}</div>`
