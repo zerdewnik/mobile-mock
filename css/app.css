@@ -3434,3 +3434,31 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .pdoc .bad { color: #c0392b; font-weight: 600; }
 .pdoc .warn { color: #d07a1c; font-weight: 600; }
 .pdoc-foot { margin-top: 20px; color: #9aa0b4; font-size: 10.5px; }
+
+/* Ашық тема: телефон экранын инверттеу, суреттер мен түсті белгілер өз түсінде қалады */
+html[data-theme="light"] .phone .app { filter: invert(0.92) hue-rotate(180deg); background: #121212; }
+html[data-theme="light"] .phone .app img,
+html[data-theme="light"] .phone .app .poster,
+html[data-theme="light"] .phone .app .avatar,
+html[data-theme="light"] .phone .app .sp-avatar,
+html[data-theme="light"] .phone .app .user-avatar,
+html[data-theme="light"] .phone .app .champ-pic,
+html[data-theme="light"] .phone .app .banner-slide,
+html[data-theme="light"] .phone .app .vplayer,
+html[data-theme="light"] .phone .app .menu-brand,
+html[data-theme="light"] .phone .app .cs-page,
+html[data-theme="light"] .phone .app .ent-light,
+html[data-theme="light"] .phone .app .ent-dlg,
+html[data-theme="light"] .phone .app .cert-view { filter: invert(1) hue-rotate(180deg); }
+html[data-theme="light"] .phone .app .ent-light img, html[data-theme="light"] .phone .app .ent-light .poster { filter: none; }
+html[data-theme="light"] .phone .app .appbar,
+html[data-theme="light"] .phone .app .status-bar,
+html[data-theme="light"] .phone .app .nav-fab,
+html[data-theme="light"] .phone .app .toggle.on,
+html[data-theme="light"] .phone .app .lang-chip.active { filter: invert(1) hue-rotate(180deg); }
+html[data-theme="light"] .phone .app .poster img,
+html[data-theme="light"] .phone .app .cert-view img,
+html[data-theme="light"] .phone .app .banner-slide img { filter: none; }
+html[data-theme="light"] .phone .app .trophy,
+html[data-theme="light"] .phone .app .lvl-badge,
+html[data-theme="light"] .phone .app .sp-badge { filter: invert(1) hue-rotate(180deg); }

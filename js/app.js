@@ -2254,11 +2254,13 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $("#themeToggle").onclick = () => {
       state.darkTheme = !state.darkTheme;
       $("#themeToggle").classList.toggle("on", state.darkTheme);
+      applyPrefs();
       toast(state.darkTheme ? "Тёмная тема" : "Светлая тема", "ok");
     };
     $$("[data-lang]", el).forEach((btn) => {
       btn.onclick = () => {
         state.lang = btn.dataset.lang;
+        applyPrefs();
         openUserProfile();
         toast(state.lang === "kk" ? "Қазақша" : "Русский", "ok");
       };
@@ -4983,7 +4985,56 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     applyView();
   }
 
+  /* —— Тема және тіл —— */
+  function translateNode(root) {
+    if (state.lang !== "kk" || !window.I18N_KK) return;
+    const D = window.I18N_KK;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const nodes = [];
+    while (w.nextNode()) nodes.push(w.currentNode);
+    nodes.forEach((n) => {
+      const t = n.nodeValue.trim();
+      if (!t) return;
+      if (D[t]) return (n.nodeValue = n.nodeValue.replace(t, D[t]));
+      for (const [re, to] of window.I18N_KK_RE || []) if (re.test(t)) return (n.nodeValue = n.nodeValue.replace(t, t.replace(re, to)));
+    });
+    root.querySelectorAll?.("[placeholder]").forEach((el) => {
+      const t = el.getAttribute("placeholder");
+      if (D[t]) el.setAttribute("placeholder", D[t]);
+    });
+  }
+  let i18nObs = null;
+  function applyPrefs() {
+    document.documentElement.dataset.theme = state.darkTheme ? "dark" : "light";
+    document.documentElement.lang = state.lang === "kk" ? "kk" : "ru";
+    try {
+      localStorage.setItem("prefs", JSON.stringify({ dark: state.darkTheme, lang: state.lang }));
+    } catch {}
+    const app = $(".phone .app");
+    if (state.lang === "kk") {
+      translateNode(app);
+      if (!i18nObs) {
+        i18nObs = new MutationObserver((ms) => {
+          if (state.lang !== "kk") return;
+          i18nObs.disconnect();
+          ms.forEach((m) => m.addedNodes.forEach((n) => (n.nodeType === 1 ? translateNode(n) : n.nodeType === 3 && n.parentNode && translateNode(n.parentNode))));
+          i18nObs.observe(app, { childList: true, subtree: true });
+        });
+        i18nObs.observe(app, { childList: true, subtree: true });
+      }
+    } else if (i18nObs) {
+      i18nObs.disconnect();
+      i18nObs = null;
+      render();
+    }
+  }
+
   function init() {
+    try {
+      const p = JSON.parse(localStorage.getItem("prefs") || "{}");
+      if (typeof p.dark === "boolean") state.darkTheme = p.dark;
+      if (p.lang) state.lang = p.lang;
+    } catch {}
     initPhoneView();
     const week = currentIsoWeek();
     state.periodStart = week.start;
@@ -5015,6 +5066,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
     // По умолчанию — студент; staff: .../mobile-mock/#staff
     setMode(location.hash === "#staff" ? "staff" : "student");
+    applyPrefs();
   }
 
   document.addEventListener("DOMContentLoaded", init);
