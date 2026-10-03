@@ -3472,3 +3472,4 @@ html[data-theme="light"] .phone .app .sp-badge { filter: invert(1) hue-rotate(18
 .student-group .champ-pic { cursor: default; }
 .student-group .rank-row { cursor: default; }
 .student-group .rank-phone { display: none; }
+.student-group .rank-progress, .student-group .rank-points-today { display: none; }
