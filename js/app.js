@@ -1367,27 +1367,43 @@
   }
 
   function openEntStartSheet() {
-    const pair = MOCK.entPicker.selected.map((id) => MOCK.entPicker.electives.find((x) => x.id === id)?.title).join(" · ");
-    openSheet(`
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">Пробный ЕНТ</div>
-      <div class="sheet-sub">Қазақстан тарихы · Мат. сауаттылық · Оқу сауаттылығы · ${pair}<br>120 сұрақ · 140 балл · 4 сағат</div>
-      <div class="sheet-label">Нұсқаны таңдаңыз</div>
-      <div class="ent-vars">${[1, 2, 3].map((v) => `<button type="button" class="ent-var" data-entvar="${v}"><b>${v}</b><span>нұсқа</span></button>`).join("")}</div>
-      <div class="ent-src">Сұрақтар: testcenter.kz пробный ЕНТ, біздің ЕНТ банкінен</div>`);
-    $$("[data-entvar]").forEach((b) => {
-      b.onclick = async () => {
-        b.classList.add("loading");
-        try {
-          await loadProbnik();
-        } catch {
-          toast("Сұрақтар жүктелмеді", "err");
-          return;
-        }
-        closeSheet();
-        openEntTest(Number(b.dataset.entvar));
-      };
-    });
+    const P = MOCK.entPicker;
+    const rows = [
+      ...P.selected.map((id) => {
+        const e = P.electives.find((x) => x.id === id);
+        return { title: e.title === "ДЖТ" ? "Дүниежүзі тарихы" : e.title, color: e.color, n: 40 };
+      }),
+      { title: "Қазақстан тарихы", color: "#2E8B73", n: 20 },
+      { title: "Оқу сауаттылығы", color: "#E2AE1E", n: 10 },
+      { title: "Математикалық сауаттылық", color: "#4A93CC", n: 10 },
+    ];
+    // Нұсқа кезекпен: 1 → 2 → 3 → 1 …
+    const variant = ((MOCK.entAttempts?.length || 0) % 3) + 1;
+    const layer = $("#dialogLayer");
+    layer.hidden = false;
+    layer.innerHTML = `
+      <div class="ent-dlg">
+        <div class="ent-dlg-title">Сынақ ҰБТ</div>
+        ${rows.map((r) => `<div class="ent-dlg-row" style="--c:${r.color}"><span>${r.title}</span><b>${r.n}</b></div>`).join("")}
+        <div class="ent-dlg-meta">${icon("quiz", "material-icons-outlined")}120 сұрақ <i>·</i> ${icon("schedule", "material-icons-outlined")}4 сағат</div>
+        <div class="ent-dlg-actions">
+          <button type="button" class="ent-dlg-cancel" id="entCancel">Бас тарту</button>
+          <button type="button" class="ent-dlg-go" id="entGo">Бастау</button>
+        </div>
+      </div>`;
+    layer.onclick = (e) => e.target === layer && closeDialog();
+    $("#entCancel").onclick = closeDialog;
+    $("#entGo").onclick = async () => {
+      $("#entGo").textContent = "…";
+      try {
+        await loadProbnik();
+      } catch {
+        toast("Сұрақтар жүктелмеді", "err");
+        return;
+      }
+      closeDialog();
+      openEntTest(variant);
+    };
   }
 
   function openEntTest(variant) {

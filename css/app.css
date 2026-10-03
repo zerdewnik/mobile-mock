@@ -3322,3 +3322,16 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .ent-light .tr-pts { color: #4a4d5c; }
 .ent-light .sticky-foot { background: #e9eaee; }
 .ent-light .save-btn { background: #3b4089; }
+
+/* Сынақ ҰБТ диалогы */
+.ent-dlg { position: absolute; left: 14px; right: 14px; top: 50%; transform: translateY(-50%); background: #fff; color: #1c1c22; border-radius: 20px; padding: 22px 16px 16px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45); }
+.ent-dlg-title { text-align: center; font-size: 17px; font-weight: 500; margin-bottom: 16px; }
+.ent-dlg-row { display: flex; justify-content: space-between; align-items: center; height: 46px; padding: 0 14px; margin-bottom: 9px; border: 1px solid color-mix(in srgb, var(--c) 70%, #fff); border-radius: 12px; color: var(--c); font-size: 14.5px; }
+.ent-dlg-row b { color: #1c1c22; font-weight: 400; font-size: 14px; }
+.ent-dlg-meta { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 14px 0 16px; color: #3b4089; font-size: 13.5px; font-weight: 500; }
+.ent-dlg-meta i { font-style: normal; color: #9aa0b4; margin: 0 6px; }
+.ent-dlg-meta .material-icons-outlined { font-size: 19px; }
+.ent-dlg-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ent-dlg-actions button { height: 48px; border-radius: 24px; font-family: inherit; font-size: 15px; cursor: pointer; }
+.ent-dlg-cancel { background: #fff; border: 1px solid #b8b8bf; color: #1c1c22; }
+.ent-dlg-go { background: #3b4089; border: 0; color: #fff; }
