@@ -3705,3 +3705,21 @@ img.tr-vs-x { width: 54px; height: 54px; filter: drop-shadow(0 6px 8px rgba(0, 0
 .br-m.champ img { width: 34px; height: 34px; }
 .du-res-ico img { width: 96px; height: 96px; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5)); }
 .tr-rule { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #0c0c10; }
+
+/* Staff түсі айнымалы арқылы (варианттар) */
+html[data-mode="staff"] {
+  --primary: var(--staff-primary, #58aa80);
+  --primary-dark: var(--staff-dark, #3f8f68);
+  --appbar: var(--staff-bar, #58aa80);
+}
+html[data-mode="staff"] .fab-core { background: var(--primary); }
+html[data-mode="staff"] .efir-date { border-color: color-mix(in srgb, var(--primary) 35%, #141816); }
+html[data-mode="staff"] .pill { color: var(--primary); background: color-mix(in srgb, var(--primary) 14%, #1e1e1e); }
+html[data-mode="staff"] .appbar-profile { color: var(--primary); }
+.palette-pick { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; max-width: 460px; color: #c8cad4; font-size: 12px; }
+.palette-pick[hidden] { display: none; }
+.pal { border: 1px solid #2e2e36; background: #1c1c22; color: #c8cad4; border-radius: 12px; padding: 5px 9px 5px 5px; display: flex; align-items: center; gap: 6px; cursor: pointer; font-family: inherit; }
+.pal i { width: 22px; height: 22px; border-radius: 7px; display: block; }
+.pal small { font-size: 11px; }
+.pal.on { border-color: #fff; color: #fff; box-shadow: 0 0 0 1px #fff; }
+@media (max-width: 440px) { .palette-pick { display: none !important; } }
