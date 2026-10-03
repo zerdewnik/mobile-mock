@@ -155,10 +155,21 @@
     el.innerHTML = "";
   }
 
+  /** Телефон кішірейтілгенде экран координаталарын макет координаталарына аудару */
+  function phoneRects(anchorEl) {
+    const k = view.scale || 1;
+    const ph = $(".phone .app").getBoundingClientRect();
+    const r = anchorEl.getBoundingClientRect();
+    const map = (v, o) => (v - o) / k;
+    return {
+      phone: { left: 0, top: 0, width: ph.width / k, height: ph.height / k },
+      rect: { left: map(r.left, ph.left), right: map(r.right, ph.left), top: map(r.top, ph.top), bottom: map(r.bottom, ph.top), width: r.width / k },
+    };
+  }
+
   function showActionMenu(anchorEl, items) {
     closeMenu();
-    const phone = $(".phone .app").getBoundingClientRect();
-    const rect = anchorEl.getBoundingClientRect();
+    const { phone, rect } = phoneRects(anchorEl);
     const menuW = 156;
     const menuH = items.length * 38;
     let left = rect.right - phone.left - menuW;
@@ -2419,8 +2430,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   /** «Звонок» / «Написать» → Ученику | Родителю */
   function openContactMenu(anchor, s, kind) {
     closeMenu();
-    const phone = $(".phone .app").getBoundingClientRect();
-    const rect = anchor.getBoundingClientRect();
+    const { phone, rect } = phoneRects(anchor);
     const w = 190;
     const left = Math.max(12, Math.min(rect.left - phone.left + rect.width / 2 - w / 2, phone.width - w - 12));
     const top = rect.bottom - phone.top + 8;
@@ -4214,7 +4224,71 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $("#curatorAvatar")?.addEventListener("click", openUserProfile);
   }
 
+  /* —— Телефонды жылжыту және кішірейту (компьютерде) —— */
+  const view = { x: 0, y: 0, scale: 1 };
+  function applyView() {
+    const stage = $("#phoneStage");
+    const small = window.matchMedia("(max-width: 440px)").matches;
+    stage.style.transform = small ? "" : `translate(${view.x}px, ${view.y}px) scale(${view.scale})`;
+    $("#zoomVal").textContent = `${Math.round(view.scale * 100)}%`;
+    try {
+      localStorage.setItem("phoneView", JSON.stringify(view));
+    } catch {}
+  }
+  function initPhoneView() {
+    try {
+      Object.assign(view, JSON.parse(localStorage.getItem("phoneView") || "{}"));
+    } catch {}
+    const clamp = (v) => Math.min(1.6, Math.max(0.4, Math.round(v * 100) / 100));
+    const stage = $("#phoneStage");
+    const phone = $(".phone");
+    $$("[data-zoom]").forEach((b) => (b.onclick = () => ((view.scale = clamp(view.scale + Number(b.dataset.zoom) * 0.1)), applyView())));
+    $("#zoomReset").onclick = () => (Object.assign(view, { x: 0, y: 0, scale: 1 }), applyView());
+    // Рамкадан (немесе «шоқыдан») ұстап жылжыту
+    phone.addEventListener("pointerdown", (e) => {
+      if (e.target !== phone && !e.target.classList.contains("phone-notch")) return;
+      e.preventDefault();
+      const sx = e.clientX - view.x;
+      const sy = e.clientY - view.y;
+      phone.setPointerCapture(e.pointerId);
+      stage.classList.add("dragging");
+      const move = (ev) => ((view.x = ev.clientX - sx), (view.y = ev.clientY - sy), applyView());
+      const up = () => {
+        stage.classList.remove("dragging");
+        phone.removeEventListener("pointermove", move);
+        phone.removeEventListener("pointerup", up);
+      };
+      phone.addEventListener("pointermove", move);
+      phone.addEventListener("pointerup", up);
+    });
+    // Бұрыштан тартып өлшемін өзгерту
+    const grip = $("#phoneResize");
+    grip.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      const r = phone.getBoundingClientRect();
+      const s0 = view.scale;
+      const d0 = Math.hypot(e.clientX - r.left, e.clientY - r.top);
+      grip.setPointerCapture(e.pointerId);
+      const move = (ev) => {
+        view.scale = clamp((s0 * Math.hypot(ev.clientX - r.left, ev.clientY - r.top)) / d0);
+        applyView();
+      };
+      const up = () => {
+        grip.removeEventListener("pointermove", move);
+        grip.removeEventListener("pointerup", up);
+      };
+      grip.addEventListener("pointermove", move);
+      grip.addEventListener("pointerup", up);
+    });
+    phone.addEventListener("dblclick", (e) => {
+      if (e.target === phone) (Object.assign(view, { x: 0, y: 0, scale: 1 }), applyView());
+    });
+    window.addEventListener("resize", applyView);
+    applyView();
+  }
+
   function init() {
+    initPhoneView();
     const week = currentIsoWeek();
     state.periodStart = week.start;
     state.periodEnd = week.end;

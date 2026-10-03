@@ -3212,3 +3212,20 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .lvl-steps span.done { filter: none; opacity: 0.85; }
 .lvl-steps span.cur { filter: none; opacity: 1; background: color-mix(in srgb, var(--lc) 25%, #262628); box-shadow: inset 0 0 0 1.5px var(--lc); }
 .sp-lvl { margin: 0 15px; }
+
+/* Телефонды жылжыту / кішірейту */
+.phone-stage { position: relative; transform-origin: top center; will-change: transform; }
+.phone-stage.dragging { cursor: grabbing; }
+.phone { cursor: grab; }
+.phone .app { cursor: auto; }
+.phone-stage.dragging .phone { cursor: grabbing; }
+.phone-resize { position: absolute; right: -14px; bottom: -14px; width: 28px; height: 28px; border-radius: 50%; background: #2a2a30; border: 1px solid #44444c; cursor: nwse-resize; z-index: 5; }
+.phone-resize::before { content: ""; position: absolute; inset: 8px; border-right: 2px solid #9aa0b4; border-bottom: 2px solid #9aa0b4; border-radius: 0 0 3px 0; }
+.phone-zoom { display: flex; align-items: center; gap: 8px; color: #c8cad4; font-size: 12px; }
+.phone-zoom .chip { min-width: 32px; padding: 4px 10px; font-size: 14px; }
+.zoom-hint { color: #6c6f84; font-size: 11px; }
+@media (max-width: 440px) {
+  .phone-zoom, .phone-resize { display: none; }
+  .phone-stage { transform: none !important; }
+  .phone { cursor: auto; }
+}

@@ -18,7 +18,7 @@
       rel="stylesheet"
     />
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/app.css?v=202610031405" />
+    <link rel="stylesheet" href="css/app.css?v=202610031410" />
   </head>
   <body>
     <p class="page-label">
@@ -42,6 +42,15 @@
       <button type="button" class="chip" data-goto="3">Мои группы</button>
     </div>
 
+    <div class="phone-zoom" id="phoneZoom">
+      <button type="button" class="chip" data-zoom="-1" title="Уменьшить">−</button>
+      <span id="zoomVal">100%</span>
+      <button type="button" class="chip" data-zoom="1" title="Увеличить">+</button>
+      <button type="button" class="chip" id="zoomReset" title="Вернуть в центр">⟲</button>
+      <span class="zoom-hint">тяните за рамку · угол — размер</span>
+    </div>
+
+    <div class="phone-stage" id="phoneStage">
     <div class="phone">
       <div class="phone-notch" aria-hidden="true"></div>
       <div class="app">
@@ -120,8 +129,10 @@
         <div class="toast" id="toast"></div>
       </div>
     </div>
+      <div class="phone-resize" id="phoneResize" title="Тяните, чтобы изменить размер"></div>
+    </div>
 
-    <script src="js/data.js?v=202610031405"></script>
-    <script src="js/app.js?v=202610031405"></script>
+    <script src="js/data.js?v=202610031410"></script>
+    <script src="js/app.js?v=202610031410"></script>
   </body>
 </html>
