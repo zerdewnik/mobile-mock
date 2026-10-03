@@ -475,6 +475,7 @@ window.MOCK = {
     core: [
       { title: "История", color: "#4FA78A" },
       { title: "Математическая грамотность", color: "#5B8FD6" },
+      { title: "Грамотность чтения", color: "#E2AE1E" },
     ],
     selected: ["math", "geo"],
   },

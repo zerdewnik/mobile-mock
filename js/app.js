@@ -1366,6 +1366,180 @@
     return true;
   }
 
+  /* —— ҰБТ нәтижесі сертификаты (I4U бланкі) —— */
+  const CERT_NAMES = {
+    history_kz: ["Қазақстан тарихы", "История Казахстана"],
+    reading_literacy: ["Оқу сауаттылығы", "Грамотность чтения"],
+    math_literacy: ["Математикалық сауаттылық", "Математическая грамотность"],
+    mathematics: ["Математика", "Математика"],
+    physics: ["Физика", "Физика"],
+    informatics: ["Информатика", "Информатика"],
+    geography: ["География", "География"],
+    biology: ["Биология", "Биология"],
+    chemistry: ["Химия", "Химия"],
+    world_history: ["Дүниежүзі тарихы", "Всемирная история"],
+    english: ["Ағылшын тілі", "Английский язык"],
+    law_basics: ["Құқық негіздері", "Основы права"],
+    kazakh_language: ["Қазақ тілі", "Казахский язык"],
+    kazakh_literature: ["Қазақ әдебиеті", "Казахская литература"],
+  };
+  function drawCertificate(d) {
+    const W = 906, H = 1280, S = 2;
+    const cv = document.createElement("canvas");
+    cv.width = W * S;
+    cv.height = H * S;
+    const x = cv.getContext("2d");
+    x.scale(S, S);
+    const blue = "#2d5a8c", ink = "#111";
+    x.fillStyle = "#fff";
+    x.fillRect(0, 0, W, H);
+    x.fillStyle = "#eef4f8";
+    x.fillRect(22, 22, W - 44, H - 44);
+    // толқынды жиек
+    x.strokeStyle = "#6f9cc4";
+    x.lineWidth = 2;
+    const wave = (x0, y0, x1, y1) => {
+      const len = Math.hypot(x1 - x0, y1 - y0), n = Math.floor(len / 6);
+      x.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const t = i / n, px = x0 + (x1 - x0) * t, py = y0 + (y1 - y0) * t;
+        const o = Math.sin(i * 1.6) * 3;
+        x0 === x1 ? x.lineTo(px + o, py) : x.lineTo(px, py + o);
+      }
+      x.stroke();
+    };
+    wave(24, 24, W - 24, 24); wave(24, H - 24, W - 24, H - 24); wave(24, 24, 24, H - 24); wave(W - 24, 24, W - 24, H - 24);
+    // логотип
+    x.fillStyle = "#3b3f8f";
+    x.font = "bold 64px Arial";
+    x.fillText("I4U", 70, 108);
+    x.fillStyle = blue;
+    x.font = "bold 17px Times New Roman";
+    x.fillText("I4U.kz Білім беру орталығы", 487, 68);
+    x.fillText("Образовательный центр I4U.kz", 487, 90);
+    const line = (y, x0 = 44, x1 = W - 44) => { x.strokeStyle = "#555"; x.lineWidth = 1; x.beginPath(); x.moveTo(x0, y); x.lineTo(x1, y); x.stroke(); };
+    line(137);
+    x.textAlign = "center";
+    x.font = "bold 19px Times New Roman";
+    x.fillText("ТЕСТІЛЕНУШІНІҢ ҰБТ НӘТИЖЕСІ", W / 2, 176);
+    x.fillText("РЕЗУЛЬТАТЫ ЕНТ ТЕСТИРУЕМОГО", W / 2, 197);
+    x.textAlign = "left";
+    x.fillStyle = ink;
+    const field = (label, value, y, lx, w) => {
+      x.font = "bold 17px Times New Roman";
+      x.fillText(label, 46, y);
+      x.font = "17px Arial";
+      x.fillText(value, lx + 4, y - 3);
+      line(y + 4, lx, lx + w);
+    };
+    field("Номер телефона", d.phone, 245, 186, 220);
+    field("Группы", d.group, 276, 120, 220);
+    x.font = "bold 22px Arial";
+    x.textAlign = "center";
+    x.fillText(d.name, W / 2, 316);
+    x.textAlign = "left";
+    line(327);
+    x.font = "italic 13px Times New Roman";
+    x.textAlign = "center";
+    x.fillText("Т.А.Ә. бар болған жағдайда/Ф.И.О. при его наличии", W / 2, 342);
+    x.textAlign = "left";
+    x.font = "17px Times New Roman";
+    x.fillText("ҰБТ тапсырған мерзімі:", 46, 375);
+    x.fillText("Дата сдачи ЕНТ:", 46, 399);
+    x.font = "17px Arial";
+    x.fillText(d.date, 236, 372);
+    line(378, 230, 376);
+    x.font = "17px Times New Roman";
+    x.fillText("ҰБТ тапсыру тілі:", 46, 432);
+    x.fillText("Язык сдачи ЕНТ:", 46, 456);
+    x.font = "16px Arial";
+    x.fillText(d.lang, 192, 429);
+    line(437, 186, 420);
+    // кесте
+    const tx = 46, ty = 482, tw = W - 92, c1 = 42, c2 = 498, rh = 43;
+    const rows = [...d.rows].sort((a, b) => ["history_kz", "reading_literacy", "math_literacy"].indexOf(a.key) - ["history_kz", "reading_literacy", "math_literacy"].indexOf(b.key));
+    const order = ["history_kz", "reading_literacy", "math_literacy"];
+    const sorted = [...rows.filter((r) => order.includes(r.key)).sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key)), ...rows.filter((r) => !order.includes(r.key))];
+    x.strokeStyle = "#222";
+    x.lineWidth = 1;
+    x.strokeRect(tx, ty, tw, 28 + sorted.length * rh + 43 + 34);
+    x.fillStyle = blue;
+    x.font = "bold 13px Times New Roman";
+    x.textAlign = "center";
+    x.fillText("№", tx + c1 / 2, ty + 18);
+    x.fillText("Пәндер атауы/Наименование предметов", tx + c1 + c2 / 2, ty + 18);
+    x.fillText("Жинаған балдары/Набранные баллы", tx + c1 + c2 + (tw - c1 - c2) / 2, ty + 18);
+    const hl = (y) => { x.beginPath(); x.moveTo(tx, y); x.lineTo(tx + tw, y); x.stroke(); };
+    const vl = (xx, y0, y1) => { x.beginPath(); x.moveTo(xx, y0); x.lineTo(xx, y1); x.stroke(); };
+    hl(ty + 28);
+    sorted.forEach((r, i) => {
+      const y = ty + 28 + i * rh;
+      const [kz, ru] = CERT_NAMES[r.key] || [r.key, r.key];
+      x.fillStyle = ink;
+      x.textAlign = "center";
+      x.font = "15px Times New Roman";
+      x.fillText(String(i + 1), tx + c1 / 2, y + 27);
+      x.textAlign = "left";
+      x.font = "14px Times New Roman";
+      x.fillText(kz, tx + c1 + 4, y + 16);
+      x.fillText(ru, tx + c1 + 4, y + 37);
+      x.setLineDash([3, 3]);
+      x.beginPath(); x.moveTo(tx + c1, y + 21); x.lineTo(tx + c1 + c2, y + 21); x.stroke();
+      x.setLineDash([]);
+      x.textAlign = "center";
+      x.font = "bold 20px Arial";
+      x.fillText(String(r.score), tx + c1 + c2 + (tw - c1 - c2) / 2, y + 29);
+      hl(y + rh);
+    });
+    const yEnd = ty + 28 + sorted.length * rh;
+    vl(tx + c1, ty, yEnd);
+    vl(tx + c1 + c2, ty, yEnd + 43);
+    x.lineWidth = 2;
+    hl(yEnd);
+    x.lineWidth = 1;
+    x.fillStyle = blue;
+    x.textAlign = "right";
+    x.font = "bold 14px Times New Roman";
+    x.fillText("Барлығы/Итого", tx + c1 + c2 - 2, yEnd + 27);
+    x.fillStyle = ink;
+    x.textAlign = "center";
+    x.font = "bold 22px Arial";
+    x.fillText(String(d.total), tx + c1 + c2 + (tw - c1 - c2) / 2, yEnd + 30);
+    hl(yEnd + 43);
+    x.font = "13px Times New Roman";
+    x.fillText("мүмкін болған", 600, yEnd + 60);
+    x.fillText("из возможных", 600, yEnd + 74);
+    x.font = "14px Times New Roman";
+    x.fillText("140", 718, yEnd + 66);
+    x.font = "13px Times New Roman";
+    x.fillText("балдан", 800, yEnd + 60);
+    x.fillText("баллов", 800, yEnd + 74);
+    x.textAlign = "left";
+    x.font = "13px Times New Roman";
+    const fy = yEnd + 100;
+    x.fillText("Білім беру гранттарын беру конкурсына қатысу үшін жарамсыз", 46, fy);
+    x.fillText("Не действителен для участия в конкурсе по присуждению образовательных грантов", 46, fy + 18);
+    x.font = "bold 13px Times New Roman";
+    x.fillText("Ресми сертификат болып табылмайды", 50, fy + 70);
+    x.fillText("Не является официальным сертификатом", 50, fy + 86);
+    line(fy + 150);
+    return cv;
+  }
+  function downloadCertificate(d) {
+    const cv = drawCertificate(d);
+    cv.toBlob((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `I4U_UBT_natizhe_${d.date.replace(/\./g, "-")}.png`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      toast("Сертификат жүктелді");
+    }, "image/png");
+  }
+
   function openEntStartSheet() {
     const P = MOCK.entPicker;
     const rows = [
@@ -1492,32 +1666,15 @@
             .map((s2, i) => {
               const sc = subjScore(s2);
               const min = ENT_MIN[s2.key] || 5;
-              return `<button type="button" class="er-row ${i === E.review ? "on" : ""}" data-review="${i}">
+              return `<div class="er-row">
                 <span class="er-name">${s2.title}</span>
                 <span class="er-min ${sc >= min ? "ok" : "bad"}">${icon(sc >= min ? "check_circle" : "error_outline", "material-icons-outlined")}мин ${min}</span>
                 <b>${sc}<small> / ${subjMax(s2)}</small></b>
-              </button>`;
-            })
-            .join("")}
-          <div class="er-title">${sub.title}: жауаптар</div>
-          ${sub.qs
-            .map((q, i) => {
-              const got = qScore(sub, q);
-              const max2 = qMax(sub, q);
-              const right =
-                q.type === "matching"
-                  ? q.matching
-                  : q.options
-                      .filter((o) => o.correct)
-                      .map((o) => `${o.id}) ${md(o.content)}`)
-                      .join("; ");
-              return `<div class="tr-item ${got === max2 ? "ok" : got > 0 ? "part" : "bad"}">
-                <div class="tr-q"><span class="tr-n">${i + 1}</span>${md(q.type === "matching" ? splitMatching(q.stem).stem : q.stem)}</div>
-                <div class="tr-a">${icon(got === max2 ? "check_circle" : got > 0 ? "remove_circle" : "cancel")}<span>Дұрыс жауабы: ${right}</span><b class="tr-pts">${got}/${max2}</b></div>
-                ${q.note ? `<div class="tr-note">${md(q.note)}</div>` : ""}
               </div>`;
             })
             .join("")}
+          <button type="button" class="cert-btn" id="certDownload">${icon("download")}Сертификат жүктеу</button>
+          <div class="cert-note">PNG · I4U бланкі: аты-жөні, телефон, топ, күні, пәндер бойынша балл</div>
         </div>`;
     };
 
@@ -1583,6 +1740,19 @@
         const root = $("#screenOverlay");
         renderMath(root);
         $$("[data-review]").forEach((b) => (b.onclick = () => ((E.review = Number(b.dataset.review)), paintStack())));
+        $("#certDownload")?.addEventListener("click", () => {
+          const me = MOCK.me;
+          const grp = MOCK.groups.find((g) => g.students?.some((x) => x.phone === me.phone));
+          downloadCertificate({
+            name: `${me.firstName} ${me.lastName}`,
+            phone: me.phone,
+            group: grp ? grp.name : "—",
+            date: dmy(new Date()),
+            lang: "Қазақ тілі / Казахский",
+            rows: subjects.map((s2) => ({ key: s2.key, score: subjScore(s2) })),
+            total: subjects.reduce((t, s2) => t + subjScore(s2), 0),
+          });
+        });
         $("#entClose")?.addEventListener("click", () => {
           state.navStack.pop();
           paintStack();
