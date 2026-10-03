@@ -1525,6 +1525,19 @@
     line(fy + 150);
     return cv;
   }
+  function openCertificate(d) {
+    const url = drawCertificate(d).toDataURL("image/png");
+    pushScreen(
+      "Сертификат",
+      () => `<div class="cert-view"><img src="${url}" alt="Сертификат" /></div>`,
+      () => ($("#certSave").onclick = () => downloadCertificate(d)),
+      {
+        screenCls: "ent-light",
+        footer: () => `<div class="sticky-foot"><button type="button" class="save-btn cert-save" id="certSave">${icon("download")}Скачать</button></div>`,
+      }
+    );
+  }
+
   function downloadCertificate(d) {
     const cv = drawCertificate(d);
     cv.toBlob((blob) => {
@@ -1673,8 +1686,7 @@
               </div>`;
             })
             .join("")}
-          <button type="button" class="cert-btn" id="certDownload">${icon("download")}Сертификат жүктеу</button>
-          <div class="cert-note">PNG · I4U бланкі: аты-жөні, телефон, топ, күні, пәндер бойынша балл</div>
+          <button type="button" class="cert-btn" id="certDownload">${icon("workspace_premium", "material-icons-outlined")}Сертификат${icon("chevron_right")}</button>
         </div>`;
     };
 
@@ -1743,7 +1755,7 @@
         $("#certDownload")?.addEventListener("click", () => {
           const me = MOCK.me;
           const grp = MOCK.groups.find((g) => g.students?.some((x) => x.phone === me.phone));
-          downloadCertificate({
+          openCertificate({
             name: `${me.firstName} ${me.lastName}`,
             phone: me.phone,
             group: grp ? grp.name : "—",

@@ -3344,3 +3344,10 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .cert-btn .material-icons-round { font-size: 22px; }
 .cert-note { margin-top: 8px; text-align: center; font-size: 11px; color: #8a8d9c; }
 .ent-light .er-row { cursor: default; }
+.cert-btn { justify-content: flex-start; padding: 0 16px; }
+.cert-btn .material-icons-round:last-child { margin-left: auto; font-size: 22px; }
+.cert-btn .material-icons-outlined { font-size: 22px; }
+.cert-view { padding: 14px 15px 20px; }
+.cert-view img { display: block; width: 100%; border-radius: 6px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18); }
+.cert-save { display: flex; align-items: center; justify-content: center; gap: 8px; }
+.ent-light .appbar:not(.ent-bar) { background: #3b4089; }
