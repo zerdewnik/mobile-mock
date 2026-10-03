@@ -825,13 +825,23 @@
     if (id === "tests") {
       const tabs = [
         ["ent", "ЕНТ"],
+        ["tournament", "Турнир"],
         ["history", "История"],
         ["stats", "Статистика"],
       ];
-      const head = `<div class="seg-tabs seg-3">${tabs
+      const head = `<div class="seg-tabs seg-3 seg-4">${tabs
         .map(([k, l]) => `<button type="button" data-svctab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`)
         .join("")}</div>`;
       const attempts = MOCK.entAttempts || [];
+      if (tab === "tournament") {
+        return `${head}<div class="list-pad" style="padding-top:16px">
+          <div class="tour-card">
+            <span class="tour-ico">${icon("emoji_events")}</span>
+            <div class="tour-title">Турнир</div>
+            <div class="tour-sub">Скоро здесь появятся турниры между учениками</div>
+          </div>
+        </div>`;
+      }
       if (tab === "history") {
         return `${head}<div class="list-pad" style="padding-top:16px">
           ${
@@ -859,7 +869,7 @@
       return `
         <div class="list-pad trainer-list">
           <p class="trainer-intro">Выберите предмет и потренируйте слабые темы. Вопросы подбираются по вашему прогрессу.</p>
-          ${MOCK.trainerSubjects
+          ${trainerList()
             .map((t) => {
               const c = MOCK.myCourses.find((x) => x.id === t.courseId);
               return `
@@ -1888,6 +1898,25 @@
       </div>`;
   }
 
+  /** Тренажёр: «Мои курсы» ішіндегі барлық пән */
+  function trainerList() {
+    return MOCK.myCourses.map((c) => {
+      let t = MOCK.trainerSubjects.find((x) => x.courseId === c.id);
+      if (!t) {
+        const cc = MOCK.courseContent[c.id];
+        const sections = (cc ? cc.sections : [{ title: c.title, items: [] }]).map((sec) => {
+          const topics = sec.items.filter((x) => x.startsWith("v:")).map((x) => x.slice(2));
+          return { title: sec.title, percent: 0, topics, count: topics.length };
+        });
+        t = { id: c.id, title: c.title, courseId: c.id, percent: 0, done: 0, total: sections.reduce((a, x) => a + x.count, 0), weak: 0, closed: 0, sections };
+        MOCK.trainerSubjects.push(t);
+      }
+      if (!MOCK.practice[c.id] && MOCK.lessonTests[c.id]) MOCK.practice[c.id] = { topic: c.title, questions: MOCK.lessonTests[c.id] };
+      if (!MOCK.practice[c.id]) MOCK.practice[c.id] = MOCK.practice[10];
+      return t;
+    });
+  }
+
   function trainerSubjectHtml(t) {
     return `
       <div class="list-pad trainer-subject">
@@ -1992,7 +2021,7 @@
       };
     });
     $$("[data-trainer]").forEach((btn) => {
-      btn.onclick = () => openTrainerSubject(MOCK.trainerSubjects.find((x) => x.id === Number(btn.dataset.trainer)));
+      btn.onclick = () => openTrainerSubject(trainerList().find((x) => x.id === Number(btn.dataset.trainer)));
     });
     $("#entToggle") &&
       ($("#entToggle").onclick = (e) => {
@@ -2564,7 +2593,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-f"><span>Номер ученика</span><a href="tel:${s.phone.replace(/\s/g, "")}" class="green">${s.phone}</a></div>
           <div class="sp-f"><span>ФИО родителя</span><b>${ex.parentName}</b></div>
           <div class="sp-f"><span>Номер родителя</span><b>${ex.parentPhone}</b></div>
-          <div class="sp-f"><span>Город</span><b>${ex.city}</b></div>
           <div class="sp-f"><span>Класс</span><b>${ex.grade}</b></div>
           <div class="sp-f"><span>UUID</span><b class="mono">${ex.uuid}</b></div>
         </div>
@@ -3300,7 +3328,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <div class="sheet-title">Изменить данные</div>
       <div class="ef-label">ФИО родителя</div><input class="ef-input" id="seParent" value="${ex.parentName === "—" ? "" : ex.parentName}" placeholder="Иванова Айгүл" />
       <div class="ef-label">Номер родителя</div><input class="ef-input" id="sePhone" value="${ex.parentPhone}" />
-      <div class="ef-label">Город</div><input class="ef-input" id="seCity" value="${ex.city === "—" ? "" : ex.city}" placeholder="Алматы" />
       <div class="ef-label">Класс</div>
       <label class="ef-select"><span id="seGradeL">${ex.grade}</span><select id="seGrade">${["9 класс", "10 класс", "11 класс", "Выпускник"].map((g) => `<option ${g === ex.grade ? "selected" : ""}>${g}</option>`).join("")}</select>${icon("expand_more")}</label>
       <button type="button" class="ef-submit" id="seSave">Сохранить</button>`,
@@ -3310,7 +3337,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $("#seSave").onclick = () => {
       ex.parentName = $("#seParent").value.trim() || "—";
       ex.parentPhone = $("#sePhone").value.trim() || "—";
-      ex.city = $("#seCity").value.trim() || "—";
       ex.grade = $("#seGrade").value;
       closeSheet();
       toast("Сохранено");
