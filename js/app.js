@@ -4259,13 +4259,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const g = MOCK.groups[0];
     return `
       <div class="list-pad groups-list student-group">
-        <div class="card expanded">
-          <div class="group-head">
+        <div class="card ${state.sgClosed ? "" : "expanded"}">
+          <div class="group-head" id="sgToggle">
             <div class="group-meta">
               <div class="group-name">${g.name}</div>
               <div class="group-course">${g.courseLabel}</div>
             </div>
             <span class="pill">${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</span>
+            <span class="chevron">${icon("keyboard_arrow_down")}</span>
           </div>
           <div class="group-body">
             ${championHtml(g)}
@@ -4790,6 +4791,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         if (!n) return;
         openInner(n.title, `<div class="list-pad news-open">${newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body">${n.body}</div></div></div>`);
       };
+    });
+    $("#sgToggle")?.addEventListener("click", () => {
+      state.sgClosed = !state.sgClosed;
+      render();
     });
     $("#studentBell")?.addEventListener("click", () => {
       MOCK.studentNotifs.forEach((n) => (n.read = true));
