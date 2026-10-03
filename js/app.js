@@ -11,11 +11,11 @@
   const NAV_STUDENT = [
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
     { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
-    { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Уведомление" },
+    { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
   const CHIPS_STAFF = ["Аналитика", "Эфир", "Хабарлама", "Мои группы"];
-  const CHIPS_STUDENT = ["Главная", "Новости", "Уведомления", "Мои курсы"];
+  const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
     mode: "staff",
@@ -4254,6 +4254,31 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /** Студент: өз тобы — өткен апта чемпионы және апталық рейтинг */
+  function renderStudentGroup() {
+    const g = MOCK.groups[0];
+    return `
+      <div class="list-pad groups-list student-group">
+        <div class="card expanded">
+          <div class="group-head">
+            <div class="group-meta">
+              <div class="group-name">${g.name}</div>
+              <div class="group-course">${g.courseLabel}</div>
+            </div>
+            <span class="pill">${g.studentsCount} ${plural(g.studentsCount, "ученик", "ученика", "учеников")}</span>
+          </div>
+          <div class="group-body">
+            ${championHtml(g)}
+            <div class="rating-head">
+              ${icon("emoji_events", "material-icons-outlined")}
+              <span class="label">Рейтинг за неделю</span>
+            </div>
+            ${g.students.map((x, i) => renderRankRow(x, i === g.students.length - 1)).join("")}
+          </div>
+        </div>
+      </div>`;
+  }
+
   function renderStudentNotifs() {
     return `
       <div class="list-pad">
@@ -4692,9 +4717,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
     if (state.mode === "student") {
-      const titles = ["Главная", "Новости", "Уведомления", "Мои курсы"];
+      const titles = ["Главная", "Новости", "Группы", "Мои курсы"];
+      const unread = MOCK.studentNotifs.filter((n) => !n.read).length;
       return `
         <div class="appbar-title" style="flex:1">${titles[state.tab] || "Главная"}</div>
+        <button type="button" class="appbar-bell" id="studentBell" title="Уведомления">${icon("notifications_none")}${unread ? `<i>${unread}</i>` : ""}</button>
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
     if (state.tab === 2) {
@@ -4724,7 +4751,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     if (state.mode === "student") {
       if (state.tab === 0) content.innerHTML = renderStudentHome();
       else if (state.tab === 1) content.innerHTML = renderNews();
-      else if (state.tab === 2) content.innerHTML = renderStudentNotifs();
+      else if (state.tab === 2) content.innerHTML = renderStudentGroup();
       else content.innerHTML = renderMyCourses();
       bindStudentContent();
       return;
@@ -4763,6 +4790,20 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         if (!n) return;
         openInner(n.title, `<div class="list-pad news-open">${newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body">${n.body}</div></div></div>`);
       };
+    });
+    $("#studentBell")?.addEventListener("click", () => {
+      MOCK.studentNotifs.forEach((n) => (n.read = true));
+      state.navStack = [];
+      pushScreen("Уведомления", renderStudentNotifs, () => {
+        $$("#screenOverlay [data-push]").forEach((btn) => {
+          btn.onclick = () => {
+            const n = MOCK.studentNotifs.find((x) => x.id === Number(btn.dataset.push));
+            pushScreen(n.title, () => `<div class="list-pad"><div class="push-row"><img src="assets/v2/notification.png" alt="" /><span class="push-line"></span><span><span class="push-when">${n.when}</span><span class="push-title">${n.title}</span><span class="push-body">${n.body}</span></span></div></div>`);
+          };
+        });
+      });
+      $("#appbar").innerHTML = appbarHtml();
+      bindStudentContent();
     });
     $$("[data-push]").forEach((btn) => {
       btn.onclick = () => {
