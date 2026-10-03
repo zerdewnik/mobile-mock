@@ -970,7 +970,6 @@
           </div>`
           }
           ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${pct(allDone, allTotal)}%`, bar: pct(allDone, allTotal), meta: `Пройдено ${allDone} из ${allTotal} уроков по ${MOCK.myCourses.length} предметам`, open: "courses" })}
-          ${card({ emoji: "👆", tint: "#4f4834", label: "Просмотрено всего уроков", value: `${allDone} из ${allTotal}`, meta: `Осталось посмотреть: ${allTotal - allDone} уроков` })}
           ${card({ emoji: "📝", tint: "#34485a", label: "Пройдено всего тестов", value: `${T.done} из ${T.total}`, bar: pct(T.done, T.total), meta: `Средний результат: ${T.avg}% · осталось сдать ${T.total - T.done}`, open: "tests" })}
           ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${mockAttempts().length}`, meta: mockAttempts()[0]?.total != null ? `Последний: ${mockAttempts()[0].total} / 140` : "", open: "mock" })}
         </div>`;
