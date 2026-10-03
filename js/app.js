@@ -833,15 +833,7 @@
         .map(([k, l]) => `<button type="button" data-svctab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`)
         .join("")}</div>`;
       const attempts = MOCK.entAttempts || [];
-      if (tab === "tournament") {
-        return `${head}<div class="list-pad" style="padding-top:16px">
-          <div class="tour-card">
-            <span class="tour-ico">${icon("emoji_events")}</span>
-            <div class="tour-title">Турнир</div>
-            <div class="tour-sub">Скоро здесь появятся турниры между учениками</div>
-          </div>
-        </div>`;
-      }
+      if (tab === "tournament") return tournamentHtml(head);
       if (tab === "history") {
         return `${head}<div class="list-pad" style="padding-top:16px">
           ${
@@ -1850,6 +1842,345 @@
     );
   }
 
+  /* ============================================================
+     ТУРНИР және ЖЕКПЕ-ЖЕК (тренажёр сұрақтарымен)
+     Жекпе-жек: 1-раунд Жеңіл 5×1, 2-раунд Орта 5×2, 3-раунд HARD 3×3 (макс 24)
+     ============================================================ */
+  const T_SUBJ = { 10: "english", 11: "world_history", 12: "biology", 13: "geography", 14: "informatics", 15: "mathematics" };
+  const DUEL_ROUNDS = [
+    { name: "Жеңіл", n: 5, pts: 1, cls: "easy" },
+    { name: "Орта", n: 5, pts: 2, cls: "mid" },
+    { name: "HARD", n: 3, pts: 3, cls: "hard" },
+  ];
+  const DUEL_MAX = DUEL_ROUNDS.reduce((t, r) => t + r.n * r.pts, 0);
+  const stageName = (n) => ({ 8: "1/8 финал", 4: "1/4 финал", 2: "Жартылай финал", 1: "Финал" })[n] || `${n * 2} қатысушы`;
+  const firstName = (p) => (p.me ? "Сен" : p.name.split(" ")[0]);
+
+  function simMatch(m) {
+    const sc = (p, k) => Math.max(2, Math.min(DUEL_MAX, Math.round(DUEL_MAX * (0.3 + (p.score || 0) / 160) * (0.75 + rnd(p.id, k, 31) * 0.5))));
+    m.sa = sc(m.a, (m.b.id || 1) * 7);
+    m.sb = sc(m.b, (m.a.id || 1) * 13);
+    if (m.sa === m.sb) m.sb -= 1;
+    m.w = m.sa > m.sb ? m.a : m.b;
+  }
+  function tourney() {
+    if (!MOCK.tour) {
+      const g = MOCK.groups[0];
+      const me = { id: 0, name: `${MOCK.me.firstName} ${MOCK.me.lastName}`, initials: MOCK.me.initials, color: "#5B6EC2", score: 60, me: true };
+      const order = [me, ...g.students].map((p) => ({ p, r: rnd(p.id + 3, 77) })).sort((a, b) => a.r - b.r).map((x) => x.p);
+      const r0 = [];
+      for (let i = 0; i < order.length; i += 2) r0.push({ a: order[i], b: order[i + 1], sa: null, sb: null, w: null });
+      r0.forEach((m, i) => !(m.a.me || m.b.me) && i % 3 !== 2 && simMatch(m));
+      MOCK.tour = { name: `${g.name} кубогы`, group: g, subject: "world_history", subjectTitle: "Дүниежүзі тарихы", rounds: [r0], size: order.length, deadline: "5 қазан" };
+    }
+    return MOCK.tour;
+  }
+  function tourAdvance(T) {
+    for (;;) {
+      const cur = T.rounds[T.rounds.length - 1];
+      const meIn = cur.some((m) => !m.w && (m.a.me || m.b.me));
+      cur.forEach((m) => !m.w && !(m.a.me || m.b.me) && simMatch(m));
+      if (cur.some((m) => !m.w)) return;
+      if (cur.length === 1) return void (T.champion = cur[0].w);
+      const next = [];
+      for (let i = 0; i < cur.length; i += 2) next.push({ a: cur[i].w, b: cur[i + 1].w, sa: null, sb: null, w: null });
+      T.rounds.push(next);
+      if (meIn) return;
+    }
+  }
+  const myMatch = (T) => T.rounds[T.rounds.length - 1].find((m) => !m.w && (m.a.me || m.b.me));
+  const meOut = (T) => T.rounds.some((r) => r.some((m) => m.w && (m.a.me || m.b.me) && !m.w.me));
+
+  function avatarHtml(p, cls = "") {
+    return `<span class="du-av ${cls}" style="background:${p.color}">${p.initials}</span>`;
+  }
+  function bracketHtml(T) {
+    const cols = [];
+    for (let r = 0, n = T.size / 2; n >= 1; r++, n /= 2) {
+      const ms = Array.from({ length: n }, (_, i) => T.rounds[r]?.[i] || null);
+      const box = (m) => {
+        if (!m) return `<div class="br-m br-empty"><div class="br-p">—</div><div class="br-p">—</div></div>`;
+        const row = (p, s) => `<div class="br-p ${m.w ? (m.w === p ? "win" : "lose") : ""} ${p.me ? "me" : ""}"><span>${firstName(p)}</span><b>${s ?? ""}</b></div>`;
+        return `<div class="br-m ${!m.w && (m.a.me || m.b.me) ? "live" : ""}">${row(m.a, m.sa)}${row(m.b, m.sb)}</div>`;
+      };
+      const pairs = [];
+      for (let i = 0; i < ms.length; i += 2) pairs.push(ms.slice(i, i + 2));
+      cols.push(`<div class="br-col"><div class="br-h">${stageName(n)}</div><div class="br-body">${pairs
+        .map((p) => `<div class="br-pair ${p.length === 2 ? "two" : ""}">${p.map(box).join("")}</div>`)
+        .join("")}</div></div>`);
+    }
+    cols.push(`<div class="br-col champ-col"><div class="br-h">Чемпион</div><div class="br-body"><div class="br-pair"><div class="br-m champ ${T.champion ? "" : "br-empty"}">${icon("emoji_events")}<span>${T.champion ? firstName(T.champion) : "?"}</span></div></div></div></div>`);
+    return `<div class="br">${cols.join("")}</div>`;
+  }
+
+  function tournamentHtml(head) {
+    const T = tourney();
+    const cur = T.rounds[T.rounds.length - 1];
+    const mm = myMatch(T);
+    const opp = mm && (mm.a.me ? mm.b : mm.a);
+    let mine;
+    if (T.champion?.me) mine = `<div class="tr-me win">${icon("emoji_events")}<div><b>Сен чемпионсың!</b><span>${T.name} сенікі</span></div></div>`;
+    else if (mm)
+      mine = `
+        <div class="tr-vs">
+          <div class="tr-vs-h">Сенің жекпе-жегің · ${stageName(cur.length)}</div>
+          <div class="tr-vs-row">
+            <div class="tr-vs-p">${avatarHtml(mm.a.me ? mm.a : mm.b, "lg")}<b>Сен</b></div>
+            <div class="tr-vs-x">VS</div>
+            <div class="tr-vs-p">${avatarHtml(opp, "lg")}<b>${opp.name}</b><small>рейтингте ${opp.rank}-орын</small></div>
+          </div>
+          <div class="tr-vs-meta">3 раунд · 13 сұрақ · макс ${DUEL_MAX} ұпай</div>
+          <button type="button" class="tr-play" id="tourPlay">${icon("sports_kabaddi")}Жекпе-жекті бастау</button>
+        </div>`;
+    else if (meOut(T)) mine = `<div class="tr-me">${icon("flag", "material-icons-outlined")}<div><b>Сен турнирден шықтың</b><span>Келесі турнирде сәттілік! Тренажёрда жаттыға бер.</span></div></div>`;
+    else mine = `<div class="tr-me">${icon("hourglass_top", "material-icons-outlined")}<div><b>Келесі кезеңді күт</b><span>Басқа жұптар ойнап жатыр</span></div></div>`;
+    const duels = MOCK.duels || [];
+    return `${head}
+      <div class="list-pad tour">
+        <div class="tr-hero">
+          <div class="tr-cup">${icon("emoji_events")}</div>
+          <div style="flex:1;min-width:0">
+            <div class="tr-name">${T.name}</div>
+            <div class="tr-sub">${T.subjectTitle} · ${T.size} қатысушы · бүкіл топ</div>
+          </div>
+          <span class="tr-stage">${T.champion ? "Аяқталды" : stageName(cur.length)}</span>
+        </div>
+        ${T.champion ? "" : `<div class="tr-deadline">${icon("schedule", "material-icons-outlined")}Кезең ${T.deadline} аяқталады · ${cur.filter((m) => m.w).length}/${cur.length} жекпе-жек өтті</div>`}
+        ${mine}
+        <div class="ga-card tr-card">
+          <div class="ga-ctitle">Турнир кестесі</div>
+          <div class="ga-csub">Жеңімпаз келесі кезеңге өтеді · солға-оңға жылжыт</div>
+          <div class="br-scroll">${bracketHtml(T)}</div>
+        </div>
+        <div class="ga-card tr-card">
+          <div class="ga-ctitle">Ережелер</div>
+          <div class="tr-rules">
+            ${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} сұрақ × ${r.pts} ұпай</span></div>`).join("")}
+          </div>
+          <div class="ga-csub" style="margin-top:10px">Әр сұраққа 20 секунд. Ұпай тең болса — жылдам жауап берген жеңеді.</div>
+        </div>
+        <div class="ga-card tr-card">
+          <div class="ga-ctitle">Сыныптасыңды жарысқа шақыр</div>
+          <div class="ga-csub">Тренажёр пәндері бойынша достық жекпе-жек</div>
+          <button type="button" class="tr-invite" id="duelInvite">${icon("person_add", "material-icons-outlined")}Жарысқа шақыру</button>
+          ${duels
+            .slice(0, 5)
+            .map(
+              (d) => `<div class="tr-hist">${avatarHtml(d.opp)}<div style="flex:1;min-width:0"><b>${d.opp.name}</b><small>${d.subjectTitle} · ${d.date}</small></div><span class="${d.win ? "up" : "down"}">${d.my} : ${d.op}</span></div>`
+            )
+            .join("")}
+        </div>
+      </div>`;
+  }
+
+  async function duelQuestions(subject, seed) {
+    const pick = (arr, n, k) => {
+      const a = [...arr].sort((x, y) => rnd(seed, k, x.id.length + x.stem.length) - rnd(seed, k, y.id.length + y.stem.length));
+      return a.slice(0, n);
+    };
+    try {
+      await loadProbnik();
+      const P = window.PROBNIK.subjects[subject];
+      const all = Object.values(P.variants).flat().filter((q) => q.type === "single_choice" && !q.ctx && q.options.filter((o) => o.correct).length === 1);
+      const easy = all.filter((q) => (q.n || 0) <= 12), mid = all.filter((q) => (q.n || 0) > 12 && q.n <= 25), hard = all.filter((q) => (q.n || 0) > 25);
+      const e = pick(easy.length >= 5 ? easy : all, 5, 1), m = pick(mid.length >= 5 ? mid : all, 5, 2), h = pick(hard.length >= 3 ? hard : all, 3, 3);
+      return [...e, ...m, ...h].map((q) => ({ stem: q.stem, options: q.options.map((o) => o.content), answer: q.options.findIndex((o) => o.correct) }));
+    } catch {
+      const bank = Object.values(MOCK.practice).flatMap((p) => p.questions);
+      return Array.from({ length: 13 }, (_, i) => {
+        const q = bank[i % bank.length];
+        return { stem: q.q, options: q.options, answer: q.answer };
+      });
+    }
+  }
+
+  async function startDuel({ opp, subject, subjectTitle, match }) {
+    toast("Сұрақтар дайындалуда…");
+    const seed = Date.now() % 100000;
+    const qs = await duelQuestions(subject, seed);
+    const plan = DUEL_ROUNDS.flatMap((r, ri) => Array.from({ length: r.n }, () => ({ ri, pts: r.pts })));
+    const D = { i: 0, my: 0, op: 0, myT: 0, opT: 0, pick: null, reveal: false, splash: 0, done: false, left: 20, res: [] };
+    const me = { name: "Сен", initials: MOCK.me.initials, color: "#5B6EC2" };
+    let timer = null;
+    const oppCorrect = (i) => rnd(opp.id, seed, i) < [0.78, 0.6, 0.42][plan[i].ri] * (0.65 + (opp.score || 0) / 220);
+    const answer = (k) => {
+      if (D.reveal) return;
+      clearInterval(timer);
+      const q = qs[D.i], p = plan[D.i];
+      D.pick = k;
+      D.reveal = true;
+      const ok = k === q.answer;
+      const opOk = oppCorrect(D.i);
+      const opTime = 4 + rnd(opp.id, seed, D.i + 50) * 13;
+      D.myT += 20 - D.left;
+      D.opT += opTime;
+      if (ok) D.my += p.pts;
+      if (opOk) D.op += p.pts;
+      D.res.push({ ok, opOk, ri: p.ri });
+      paintStack();
+      setTimeout(() => {
+        D.reveal = false;
+        D.pick = null;
+        D.i += 1;
+        if (D.i >= plan.length) finish();
+        else if (plan[D.i].ri !== plan[D.i - 1].ri) D.splash = plan[D.i].ri;
+        else startTimer();
+        paintStack();
+      }, 1100);
+    };
+    const startTimer = () => {
+      D.left = 20;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        const el = $("#duTime");
+        if (!el) return clearInterval(timer);
+        D.left -= 1;
+        el.textContent = D.left;
+        $("#duTimeBar").style.width = `${(D.left / 20) * 100}%`;
+        if (D.left <= 0) answer(-1);
+      }, 1000);
+    };
+    const finish = () => {
+      clearInterval(timer);
+      D.done = true;
+      const win = D.my > D.op || (D.my === D.op && D.myT <= D.opT);
+      D.win = win;
+      (MOCK.duels = MOCK.duels || []).unshift({ opp, my: D.my, op: D.op, win, subjectTitle, date: dmy(new Date()) });
+      if (match) {
+        const meA = match.a.me;
+        match.sa = meA ? D.my : D.op;
+        match.sb = meA ? D.op : D.my;
+        if (match.sa === match.sb) meA === win ? (match.sb -= 0.5) : (match.sa -= 0.5);
+        match.w = win ? (meA ? match.a : match.b) : meA ? match.b : match.a;
+        match.sa = Math.ceil(match.sa);
+        match.sb = Math.ceil(match.sb);
+        tourAdvance(tourney());
+      }
+    };
+    const scoreBar = () => `
+      <div class="du-top">
+        <div class="du-side">${avatarHtml(me)}<div><b>Сен</b><span class="du-pts">${D.my}</span></div></div>
+        <div class="du-mid"><span class="du-round ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].cls}">${plan[Math.min(D.i, plan.length - 1)].ri + 1}-раунд · ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].name}</span><small>${subjectTitle}</small></div>
+        <div class="du-side r"><div><b>${opp.name.split(" ")[0]}</b><span class="du-pts">${D.op}</span></div>${avatarHtml(opp)}</div>
+      </div>
+      <div class="du-dots">${plan.map((p, i) => {
+        const r = D.res[i];
+        return `<i class="${DUEL_ROUNDS[p.ri].cls} ${r ? (r.ok ? "ok" : "bad") : i === D.i ? "cur" : ""}"></i>`;
+      }).join("")}</div>`;
+    const build = () => {
+      if (D.done) {
+        const per = DUEL_ROUNDS.map((r, ri) => ({ r, my: D.res.filter((x) => x.ri === ri && x.ok).length * r.pts, op: D.res.filter((x) => x.ri === ri && x.opOk).length * r.pts }));
+        return `
+          <div class="du-res ${D.win ? "win" : "lose"}">
+            <div class="du-res-ico">${icon(D.win ? "emoji_events" : "sentiment_dissatisfied", "material-icons-outlined")}</div>
+            <div class="du-res-t">${D.win ? "Жеңіс!" : "Бұл жолы жеңіліс"}</div>
+            <div class="du-res-s">${avatarHtml(me)}<b>${D.my}</b><span>:</span><b>${D.op}</b>${avatarHtml(opp)}</div>
+            ${D.my === D.op ? `<div class="du-res-n">Ұпай тең — ${D.win ? "сен" : opp.name.split(" ")[0]} жылдамырақ жауап берді</div>` : ""}
+            ${match ? `<div class="du-res-n">${D.win ? "Сен келесі кезеңге өттің!" : "Турнир сен үшін аяқталды"}</div>` : ""}
+          </div>
+          <div class="list-pad">${per
+            .map((x, i) => `<div class="du-rr ${x.r.cls}"><span>${i + 1}-раунд · ${x.r.name}</span><b>${x.my} : ${x.op}</b></div>`)
+            .join("")}</div>`;
+      }
+      if (D.splash) {
+        const r = DUEL_ROUNDS[D.splash];
+        return `${scoreBar()}<div class="du-splash ${r.cls}"><div class="du-sp-n">${D.splash + 1}-раунд</div><div class="du-sp-t">${r.name}</div><div class="du-sp-s">${r.n} сұрақ · әр сұрақ ${r.pts} ұпай</div><button type="button" class="tr-play" id="duGo">Бастау</button></div>`;
+      }
+      const q = qs[D.i];
+      return `${scoreBar()}
+        <div class="du-timer"><i id="duTimeBar" style="width:${(D.left / 20) * 100}%"></i><span id="duTime">${D.left}</span></div>
+        <div class="du-q">
+          <div class="du-qn">Сұрақ ${D.i + 1} / ${plan.length} · +${plan[D.i].pts} ұпай</div>
+          <div class="tq-q">${md(q.stem)}</div>
+          ${q.options
+            .map((o, k) => {
+              let cls = "";
+              if (D.reveal && k === q.answer) cls = "ok";
+              else if (D.reveal && k === D.pick) cls = "bad";
+              return `<button type="button" class="pr-opt ${cls}" data-du="${k}"><span class="pr-radio"></span><span>${md(o)}</span></button>`;
+            })
+            .join("")}
+          ${D.reveal ? `<div class="du-op">${opp.name.split(" ")[0]}: ${D.res[D.res.length - 1].opOk ? `<span class="up">дұрыс жауап берді</span>` : `<span class="down">қателесті</span>`}</div>` : ""}
+        </div>`;
+    };
+    pushScreen(
+      "Жекпе-жек",
+      build,
+      () => {
+        renderMath($("#screenOverlay"));
+        $$("[data-du]").forEach((b) => (b.onclick = () => answer(Number(b.dataset.du))));
+        $("#duGo")?.addEventListener("click", () => {
+          D.splash = 0;
+          startTimer();
+          paintStack();
+        });
+        $("#duBack")?.addEventListener("click", () => {
+          state.navStack.pop();
+          paintStack();
+        });
+        $("#duAgain")?.addEventListener("click", () => {
+          state.navStack.pop();
+          startDuel({ opp, subject, subjectTitle });
+        });
+      },
+      {
+        screenCls: "duel",
+        footer: () =>
+          D.done
+            ? `<div class="sticky-foot rp-foot">${match ? "" : `<button type="button" class="rp-pdf" id="duAgain">${icon("replay")}Реванш</button>`}<button type="button" class="ef-submit" id="duBack" style="margin:0">${match ? "Турнирге оралу" : "Дайын"}</button></div>`
+            : "",
+      }
+    );
+    D.splash = 0;
+    paintStack();
+    startTimer();
+  }
+
+  function openDuelInvite() {
+    const g = MOCK.groups[0];
+    const subs = MOCK.myCourses.filter((c) => T_SUBJ[c.id]);
+    const st = { who: null, sub: subs[0]?.id };
+    const draw = () => {
+      openSheet(
+        `
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Жарысқа шақыру</span><button type="button" id="dvClose">${icon("close")}</button></div>
+        <div class="ef-label">Пән</div>
+        <div class="ent-chips">${subs.map((c) => `<button type="button" class="ent-chip ${st.sub === c.id ? "on" : ""}" style="--c:#6C7FD8" data-dvs="${c.id}">${c.title}</button>`).join("")}</div>
+        <div class="ef-label">Сыныптас</div>
+        <div class="pick-list">${g.students
+          .map((x) => `<button type="button" class="pick-opt dv-p ${st.who === x.id ? "on" : ""}" data-dvp="${x.id}">${avatarHtml(x)}<span style="flex:1">${x.name}</span>${st.who === x.id ? icon("check") : ""}</button>`)
+          .join("")}</div>
+        <button type="button" class="ef-submit" id="dvGo" ${st.who ? "" : "disabled"}>Шақыру</button>`,
+        { tall: true }
+      );
+      $("#dvClose").onclick = closeSheet;
+      $$("[data-dvs]").forEach((b) => (b.onclick = () => ((st.sub = Number(b.dataset.dvs)), draw())));
+      $$("[data-dvp]").forEach((b) => (b.onclick = () => ((st.who = Number(b.dataset.dvp)), draw())));
+      $("#dvGo").onclick = () => {
+        const opp = g.students.find((x) => x.id === st.who);
+        const c = MOCK.myCourses.find((x) => x.id === st.sub);
+        closeSheet();
+        toast(`${opp.name.split(" ")[0]} шақыруды қабылдады!`);
+        setTimeout(() => startDuel({ opp, subject: T_SUBJ[c.id], subjectTitle: c.title }), 500);
+      };
+    };
+    draw();
+  }
+
+  function bindTournament() {
+    $("#tourPlay")?.addEventListener("click", () => {
+      const T = tourney();
+      const m = myMatch(T);
+      if (!m) return;
+      startDuel({ opp: m.a.me ? m.b : m.a, subject: T.subject, subjectTitle: T.subjectTitle, match: m });
+    });
+    $("#duelInvite")?.addEventListener("click", openDuelInvite);
+    const sc = $(".br-scroll");
+    const live = $(".br-m.live");
+    if (sc && live) sc.scrollLeft = Math.max(0, live.offsetLeft - 20);
+  }
+
   function entPickerHtml() {
     const P = MOCK.entPicker;
     const sel = state.entSel;
@@ -1984,6 +2315,7 @@
         pushScreen(name, () => `<div class="list-pad"><div class="news-card"><div class="n-title">${name}</div><div class="n-body">Раздел открыт, как в приложении.</div></div></div>`);
       };
     });
+    bindTournament();
     $("#profFilter") &&
       ($("#profFilter").onclick = () => {
         const isUni = state.svc.tab === "uni";
