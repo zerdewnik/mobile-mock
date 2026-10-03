@@ -6,7 +6,7 @@
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
     { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
-    { out: "", fill: "", outClass: "", fillClass: "", label: "" }, // бос орын — кейін толтырылады
+    { out: "how_to_reg", fill: "how_to_reg", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисление" },
   ];
   const NAV_STUDENT = [
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
@@ -14,7 +14,7 @@
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Главная", "Новости", "Группы"];
+  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Зачисление"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
@@ -338,7 +338,6 @@
   }
 
   function setTab(index, { skipClose } = {}) {
-    if (state.mode === "staff" && index === 3) return; // бос орын
     state.tab = index;
     state.sub = null;
     state.profileStudent = null;
@@ -4671,6 +4670,55 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /** Зачисление: курсқа доступы бар оқушылар (куратор — өз топтары, бас куратор — бәрі) */
+  function accessList() {
+    return visibleGroups().flatMap((g) =>
+      g.students.map((x) => {
+        const days = 20 + Math.floor(rnd(x.id, 5) * 300);
+        const until = new Date(AN_TODAY);
+        until.setDate(until.getDate() + days);
+        return { x, g, course: COURSE_TITLE[g.courseId] || g.courseLabel, days, until };
+      })
+    );
+  }
+  function renderAccessList() {
+    const all = accessList();
+    const courses = [...new Set(all.map((r) => r.course))];
+    const f = state.accCourse || null;
+    const rows = all
+      .filter((r) => (!f || r.course === f) && matches(state.accQ || "", r.x.name, r.x.phone, r.g.name))
+      .sort((a, b) => a.x.name.localeCompare(b.x.name));
+    return `
+      <div class="search-row">
+        <div class="search-field">${icon("search")}<input id="accSearch" placeholder="Поиск по имени, телефону, группе" value="${(state.accQ || "").replace(/"/g, "&quot;")}" /></div>
+      </div>
+      ${courses.length > 1 ? `<div class="acc-chips"><button type="button" class="ent-chip ${!f ? "on" : ""}" style="--c:var(--primary)" data-acc="">Все курсы</button>${courses.map((c) => `<button type="button" class="ent-chip ${f === c ? "on" : ""}" style="--c:var(--primary)" data-acc="${c}">${c}</button>`).join("")}</div>` : ""}
+      <div class="acc-count">${icon("verified_user", "material-icons-outlined")}Доступ к курсу: <b>${rows.length}</b> ${plural(rows.length, "ученик", "ученика", "учеников")}</div>
+      <div class="list-pad tight-top">
+        ${
+          rows.length
+            ? rows
+                .map(
+                  (r) => `
+          <button type="button" class="acc-row" data-acc-st="${r.x.id}">
+            <span class="avatar" style="background:${r.x.color}">${r.x.initials}</span>
+            <span class="acc-main">
+              <b>${r.x.name}</b>
+              <small>${r.x.phone}</small>
+              <small>${r.course} · ${r.g.name}</small>
+            </span>
+            <span class="acc-right">
+              <span class="acc-badge ${r.days < 30 ? "warn" : ""}">${icon("lock_open", "material-icons-outlined")}Доступ</span>
+              <small>до ${dmy(r.until)}</small>
+            </span>
+          </button>`
+                )
+                .join("")
+            : `<div class="empty">Ничего не найдено</div>`
+        }
+      </div>`;
+  }
+
   function renderEnrollSoon() {
     return `
       <div class="soon-screen">
@@ -5696,7 +5744,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
     return `
-      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", ""][state.tab]}</div>
+      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Зачисление"][state.tab]}</div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
@@ -5729,6 +5777,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     else if (state.sub === "pushes") content.innerHTML = renderPushes();
     else if (state.tab === 0) content.innerHTML = renderStaffHome();
     else if (state.tab === 1) content.innerHTML = renderStaffNews();
+    else if (state.tab === 3) content.innerHTML = renderAccessList();
     else content.innerHTML = renderGroups();
 
     bindContent();
@@ -5931,6 +5980,19 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
     $$("[data-nmine]").forEach((b) => (b.onclick = () => ((state.navStack = []), openMyNews(MOCK.news.find((n) => n.id === Number(b.dataset.nmine))))));
     $$("[data-nreview]").forEach((b) => (b.onclick = () => ((state.navStack = []), openNewsReview(MOCK.news.find((n) => n.id === Number(b.dataset.nreview))))));
+    bindSearch("#accSearch", (v) => {
+      state.accQ = v;
+      render();
+    });
+    $$("[data-acc]").forEach((b) => (b.onclick = () => ((state.accCourse = b.dataset.acc || null), render())));
+    $$("[data-acc-st]").forEach((b) => {
+      b.onclick = () => {
+        const id = Number(b.dataset.accSt);
+        const g = MOCK.groups.find((x) => x.students.some((y) => y.id === id));
+        state.navStack = [];
+        openStaffStudent(g.students.find((y) => y.id === id), g);
+      };
+    });
     $("#subBack")?.addEventListener("click", () => {
       state.sub = null;
       render();

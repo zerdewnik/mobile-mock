@@ -23,7 +23,7 @@
 | AI батырмасы (орта) | AI for you | сақина 46, ядро 40 | студент `#5B6EC2`, staff `#8B5CF6`, иконка `assets/logo/ai3.png` 22 (ақ) | `.nav-fab` | `FloatingActionButton` 40 |
 
 **Навбар құрамы.** Студент: Главная (`home`) · Новости (`newspaper`) · AI · Группы (`groups`) · Мои курсы (`menu_book`).
-Staff: Главная (`home`) · Новости (`newspaper`) · AI · Группы (`groups`) · *(4-орын әзірге бос)*. Хабарлама — app bar-дағы 🔔 (`notifications_none`), профильдің сол жағында.
+Staff: Главная (`home`) · Новости (`newspaper`) · AI · Группы (`groups`) · Зачисление (`how_to_reg`). Хабарлама — app bar-дағы 🔔 (`notifications_none`), профильдің сол жағында.
 
 ---
 
