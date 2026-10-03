@@ -3459,7 +3459,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
   function openAttemptReview(att) {
     const subs = attemptSubjects(att);
-    let cur = 0;
     const build = () => {
       const passAll = subs.every((s2) => s2.score >= (ENT_MIN[s2.key] || 5));
       return `
@@ -3483,58 +3482,73 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             .join("")}
         </div>`;
     };
-    const subBuild = () => {
-      const sub = subs[cur];
+    /* ҰБТ талдауы — қосымшадағыдай: пән қойындылары, сұрақ нөмірлері, бір сұрақ, Артқа/Алға */
+    const R = { s: 0, q: subs.map(() => 0) };
+    const qOk = (sub, q) => sub.qScore(q) === sub.qMax(q);
+    const anaBuild = () => {
+      const sub = subs[R.s];
+      const qi = R.q[R.s];
+      const q = sub.qs[qi];
+      const a = att.ans[q.id];
+      const got = sub.qScore(q), mx = sub.qMax(q);
+      let body;
+      if (q.type === "matching") {
+        const { stem, right } = splitMatching(q.stem);
+        const key = matchingKey(q);
+        body = `<div class="an-q">${md(stem)}</div>
+          <div class="an-right">${right.map((r) => `<div><b>${r.n})</b> ${md(r.text)}</div>`).join("")}</div>
+          ${q.options.map((o) => {
+            const mine = a?.[o.id];
+            const good = mine && mine === key[o.id];
+            return `<div class="an-opt ${good ? "ok" : "bad"}"><span><b>${o.id}</b> ${md(o.content)}</span><span class="an-pair">${mine || "—"}${good ? "" : ` → ${key[o.id]}`}</span></div>`;
+          }).join("")}`;
+      } else {
+        const picked = (k) => (q.type === "multiple_choice" ? a?.has?.(k) : a === k);
+        body = `<div class="an-q">${md(q.stem)}</div>
+          ${q.options.map((o, k) => `<div class="an-opt ${o.correct ? "ok" : picked(k) ? "bad" : ""}"><span>${md(o.content)}</span>${picked(k) ? icon(o.correct ? "check_circle" : "cancel") : ""}</div>`).join("")}`;
+      }
+      const okN = (s2) => s2.qs.filter((x) => qOk(s2, x)).length;
       return `
-        <div class="er-head">
-          <div class="er-total"><b>${sub.score}</b> / ${sub.max}</div>
-          <div class="er-sub">${sub.title} · дұрыс: ${sub.qs.filter((q) => sub.qScore(q) === sub.qMax(q)).length} / ${sub.qs.length} сұрақ</div>
-        </div>
-        <div class="list-pad">
-          ${sub.qs
-            .map((q, i) => {
-              const got = sub.qScore(q), mx = sub.qMax(q);
-              const a = att.ans[q.id];
-              const ok = got === mx;
-              const st = ok ? "ok" : got > 0 ? "part" : "bad";
-              let body;
-              if (q.type === "matching") {
-                const { stem, right } = splitMatching(q.stem);
-                const key = matchingKey(q);
-                body = `<div class="rv-q">${md(stem)}</div>
-                  <div class="mt-right rv-right">${right.map((r) => `<div><b>${r.n})</b> ${md(r.text)}</div>`).join("")}</div>
-                  ${q.options
-                    .map((o) => {
-                      const mine = a?.[o.id];
-                      const good = mine && mine === key[o.id];
-                      return `<div class="rv-opt ${good ? "ok" : "bad"}"><span class="pr-radio"></span><span><b>${o.id}</b> ${md(o.content)} → ${mine ? `<b>${mine}</b>` : "—"}${good ? "" : ` <i class="rv-fix">дұрысы: ${key[o.id]}</i>`}</span></div>`;
-                    })
-                    .join("")}`;
-              } else {
-                const picked = (k) => (q.type === "multiple_choice" ? a?.has?.(k) : a === k);
-                body = `<div class="rv-q">${md(q.stem)}</div>
-                  ${q.type === "multiple_choice" ? `<div class="mt-hint">Бір немесе бірнеше дұрыс жауап</div>` : ""}
-                  ${q.options
-                    .map((o, k) => {
-                      const cls = o.correct ? "ok" : picked(k) ? "bad" : "";
-                      return `<div class="rv-opt ${cls} ${picked(k) ? "mine" : ""}"><span class="pr-radio"></span><span>${md(o.content)}</span>${picked(k) ? `<em>сенің жауабың</em>` : ""}</div>`;
-                    })
-                    .join("")}`;
-              }
-              return `<div class="rv-card ${st}">
-                <div class="rv-top"><span class="rv-n">${i + 1}</span><span class="rv-pts">${got} / ${mx} балл</span></div>
-                ${body}
-                <div class="pr-fb ${ok ? "ok" : "bad"} rv-fb">
-                  <div class="pr-fb-title">${ok ? "Верно" : got > 0 ? "Частично верно" : "Неверно"}</div>
-                  <div class="pr-explain">
-                    ${ok ? "<b>Дұрыс!</b> " : `<b>Дұрыс емес.</b> Дұрыс жауабы: <b>${q.type === "matching" ? q.matching : q.options.filter((o) => o.correct).map((o) => md(o.content)).join("; ")}</b>${q.note ? " — " : ""}`}
-                    ${q.note ? md(q.note) : ""}
-                  </div>
-                </div>
-              </div>`;
-            })
-            .join("")}
+        <div class="an-subs">${subs.map((s2, i) => `<button type="button" class="an-sub ${i === R.s ? "on" : ""}" data-ans="${i}">${ENT_SHORT[s2.key] || s2.title}<small>${okN(s2)}/${s2.qs.length}</small></button>`).join("")}</div>
+        <div class="an-nums">${sub.qs.map((x, k) => `<button type="button" class="an-num ${qOk(sub, x) ? "ok" : sub.qScore(x) > 0 ? "part" : "bad"} ${k === qi ? "on" : ""}" data-anq="${k}">${k + 1}</button>`).join("")}</div>
+        <div class="an-body">
+          ${body}
+          <div class="an-ex ${got === mx ? "ok" : "bad"}">
+            <b>${got === mx ? "Дұрыс" : got > 0 ? "Жартылай дұрыс" : "Қате"} · ${got}/${mx} балл</b>
+            ${got === mx ? "" : `<div>Дұрыс жауабы: ${q.type === "matching" ? q.matching : q.options.filter((o) => o.correct).map((o) => md(o.content)).join("; ")}</div>`}
+            ${q.note ? `<div class="an-note">${md(q.note)}</div>` : ""}
+          </div>
         </div>`;
+    };
+    const anaFoot = () => `
+      <div class="an-foot">
+        <button type="button" class="an-nav" id="anPrev">${icon("arrow_circle_left", "material-icons-outlined")}Артқа</button>
+        <button type="button" class="an-nav" id="anNext">Алға${icon("arrow_circle_right", "material-icons-outlined")}</button>
+      </div>`;
+    const openAnalysis = (si) => {
+      R.s = si;
+      pushScreen(
+        "ҰБТ талдауы",
+        anaBuild,
+        () => {
+          renderMath($("#screenOverlay"));
+          $$("[data-ans]").forEach((b) => (b.onclick = () => ((R.s = Number(b.dataset.ans)), paintStack())));
+          $$("[data-anq]").forEach((b) => (b.onclick = () => ((R.q[R.s] = Number(b.dataset.anq)), paintStack())));
+          $("#anPrev").onclick = () => {
+            if (R.q[R.s] > 0) R.q[R.s]--;
+            else if (R.s > 0) (R.s--, (R.q[R.s] = subs[R.s].qs.length - 1));
+            paintStack();
+          };
+          $("#anNext").onclick = () => {
+            if (R.q[R.s] < subs[R.s].qs.length - 1) R.q[R.s]++;
+            else if (R.s < subs.length - 1) (R.s++, (R.q[R.s] = 0));
+            paintStack();
+          };
+          $(".an-num.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+          $(".an-sub.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+        },
+        { screenCls: "an-dark", footer: anaFoot }
+      );
     };
     pushScreen(
       `Разбор · ${att.variant}-нұсқа`,
@@ -3544,8 +3558,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $$("[data-masub]").forEach(
           (b) =>
             (b.onclick = () => {
-              cur = Number(b.dataset.masub);
-              pushScreen(`Разбор: ${subs[cur].title}`, subBuild, () => renderMath($("#screenOverlay")), { screenCls: "ent-light" });
+              openAnalysis(Number(b.dataset.masub));
             })
         );
         $("#maCert").onclick = () => {

@@ -3908,3 +3908,37 @@ input[type="date"].ef-input { color-scheme: dark; }
 .ent-light .rv-fb .pr-fb-title { color: inherit; }
 .ent-light .rv-fb.ok .pr-fb-title { color: #2e8b4e; }
 .ent-light .rv-fb.bad .pr-fb-title { color: #c0392b; }
+
+/* ҰБТ талдауы — қосымшадағыдай (қараңғы) */
+.screen-overlay.an-dark { background: #121212; }
+.an-dark .appbar { background: #2b3553; }
+.an-subs { display: flex; overflow-x: auto; border-bottom: 1px solid #fff; padding: 6px 4px 0; }
+.an-subs::-webkit-scrollbar, .an-nums::-webkit-scrollbar { height: 0; }
+.an-sub { flex: 1 0 auto; border: 0; border-bottom: 3px solid transparent; background: transparent; color: #fff; font-family: inherit; font-size: 13px; padding: 8px 10px 8px; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; white-space: nowrap; }
+.an-sub small { font-size: 12px; color: #c8cad4; }
+.an-sub.on { color: #6c7fd8; border-bottom-color: #5b6ec2; }
+.an-sub.on small { color: #6c7fd8; }
+.an-nums { display: flex; gap: 10px; overflow-x: auto; padding: 14px 15px 6px; }
+.an-num { flex-shrink: 0; width: 42px; height: 42px; border-radius: 7px; border: 0; color: #fff; font-family: inherit; font-size: 13px; font-weight: 700; cursor: pointer; background: #2b3046; }
+.an-num.ok { background: #2f5e3a; }
+.an-num.bad { background: #6a2a26; }
+.an-num.part { background: #6b5320; }
+.an-num.on { background: #5b6ec2; box-shadow: 0 0 0 2px #8a94f5; }
+.an-body { padding: 22px 8px 16px; }
+.an-q { font-size: 15px; line-height: 1.5; padding: 0 4px; margin-bottom: 16px; }
+.an-right { background: #1e1e1e; border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; display: flex; flex-direction: column; gap: 6px; font-size: 13px; }
+.an-opt { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 56px; padding: 12px 18px; margin-bottom: 14px; border-radius: 14px; background: #1e1e1e; font-size: 14.5px; }
+.an-opt.ok { background: #4caf50; color: #fff; }
+.an-opt.bad { background: #e05a4f; color: #fff; }
+.an-opt .material-icons-round { font-size: 20px; flex-shrink: 0; }
+.an-pair { font-weight: 700; white-space: nowrap; }
+.an-ex { margin-top: 6px; padding: 12px 14px; border-radius: 12px; background: #1e1e1e; border-left: 3px solid; font-size: 13px; line-height: 1.5; color: #d6d6d6; }
+.an-ex.ok { border-color: #4caf50; }
+.an-ex.bad { border-color: #e05a4f; }
+.an-ex b { display: block; margin-bottom: 4px; }
+.an-ex.ok b { color: #5cb36d; }
+.an-ex.bad b { color: #e06b5b; }
+.an-note { margin-top: 6px; color: #9a9db0; font-size: 12.5px; }
+.an-foot { flex-shrink: 0; display: flex; justify-content: space-between; gap: 12px; padding: 16px 15px 30px; background: #1a1a1a; border-radius: 16px 16px 0 0; }
+.an-nav { height: 52px; padding: 0 26px; border-radius: 26px; border: 1px solid #3a3a42; background: #232326; color: #fff; font-family: inherit; font-size: 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
+.an-nav .material-icons-outlined { font-size: 24px; }
