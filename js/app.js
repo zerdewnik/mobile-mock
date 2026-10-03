@@ -3265,17 +3265,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           b.dataset.t = b.dataset.t || b.innerHTML;
           b.innerHTML = on ? txt : b.dataset.t;
         };
-        $("#rpPdf").onclick = async (e) => {
-          const b = e.currentTarget;
-          busy(b, true, "Готовим PDF…");
-          try {
-            saveFile(await pdfFile());
-            toast("PDF сохранён");
-          } catch {
-            toast("Не удалось создать PDF", "err");
-          }
-          busy(b, false);
-        };
         $("#rpSend").onclick = async (e) => {
           const b = e.currentTarget;
           busy(b, true, "Готовим PDF…");
@@ -3300,7 +3289,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       },
       {
         right: "<span></span>",
-        footer: () => `<div class="sticky-foot rp-foot"><button type="button" class="rp-pdf" id="rpPdf">${icon("picture_as_pdf", "material-icons-outlined")}PDF</button><button type="button" class="ef-submit" id="rpSend" style="margin:0">${waSvg()}Отправить родителю</button></div>`,
+        footer: () => `<div class="sticky-foot rp-foot"><button type="button" class="ef-submit" id="rpSend" style="margin:0">${waSvg()}Отправить родителю</button></div>`,
       }
     );
   }
