@@ -2065,15 +2065,34 @@
       </button>`;
   }
 
+  /** Турнирлер екіге бөлінеді: Белсенді (тіркелу + өтіп жатыр) / Архив */
+  function tourSegHtml(list, staff) {
+    const seg = state.tourSeg || "active";
+    const act = list.filter((t) => t.status === "registration" || t.status === "running");
+    const arc = list.filter((t) => t.status === "finished" || t.status === "cancelled" && staff);
+    const sec = (title, arr) => (arr.length ? `<div class="t3-sec">${title}</div>${arr.map((t) => tourCard(t, staff)).join("")}` : "");
+    return `
+      <div class="seg-tabs tour-seg">
+        <button type="button" data-tseg="active" class="${seg === "active" ? "on" : ""}">Белсенді · ${act.length}</button>
+        <button type="button" data-tseg="archive" class="${seg === "archive" ? "on" : ""}">Архив · ${arc.length}</button>
+      </div>
+      ${
+        seg === "active"
+          ? sec("Тіркелу ашық", act.filter((t) => t.status === "registration")) + sec("Өтіп жатыр", act.filter((t) => t.status === "running")) || `<div class="empty">Белсенді турнир жоқ</div>`
+          : arc.map((t) => tourCard(t, staff)).join("") || `<div class="empty">Архив бос</div>`
+      }`;
+  }
+  function bindTourSeg(repaint) {
+    $$("[data-tseg]").forEach((b) => (b.onclick = () => ((state.tourSeg = b.dataset.tseg), repaint())));
+  }
+
   function tournamentHtml(head) {
     const list = tournaments();
     const sec = (title, arr) => (arr.length ? `<div class="t3-sec">${title}</div>${arr.map(tourCard).join("")}` : "");
     const duels = MOCK.duels || [];
     return `${head}
       <div class="list-pad tour">
-        ${sec("Тіркелу ашық", list.filter((t) => t.status === "registration"))}
-        ${sec("Өтіп жатыр", list.filter((t) => t.status === "running"))}
-        ${sec("Өткен турнирлер", list.filter((t) => t.status === "finished"))}
+        ${tourSegHtml(list, false)}
         <div class="t3-panel">
           <div class="t3-panel-h"><img src="assets/tournament/duel.svg" alt="" /><div><b>Сыныптасыңды жарысқа шақыр</b><span>Тренажёр пәндері бойынша достық жекпе-жек</span></div></div>
           <button type="button" class="btn3d" id="duelInvite">${icon("person_add", "material-icons-outlined")}Жарысқа шақыру</button>
@@ -2221,16 +2240,12 @@
     pushScreen(
       "Турнирлер",
       () => `<div class="list-pad tour">
-        <button type="button" class="btn3d" id="tNew" style="margin:0 0 6px">${icon("add")}Турнир құру</button>
-        ${[["Тіркелу ашық", ["registration"]], ["Өтіп жатыр", ["running"]], ["Өткен турнирлер · архив", ["finished", "cancelled"]]]
-          .map(([t, sts]) => {
-            const arr = tournaments().filter((x) => sts.includes(x.status));
-            return arr.length ? `<div class="t3-sec">${t}</div>${arr.map((x) => tourCard(x, true)).join("")}` : "";
-          })
-          .join("")}
+        <button type="button" class="btn3d" id="tNew" style="margin:0 0 14px">${icon("add")}Турнир құру</button>
+        ${tourSegHtml(tournaments(), true)}
       </div>`,
       () => {
         $("#tNew").onclick = openTourForm;
+        bindTourSeg(paintStack);
         $$("[data-tour]").forEach((b) => (b.onclick = () => openTournament(tournaments().find((t) => t.id === Number(b.dataset.tour)), { staff: true })));
       },
       { right: "<span></span>" }
@@ -2501,6 +2516,7 @@
   }
 
   function bindTournament() {
+    bindTourSeg(paintStack);
     $("#duelInvite")?.addEventListener("click", openDuelInvite);
     $$("[data-tour]").forEach((b) => (b.onclick = () => openTournament(tournaments().find((t) => t.id === Number(b.dataset.tour)))));
   }
