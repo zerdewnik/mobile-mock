@@ -828,10 +828,8 @@
       const tabs = [
         ["ent", "ЕНТ"],
         ["tournament", "Турнир"],
-        ["history", "История"],
-        ["stats", "Статистика"],
       ];
-      const head = `<div class="seg-tabs seg-3 seg-4">${tabs
+      const head = `<div class="seg-tabs">${tabs
         .map(([k, l]) => `<button type="button" data-svctab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`)
         .join("")}</div>`;
       const attempts = MOCK.entAttempts || [];
@@ -1777,7 +1775,7 @@
         $("#entExit") &&
           ($("#entExit").onclick = () => {
             state.navStack.pop();
-            state.svc.tab = "history";
+            state.svc.tab = "ent";
             paintStack();
           });
         if (E.done) return;

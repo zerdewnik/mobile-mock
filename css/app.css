@@ -3474,11 +3474,11 @@ html[data-theme="light"] .phone .app .sp-badge { filter: invert(1) hue-rotate(18
 .student-group .rank-phone { display: none; }
 .student-group .rank-progress, .student-group .rank-points-today { display: none; }
 /* Студент: орын өзгерісі балдың сол жағында, кішкентай белгі */
-.student-group .rank-score-line { gap: 6px; }
-.student-group .rank-change { order: -1; font-size: 11px; padding: 1px 6px 1px 2px; border-radius: 999px; }
-.student-group .rank-change.up { background: rgba(92, 179, 109, 0.15); color: #5cb36d; }
-.student-group .rank-change.down { background: rgba(224, 107, 91, 0.15); color: #e06b5b; }
-.student-group .rank-change .material-icons-round { font-size: 18px; margin: 0 -2px 0 0; }
+.rank-row .rank-score-line { gap: 6px; }
+.rank-row .rank-change { order: -1; font-size: 11px; padding: 1px 6px 1px 2px; border-radius: 999px; }
+.rank-row .rank-change.up { background: rgba(92, 179, 109, 0.15); color: #5cb36d; }
+.rank-row .rank-change.down { background: rgba(224, 107, 91, 0.15); color: #e06b5b; }
+.rank-row .rank-change .material-icons-round { font-size: 18px; margin: 0 -2px 0 0; }
 .seg-tabs.seg-4 button { font-size: 12.5px; }
 .tour-card { background: #1e1e1e; border-radius: 16px; padding: 36px 20px; text-align: center; }
 .tour-ico { width: 64px; height: 64px; border-radius: 50%; margin: 0 auto; display: grid; place-items: center; background: rgba(242, 194, 48, 0.15); color: #f2c230; }
@@ -3726,3 +3726,4 @@ html[data-mode="staff"] .appbar-profile { color: var(--primary); }
 /* Staff навбарындағы 4-орын әзірге бос */
 html[data-mode="staff"] .nav-item[data-tab="3"] { visibility: hidden; pointer-events: none; }
 .service-tile .material-icons-outlined { width: 26px; height: 26px; font-size: 26px; }
+.rank-row .rank-progress { order: -2; margin-right: 2px; }
