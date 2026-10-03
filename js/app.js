@@ -338,6 +338,7 @@
   }
 
   function setTab(index, { skipClose } = {}) {
+    if (state.mode === "staff" && index === 3 && state.staffRole !== "head") index = 0;
     state.tab = index;
     state.sub = null;
     state.profileStudent = null;
@@ -4670,30 +4671,47 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
-  /** Зачисление: курсқа доступы бар оқушылар (куратор — өз топтары, бас куратор — бәрі) */
-  function accessList() {
-    return visibleGroups().flatMap((g) =>
-      g.students.map((x) => {
-        const days = 20 + Math.floor(rnd(x.id, 5) * 300);
-        const until = new Date(AN_TODAY);
-        until.setDate(until.getDate() + days);
-        return { x, g, course: COURSE_TITLE[g.courseId] || g.courseLabel, days, until };
-      })
-    );
+  /** Зачисление (тек бас куратор / академ. бөлім басшысы): оқушылар және доступы бар курстары */
+  function accessStudents() {
+    if (!MOCK.access) {
+      const map = new Map();
+      MOCK.groups.forEach((g) =>
+        g.students.forEach((x) => {
+          if (!map.has(x.id)) map.set(x.id, { x, courses: [] });
+          const r = map.get(x.id);
+          const add = (cid, k) => {
+            if (r.courses.some((c) => c.courseId === cid)) return;
+            const end = new Date(AN_TODAY);
+            end.setDate(end.getDate() + 3 + Math.floor(rnd(x.id, cid, k) * 300));
+            r.courses.push({ courseId: cid, end, price: 0, comment: "" });
+          };
+          add(g.courseId, 1);
+          if (rnd(x.id, 9) < 0.35) add([10, 11, 12, 13, 14, 15, 16][Math.floor(rnd(x.id, 10) * 7)], 2);
+        })
+      );
+      MOCK.access = [...map.values()];
+    }
+    return MOCK.access;
   }
+  const daysLeft = (end) => Math.max(0, Math.ceil((end - AN_TODAY) / 864e5));
+  const COURSE_IDS = [10, 11, 12, 13, 14, 15, 16];
+
   function renderAccessList() {
-    const all = accessList();
-    const courses = [...new Set(all.map((r) => r.course))];
-    const f = state.accCourse || null;
-    const rows = all
-      .filter((r) => (!f || r.course === f) && matches(state.accQ || "", r.x.name, r.x.phone, r.g.name))
+    const F = state.accF || { course: null, soon: false };
+    const rows = accessStudents()
+      .map((r) => ({ ...r, cs: r.courses.filter((c) => (!F.course || c.courseId === F.course) && (!F.soon || daysLeft(c.end) <= 30)) }))
+      .filter((r) => r.cs.length && matches(state.accQ || "", r.x.name, r.x.phone, ...r.cs.map((c) => COURSE_TITLE[c.courseId])))
       .sort((a, b) => a.x.name.localeCompare(b.x.name));
+    const active = (F.course ? 1 : 0) + (F.soon ? 1 : 0);
     return `
       <div class="search-row">
-        <div class="search-field">${icon("search")}<input id="accSearch" placeholder="Поиск по имени, телефону, группе" value="${(state.accQ || "").replace(/"/g, "&quot;")}" /></div>
+        <div class="search-field acc-search">
+          ${icon("search")}
+          <input id="accSearch" placeholder="Поиск по имени, телефону, курсу" value="${(state.accQ || "").replace(/"/g, "&quot;")}" />
+          <button type="button" class="acc-filter ${active ? "on" : ""}" id="accFilter" title="Фильтр">${icon("tune")}${active ? `<i>${active}</i>` : ""}</button>
+        </div>
       </div>
-      ${courses.length > 1 ? `<div class="acc-chips"><button type="button" class="ent-chip ${!f ? "on" : ""}" style="--c:var(--primary)" data-acc="">Все курсы</button>${courses.map((c) => `<button type="button" class="ent-chip ${f === c ? "on" : ""}" style="--c:var(--primary)" data-acc="${c}">${c}</button>`).join("")}</div>` : ""}
-      <div class="acc-count">${icon("verified_user", "material-icons-outlined")}Доступ к курсу: <b>${rows.length}</b> ${plural(rows.length, "ученик", "ученика", "учеников")}</div>
+      <div class="acc-count">${icon("school", "material-icons-outlined")}<b>${rows.length}</b> ${plural(rows.length, "ученик", "ученика", "учеников")}${F.course ? ` · ${COURSE_TITLE[F.course]}` : ""}${F.soon ? " · ≤ 30 дней" : ""}</div>
       <div class="list-pad tight-top">
         ${
           rows.length
@@ -4704,12 +4722,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             <span class="avatar" style="background:${r.x.color}">${r.x.initials}</span>
             <span class="acc-main">
               <b>${r.x.name}</b>
-              <small>${r.x.phone}</small>
-              <small>${r.course} · ${r.g.name}</small>
-            </span>
-            <span class="acc-right">
-              <span class="acc-badge ${r.days < 30 ? "warn" : ""}">${icon("lock_open", "material-icons-outlined")}Доступ</span>
-              <small>до ${dmy(r.until)}</small>
+              ${r.cs
+                .map((c) => {
+                  const d = daysLeft(c.end);
+                  return `<span class="acc-c"><span>${COURSE_TITLE[c.courseId]}</span><em class="${d <= 7 ? "bad" : d <= 30 ? "warn" : ""}">${d} ${plural(d, "день", "дня", "дней")}</em></span>`;
+                })
+                .join("")}
             </span>
           </button>`
                 )
@@ -4717,6 +4735,147 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             : `<div class="empty">Ничего не найдено</div>`
         }
       </div>`;
+  }
+
+  function openAccessFilter() {
+    const F = { ...(state.accF || { course: null, soon: false }) };
+    const draw = () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Фильтр</span><button type="button" id="afClose">${icon("close")}</button></div>
+        <div class="ef-label">Курс</div>
+        <div class="ent-chips">${[null, ...COURSE_IDS].map((id) => `<button type="button" class="ent-chip ${F.course === id ? "on" : ""}" style="--c:var(--primary)" data-afc="${id ?? ""}">${id ? COURSE_TITLE[id] : "Все"}</button>`).join("")}</div>
+        <div class="nf-toggle-row"><div><b>Доступ заканчивается</b><small>Осталось 30 дней и меньше</small></div><button type="button" class="toggle ${F.soon ? "on" : ""}" id="afSoon"></button></div>
+        <div class="sheet-actions btn-row">
+          <button type="button" class="btn btn-ghost" id="afReset">Сбросить</button>
+          <button type="button" class="btn btn-primary" id="afApply">Применить</button>
+        </div>`);
+      $("#afClose").onclick = closeSheet;
+      $$("[data-afc]").forEach((b) => (b.onclick = () => ((F.course = b.dataset.afc ? Number(b.dataset.afc) : null), draw())));
+      $("#afSoon").onclick = () => ((F.soon = !F.soon), draw());
+      $("#afReset").onclick = () => ((state.accF = null), closeSheet(), render());
+      $("#afApply").onclick = () => ((state.accF = F), closeSheet(), render());
+    };
+    draw();
+  }
+
+  /** «+» → Зачислить: студент, курс(тар), басталуы, аяқталуы, құны, түсініктеме */
+  function openEnrollForm(presetId = null) {
+    const all = accessStudents();
+    const f = { st: presetId ? all.find((r) => r.x.id === presetId)?.x : null, courses: new Set(), start: "", today: true, end: "", months: 1, price: "", comment: "" };
+    const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const calcEnd = () => {
+      if (f.end) return new Date(f.end);
+      const s = f.today || !f.start ? new Date(AN_TODAY) : new Date(f.start);
+      s.setMonth(s.getMonth() + f.months);
+      return s;
+    };
+    const draw = () => {
+      const cs = [...f.courses];
+      openSheet(
+        `
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Зачислить</span><button type="button" id="enClose">${icon("close")}</button></div>
+        <div class="ef-label">Студент <i>*</i></div>
+        <button type="button" class="ef-select ${f.st ? "" : "ph"}" id="enSt">${f.st ? `<span class="en-st">${avatarHtml(f.st)}<span>${f.st.name}<small>${f.st.phone}</small></span></span>` : `<span>Выбрать студента</span>`}${icon("expand_more")}</button>
+        <div class="ef-label">Курс <i>*</i></div>
+        <div class="en-row">
+          <button type="button" class="ef-select ${cs.length ? "" : "ph"}" id="enCourse" style="flex:1"><span>${cs.length ? COURSE_TITLE[cs[0]] : "Выбрать курсы"}</span>${icon("expand_more")}</button>
+          ${cs.length > 1 ? `<span class="en-more">+${cs.length - 1}</span>` : ""}
+        </div>
+        <div class="ef-label">Начало <i>*</i></div>
+        <div class="en-row">
+          <input type="date" class="ef-input" id="enStart" value="${f.today ? "" : f.start}" style="flex:1" />
+          <span class="en-or">или</span>
+          <button type="button" class="en-chip ${f.today ? "on" : ""}" id="enToday">Сегодня</button>
+        </div>
+        <div class="ef-label">Окончание <i>*</i></div>
+        <div class="en-row">
+          <input type="date" class="ef-input" id="enEnd" value="${f.end}" style="flex:1" />
+          <span class="en-or">или</span>
+          <label class="ef-select en-dur ${f.end ? "ph" : ""}"><span id="enDurL">${f.months} мес.</span><select id="enDur">${[1, 2, 3, 6, 9, 12].map((m) => `<option value="${m}" ${m === f.months ? "selected" : ""}>${m} мес.</option>`).join("")}</select>${icon("expand_more")}</label>
+        </div>
+        <div class="en-hint">${icon("event_available", "material-icons-outlined")}Доступ до ${dmy(calcEnd())} · ${daysLeft(calcEnd())} ${plural(daysLeft(calcEnd()), "день", "дня", "дней")}</div>
+        <div class="ef-label">Стоимость <i>*</i></div>
+        <div class="en-row"><input type="number" min="0" class="ef-input" id="enPrice" placeholder="0" value="${f.price}" style="flex:1" /><span class="en-cur">₸</span></div>
+        <div class="ef-label">Комментарий</div>
+        <textarea class="ef-input nf-text" id="enCom" placeholder="Необязательно" style="height:80px">${f.comment}</textarea>
+        <div class="sheet-actions btn-row">
+          <button type="button" class="btn btn-ghost" id="enCancel">Отмена</button>
+          <button type="button" class="btn btn-primary" id="enSave">Зачислить</button>
+        </div>`,
+        { tall: true }
+      );
+      const keep = () => {
+        f.start = $("#enStart").value;
+        if (f.start) f.today = false;
+        f.end = $("#enEnd").value;
+        f.price = $("#enPrice").value;
+        f.comment = $("#enCom").value;
+      };
+      $("#enClose").onclick = $("#enCancel").onclick = closeSheet;
+      $("#enStart").onchange = () => (keep(), draw());
+      $("#enEnd").onchange = () => (keep(), draw());
+      $("#enToday").onclick = () => (keep(), (f.today = true), (f.start = ""), draw());
+      $("#enDur").onchange = (e) => (keep(), (f.months = Number(e.target.value)), (f.end = ""), draw());
+      $("#enSt").onclick = () => {
+        keep();
+        const q = { v: "" };
+        const pick = () => {
+          const list = all.filter((r) => matches(q.v, r.x.name, r.x.phone)).slice(0, 60);
+          openSheet(`
+            <div class="sheet-handle"></div>
+            <div class="ef-head"><span>Выбрать студента</span><button type="button" id="spBack">${icon("arrow_back")}</button></div>
+            <input class="ef-input" id="spQ" placeholder="Имя или телефон" value="${q.v.replace(/"/g, "&quot;")}" />
+            <div class="pick-list">${list.map((r) => `<button type="button" class="pick-opt dv-p" data-spk="${r.x.id}">${avatarHtml(r.x)}<span style="flex:1">${r.x.name}<small class="ef-gsub">${r.x.phone}</small></span></button>`).join("") || `<div class="empty">Не найдено</div>`}</div>`, { tall: true });
+          bindSearch("#spQ", (v) => ((q.v = v), pick()));
+          $("#spBack").onclick = draw;
+          $$("[data-spk]").forEach((b) => (b.onclick = () => ((f.st = all.find((r) => r.x.id === Number(b.dataset.spk)).x), draw())));
+        };
+        pick();
+      };
+      $("#enCourse").onclick = () => {
+        keep();
+        const st = f.st && all.find((r) => r.x.id === f.st.id);
+        openSheet(`
+          <div class="sheet-handle"></div>
+          <div class="ef-head"><span>Выбрать курсы</span></div>
+          <div class="pick-list">${COURSE_IDS.map((id) => {
+            const has = st?.courses.find((c) => c.courseId === id);
+            return `<button type="button" class="pick-opt ${f.courses.has(id) ? "on" : ""}" data-enc="${id}"><span>${COURSE_TITLE[id]}${has ? `<small class="ef-gsub">уже есть доступ · ${daysLeft(has.end)} дн. — продлится</small>` : ""}</span>${icon(f.courses.has(id) ? "check_box" : "check_box_outline_blank")}</button>`;
+          }).join("")}</div>
+          <div class="sheet-actions"><button type="button" class="ef-submit" id="encDone">Готово</button></div>`);
+        $$("[data-enc]").forEach((b) => {
+          b.onclick = () => {
+            const id = Number(b.dataset.enc);
+            f.courses.has(id) ? f.courses.delete(id) : f.courses.add(id);
+            b.classList.toggle("on", f.courses.has(id));
+            b.querySelector(".material-icons-round").textContent = f.courses.has(id) ? "check_box" : "check_box_outline_blank";
+          };
+        });
+        $("#encDone").onclick = draw;
+      };
+      $("#enSave").onclick = () => {
+        keep();
+        if (!f.st) return toast("Выберите студента", "err");
+        if (!f.courses.size) return toast("Выберите курс", "err");
+        if (f.price === "" || Number(f.price) < 0) return toast("Укажите стоимость", "err");
+        const end = calcEnd();
+        const startD = f.today || !f.start ? new Date(AN_TODAY) : new Date(f.start);
+        if (end <= startD) return toast("Окончание должно быть позже начала", "err");
+        let r = all.find((x) => x.x.id === f.st.id);
+        if (!r) all.push((r = { x: f.st, courses: [] }));
+        f.courses.forEach((cid) => {
+          const ex = r.courses.find((c) => c.courseId === cid);
+          if (ex) Object.assign(ex, { end, price: Number(f.price), comment: f.comment });
+          else r.courses.push({ courseId: cid, end, price: Number(f.price), comment: f.comment });
+        });
+        closeSheet();
+        toast(`${f.st.name.split(" ")[0]} зачислен: ${[...f.courses].map((c) => COURSE_TITLE[c]).join(", ")}`);
+        render();
+      };
+    };
+    draw();
   }
 
   function renderEnrollSoon() {
@@ -5743,6 +5902,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         ${state.sub === "pushes" ? `<button type="button" class="appbar-bell" id="addPush" title="Отправить пуш">${icon("add_circle_outline", "material-icons-outlined")}</button>` : ""}
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
+    if (state.tab === 3)
+      return `
+      <div class="appbar-title-row"><span class="appbar-title">Зачисление</span><button type="button" class="appbar-add" id="enrollAdd" title="Дать доступ к курсу">${icon("add")}</button></div>
+      <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
+      <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     return `
       <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Зачисление"][state.tab]}</div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
@@ -5984,14 +6148,16 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       state.accQ = v;
       render();
     });
-    $$("[data-acc]").forEach((b) => (b.onclick = () => ((state.accCourse = b.dataset.acc || null), render())));
+    $("#accFilter")?.addEventListener("click", openAccessFilter);
+    $("#enrollAdd")?.addEventListener("click", () => openEnrollForm());
     $$("[data-acc-st]").forEach((b) => {
+      const id = Number(b.dataset.accSt);
       b.onclick = () => {
-        const id = Number(b.dataset.accSt);
         const g = MOCK.groups.find((x) => x.students.some((y) => y.id === id));
         state.navStack = [];
         openStaffStudent(g.students.find((y) => y.id === id), g);
       };
+      bindLongPress(b, () => showActionMenu(b, [{ label: "Зачислить / продлить", icon: "add", onTap: () => openEnrollForm(id) }]));
     });
     $("#subBack")?.addEventListener("click", () => {
       state.sub = null;
@@ -6187,6 +6353,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         state.staffRole = btn.dataset.role;
         $$(".chip-role").forEach((b) => b.classList.toggle("active", b === btn));
         if (state.staffRole === "curator" && state.newsSeg === "review") state.newsSeg = "all";
+        document.documentElement.dataset.role = state.staffRole;
+        if (state.staffRole === "curator" && state.tab === 3) return setTab(0);
         toast(state.staffRole === "head" ? "Рөл: бас куратор / академ. бөлім басшысы" : "Рөл: куратор");
         render();
       });
