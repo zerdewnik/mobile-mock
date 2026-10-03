@@ -53,6 +53,15 @@ window.MOCK = {
         { id: 17, name: "Сабыржан Жарылқасын", phone: "+7 771 498 87 10", initials: "СЖ", color: "#E8A070", rank: 7, medal: null, score: 0, progress: "8/77", lastSeen: "был 24.09.26", pointsToday: 0, rankChange: 0 },
       ],
     },
+    /* Басқа кураторлардың топтары — тек бас куратор / академ. бөлім басшысына көрінеді */
+    { id: 1, name: "құқық", courseId: 12, courseLabel: "құқық · Назгүл", curatorId: 4, studentsCount: 8 },
+    { id: 2, name: "Math Empire", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 9 },
+    { id: 3, name: "Хронос 3", courseId: 13, courseLabel: "тарих · Назгүл", curatorId: 4, studentsCount: 29 },
+    { id: 4, name: "Нейрондар 2", courseId: 14, courseLabel: "Химия · Балайым", curatorId: 6, studentsCount: 7 },
+    { id: 5, name: "Пифагор ұрпақтары", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 15 },
+    { id: 7, name: "НЕЙРОНДАР", courseId: 15, courseLabel: "био · Балайым", curatorId: 6, studentsCount: 17 },
+    { id: 8, name: "СИНАПСТАР", courseId: 15, courseLabel: "био · Балайым", curatorId: 6, studentsCount: 12 },
+    { id: 10, name: "Future Leaders", courseId: 16, courseLabel: "ағылшын · Айгерім", curatorId: 2, studentsCount: 11 },
   ],
   students: [
     { id: 11, name: "Томирис Досымхан", phone: "+7 778 215 35 57", initials: "ТД", color: "#5B6EC2", status: "online", course: "ДЖТ", progress: "48/77", blocked: false },

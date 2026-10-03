@@ -675,7 +675,7 @@
         box.innerHTML = `
           <div class="field-label">Группа</div>
           <select class="field-select" id="pGroup">
-            ${MOCK.groups.map((g) => `<option value="${g.id}">${g.name}</option>`).join("")}
+            ${visibleGroups().map((g) => `<option value="${g.id}">${g.name}</option>`).join("")}
           </select>`;
       } else if (audience === "course") {
         box.innerHTML = `
@@ -2234,7 +2234,7 @@
         <div class="ef-label">Атауы <i>*</i></div>
         <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
         <div class="ef-label">Қатысатын топтар <i>*</i></div>
-        <div class="ent-chips">${MOCK.groups.map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
+        <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
         <div class="ef-label">Пән</div>
         <div class="ef-input t3-ro">${COURSE_TITLE[f.courseId]} <small>(топтың курсы)</small></div>
         <div class="ef-label">Модуль <i>*</i></div>
@@ -4114,10 +4114,17 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     input.click();
   }
 
+  /** Куратор — тек өз топтары; бас куратор / академ. бөлім басшысы — барлық топ */
+  const MY_CURATOR_ID = 1;
+  function visibleGroups() {
+    return state.staffRole === "head" ? MOCK.groups : MOCK.groups.filter((g) => g.curatorId === MY_CURATOR_ID);
+  }
+
   function renderGroups() {
     return `
       <div class="list-pad groups-list">
-        ${MOCK.groups
+        ${state.staffRole === "head" ? `<div class="t3-sec" style="margin:2px 2px 10px">Барлық топтар · ${MOCK.groups.length}</div>` : ""}
+        ${visibleGroups()
           .map((g) => {
             const open = state.expandedGroupId === g.id;
             return `
@@ -4268,7 +4275,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   function renderStaffAnalytics() {
     return `
       <div class="list-pad an-groups">
-        ${MOCK.groups
+        ${visibleGroups()
           .map(
             (g) => `
           <button type="button" class="ag-card" data-an-group="${g.id}">
@@ -4793,7 +4800,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         openSheet(`
           <div class="sheet-handle"></div>
           <div class="ef-head"><span>Группы</span></div>
-          <div class="pick-list">${MOCK.groups
+          <div class="pick-list">${visibleGroups()
             .map(
               (g) => `<button type="button" class="pick-opt ${f.groups.has(g.id) ? "on" : ""}" data-efg="${g.id}">
                 <span>${g.name}<small class="ef-gsub">${g.courseLabel}</small></span>${icon(f.groups.has(g.id) ? "check_box" : "check_box_outline_blank")}</button>`
