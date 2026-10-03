@@ -3575,40 +3575,92 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }, { right: "<span></span>" });
   }
 
+  /** Конспект беттері (макет: дәптер беттері; нағыз нұсқада — оқушы жүктеген фотолар) */
+  function conspectPages(x) {
+    const n = 2 + (x.title.length % 3);
+    return Array.from({ length: n }, (_, p) => {
+      const lines = Array.from({ length: 11 }, (_, i) => `<i style="width:${48 + ((i * 37 + p * 23) % 46)}%;${i % 4 === 0 ? "background:#c0392b;opacity:.55;height:4px" : ""}"></i>`).join("");
+      return `<div class="cs-page"><div class="cs-head">${x.title}</div><div class="cs-lines">${lines}</div><span class="cs-file">${icon("image", "material-icons-outlined")}${p + 1} / ${n}</span></div>`;
+    });
+  }
+  /** Саусақпен (және тінтуірмен) сырғытылатын галерея: иконкасыз, нүктелер */
+  function bindSwipe(track, dots) {
+    if (!track) return;
+    const sync = () => {
+      const i = Math.round(track.scrollLeft / track.clientWidth);
+      dots && $$("i", dots).forEach((d, k) => d.classList.toggle("on", k === i));
+    };
+    track.addEventListener("scroll", sync, { passive: true });
+    let down = false, x0 = 0, s0 = 0, moved = false;
+    track.addEventListener("pointerdown", (e) => {
+      if (e.pointerType !== "mouse") return;
+      down = true; moved = false; x0 = e.clientX; s0 = track.scrollLeft;
+      track.style.scrollSnapType = "none";
+    });
+    window.addEventListener("pointermove", (e) => {
+      if (!down) return;
+      if (Math.abs(e.clientX - x0) > 4) moved = true;
+      track.scrollLeft = s0 - (e.clientX - x0);
+    });
+    window.addEventListener("pointerup", () => {
+      if (!down) return;
+      down = false;
+      const w = track.clientWidth;
+      const i = Math.round(track.scrollLeft / w);
+      track.style.scrollSnapType = "";
+      track.scrollTo({ left: i * w, behavior: "smooth" });
+    });
+    track.addEventListener("click", (e) => moved && (e.stopPropagation(), e.preventDefault(), (moved = false)), true);
+  }
+  function openConspectFull(pages, start) {
+    const layer = document.createElement("div");
+    layer.className = "cs-full";
+    layer.innerHTML = `
+      <button type="button" class="cs-full-x">${icon("close")}</button>
+      <div class="cs-full-track" id="csFullTrack">${pages.map((p) => `<div class="cs-full-slide">${p}</div>`).join("")}</div>
+      <div class="cs-dots light" id="csFullDots">${pages.map((_, i) => `<i class="${i === start ? "on" : ""}"></i>`).join("")}</div>`;
+    $(".phone .app").appendChild(layer);
+    const tr = layer.querySelector("#csFullTrack");
+    requestAnimationFrame(() => (tr.scrollLeft = start * tr.clientWidth));
+    bindSwipe(tr, layer.querySelector("#csFullDots"));
+    layer.querySelector(".cs-full-x").onclick = () => layer.remove();
+  }
+
   function openConspect(s, x) {
+    const pages = conspectPages(x);
+    const pending = x.note === "pending";
     openSheet(
       `
       <div class="sheet-handle"></div>
       <div class="sheet-title">Конспект</div>
-      <div class="sheet-sub">${s.name} · ${x.title}<br>${x.date}</div>
-      <div class="cs-page">
-        <div class="cs-lines">${Array.from({ length: 9 }, (_, i) => `<i style="width:${55 + ((i * 37) % 40)}%"></i>`).join("")}</div>
-        <span class="cs-file">${icon("image", "material-icons-outlined")}konspekt_${x.date.slice(0, 5).replace(".", "_")}.jpg</span>
-      </div>
+      <div class="sheet-sub">${s.name} · ${x.title}<br>${x.date} · ${pages.length} ${plural(pages.length, "бет", "бет", "бет")}</div>
+      <div class="cs-track" id="csTrack">${pages.map((p, i) => `<button type="button" class="cs-slide" data-csi="${i}">${p}</button>`).join("")}</div>
+      <div class="cs-dots" id="csDots">${pages.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>
       ${
-        x.note === "pending"
-          ? `<div class="sheet-actions btn-row">
+        pending
+          ? `<div class="ef-label" style="margin-top:6px">Комментарий для ученика</div>
+             <textarea class="ef-input nf-text cs-com" id="csCom" placeholder="Например: допиши выводы по теме, перепиши разборчивее…">${x.comment || ""}</textarea>
+             <div class="sheet-actions btn-row" style="margin-top:12px">
               <button type="button" class="btn cs-back" id="csBack">Вернуть</button>
               <button type="button" class="btn btn-primary" id="csOk">Принять</button>
             </div>`
-          : `<div class="cs-status ${x.note}">${x.note === "ok" ? "Конспект принят" : "Отправлен на доработку"}</div>`
+          : `<div class="cs-status ${x.note}">${x.note === "ok" ? "Конспект принят" : "Отправлен на доработку"}</div>
+             ${x.comment ? `<div class="cs-comment">${icon("chat_bubble_outline", "material-icons-outlined")}<span>${x.comment}</span></div>` : ""}`
       }`,
       { tall: true }
     );
-    $("#csOk") &&
-      ($("#csOk").onclick = () => {
-        x.note = "ok";
-        closeSheet();
-        toast("Конспект принят");
-        paintStack();
-      });
-    $("#csBack") &&
-      ($("#csBack").onclick = () => {
-        x.note = "back";
-        closeSheet();
-        toast("Конспект возвращён на доработку");
-        paintStack();
-      });
+    bindSwipe($("#csTrack"), $("#csDots"));
+    $$("[data-csi]").forEach((b) => (b.onclick = () => openConspectFull(pages, Number(b.dataset.csi))));
+    const decide = (note) => {
+      x.note = note;
+      x.comment = $("#csCom").value.trim();
+      if (note === "back" && !x.comment) return toast("Напишите комментарий — что исправить", "err");
+      closeSheet();
+      toast(note === "ok" ? `Конспект принят${x.comment ? " · комментарий отправлен" : ""}` : "Конспект возвращён на доработку · комментарий отправлен");
+      paintStack();
+    };
+    $("#csOk") && ($("#csOk").onclick = () => decide("ok"));
+    $("#csBack") && ($("#csBack").onclick = () => decide("back"));
   }
 
   function openLoginHistory(s) {
