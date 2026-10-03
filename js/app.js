@@ -2340,7 +2340,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-f"><span>Класс</span><b>${ex.grade}</b></div>
           <div class="sp-f"><span>UUID</span><b class="mono">${ex.uuid}</b></div>
         </div>
-        <div class="sp-lvl">${levelCardHtml(data.done, data.total, data.poster.title)}</div>
         <button type="button" class="sp-course" id="spCourse">
           ${pend ? `<span class="sp-badge">${pend}</span>` : ""}
           <div class="sp-poster">${posterHtml(data.poster)}</div>
@@ -3600,7 +3599,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const open = { [items[cc.cur]?.si ?? 0]: true };
     const build = () => {
       const flat = courseItems(cc);
-      return `<div class="list-pad course-secs" style="--acc:${cc.accent || "#2a3647"}">${levelCardHtml(c.done, c.total)}${cc.sections
+      return `<div class="list-pad course-secs" style="--acc:${cc.accent || "#2a3647"}">${cc.sections
         .map((sec, si) => {
           const rows = flat.map((x, i) => ({ ...x, i })).filter((x) => x.si === si);
           const dim = cc.dimLocked && rows.every((x) => x.state === "locked");
