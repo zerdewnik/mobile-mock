@@ -3723,3 +3723,6 @@ html[data-mode="staff"] .appbar-profile { color: var(--primary); }
 .pal small { font-size: 11px; }
 .pal.on { border-color: #fff; color: #fff; box-shadow: 0 0 0 1px #fff; }
 @media (max-width: 440px) { .palette-pick { display: none !important; } }
+/* Staff навбарындағы 4-орын әзірге бос */
+html[data-mode="staff"] .nav-item[data-tab="3"] { visibility: hidden; pointer-events: none; }
+.service-tile .material-icons-outlined { width: 26px; height: 26px; font-size: 26px; }

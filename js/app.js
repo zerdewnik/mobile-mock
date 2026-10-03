@@ -3,10 +3,10 @@
   const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
 
   const NAV_STAFF = [
-    { out: "insert_chart", fill: "insert_chart", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Аналитика" },
-    { out: "live_tv", fill: "live_tv", outClass: "material-icons-outlined", fillClass: "material-icons-outlined", label: "Эфир" },
-    { out: "notifications_none", fill: "notifications", outClass: "material-icons-round", fillClass: "material-icons-round", label: "Хабарлама" },
-    { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои группы" },
+    { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
+    { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
+    { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
+    { out: "", fill: "", outClass: "", fillClass: "", label: "" }, // бос орын — кейін толтырылады
   ];
   const NAV_STUDENT = [
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
@@ -14,14 +14,14 @@
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Аналитика", "Эфир", "Хабарлама", "Мои группы"];
+  const CHIPS_STAFF = ["Главная", "Новости", "Группы"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
     mode: "staff",
     tab: 3,
     expandedGroupId: null,
-    efirDate: new Date(2026, 9, 2),
+    efirDate: new Date(2026, 9, 3),
     expandedEnrollmentId: null,
     profileStudent: null,
     periodStart: null,
@@ -314,12 +314,14 @@
     closeDialog();
     closeScreen();
     paintTabChips();
-    setTab(mode === "student" ? 0 : 3, { skipClose: true });
+    setTab(0, { skipClose: true });
     if (toastMsg) toast(toastMsg, "ok");
   }
 
   function setTab(index, { skipClose } = {}) {
+    if (state.mode === "staff" && index === 3) return; // бос орын
     state.tab = index;
+    state.sub = null;
     state.profileStudent = null;
     if (!skipClose) {
       closeSheet();
@@ -4542,6 +4544,70 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     );
   }
 
+  /** Staff басты беті: баннер + сервистер (Аналитика, Эфир, Турнирлер) + бүгінгі эфирлер */
+  function renderStaffHome() {
+    const today = MOCK.efirs.filter((e) => e.date === iso(AN_TODAY)).sort((a, b) => a.time.localeCompare(b.time));
+    const services = [
+      { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
+      { sub: "efir", label: "Эфир", icon: "live_tv" },
+      { sub: "tours", label: "Турнирлер", svg: "assets/tournament/trophy.svg" },
+    ];
+    return `
+      <div class="banner-wrap">
+        <div class="banner-track">
+          <div class="banner-slide">
+            <span class="banner-logo">!4U</span>
+            <div class="banner-pic">
+              <span class="bp-board">${icon("lightbulb")}</span>
+              <span class="bp-cap">${icon("school")}</span>
+              <span class="bp-cal">${icon("calendar_month")}</span>
+              <span class="bp-list">${icon("checklist")}</span>
+              <span class="bp-doc">${icon("description", "material-icons-outlined")}</span>
+            </div>
+            <div class="banner-copy">
+              <strong>"БІР ПЛАТФОРМА –<br><em>БАРЛЫҚ ПӘНДЕР!"</em></strong>
+              <small>"АРМАНЫҢДАҒЫ БАЛЛҒА ЖЕТУ ҮШІН,<br><em>БАРЛЫҚ ПӘНДЕРГЕ СЕНІМЕН!"</em></small>
+            </div>
+          </div>
+        </div>
+        <div class="banner-dots">${MOCK.stories.map((_, i) => `<i class="${i === 0 ? "on" : ""}"></i>`).join("")}</div>
+      </div>
+      <div class="section-title">Сервисы</div>
+      <div class="service-grid">
+        ${services
+          .map(
+            (s) => `
+          <button type="button" class="service-tile" data-staff-sub="${s.sub}">
+            ${s.img ? `<img src="${s.img}" alt="" />` : s.svg ? `<img src="${s.svg}" alt="" style="width:30px;height:30px" />` : `<span class="material-icons-outlined" style="color:var(--primary)">${s.icon}</span>`}
+            <span>${s.label}</span>
+          </button>`
+          )
+          .join("")}
+      </div>
+      <div class="section-row" style="margin-top:4px">
+        <div class="section-title">Эфиры на сегодня</div>
+        <button type="button" class="section-date" data-staff-sub="efir">${dmy(AN_TODAY)}</button>
+      </div>
+      <div class="today-wrap">
+        <div class="today-card">
+          ${
+            today.length
+              ? today
+                  .map(
+                    (e, i) => `${i ? `<div class="today-div"></div>` : ""}
+              <button type="button" class="today-row" data-staff-sub="efir">
+                <span class="material-icons-outlined ls-ico" style="color:var(--primary)">live_tv</span>
+                <div style="flex:1;min-width:0"><div class="tr-course">${e.time} · ${e.groups.map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ")}</div><div class="tr-lesson">${e.title}</div></div>
+                <span class="material-icons-round chev">chevron_right</span>
+              </button>`
+                  )
+                  .join("")
+              : `<div class="ga-csub">Сегодня эфиров нет</div>`
+          }
+        </div>
+      </div>`;
+  }
+
   function renderEnrollSoon() {
     return `
       <div class="soon-screen">
@@ -5331,14 +5397,19 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <button type="button" class="appbar-bell" id="studentBell" title="Уведомления">${icon("notifications_none")}${unread ? `<i>${unread}</i>` : ""}</button>
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
-    if (state.tab === 2) {
+    // Басты беттен ашылатын бөлімдер (Аналитика, Эфир, Хабарлама)
+    if (state.sub) {
+      const title = { analytics: "Аналитика", efir: "Эфир", pushes: "Хабарлама" }[state.sub];
       return `
-        <div class="appbar-title-row" id="addPush">${icon("add")}<span class="appbar-title">Отправить пуш</span></div>
+        <button type="button" class="appbar-back" id="subBack">${icon("arrow_back")}</button>
+        <div class="appbar-title" style="flex:1">${title}</div>
+        ${state.sub === "pushes" ? `<button type="button" class="appbar-bell" id="addPush" title="Отправить пуш">${icon("add_circle_outline", "material-icons-outlined")}</button>` : ""}
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
     return `
-      <div class="appbar-title" style="flex:1">${["Аналитика", "Эфир", "", "Мои группы"][state.tab]}</div>
-      ${state.tab === 3 ? `<button type="button" class="appbar-bell" id="staffTours" title="Турнирлер"><img src="assets/tournament/trophy.svg" alt="" style="width:30px;height:30px" /></button>` : ""}
+      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", ""][state.tab]}</div>
+      ${state.tab === 2 ? `<button type="button" class="appbar-bell" id="staffTours" title="Турнирлер"><img src="assets/tournament/trophy.svg" alt="" style="width:30px;height:30px" /></button>` : ""}
+      <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
 
@@ -5365,9 +5436,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       return;
     }
 
-    if (state.tab === 0) content.innerHTML = renderStaffAnalytics();
-    else if (state.tab === 1) content.innerHTML = renderEfir();
-    else if (state.tab === 2) content.innerHTML = renderPushes();
+    if (state.sub === "analytics") content.innerHTML = renderStaffAnalytics();
+    else if (state.sub === "efir") content.innerHTML = renderEfir();
+    else if (state.sub === "pushes") content.innerHTML = renderPushes();
+    else if (state.tab === 0) content.innerHTML = renderStaffHome();
+    else if (state.tab === 1) content.innerHTML = renderNews();
     else content.innerHTML = renderGroups();
 
     bindContent();
@@ -5551,6 +5624,31 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
     $("#sendPush")?.addEventListener("click", openPushSheet);
     $("#addPush")?.addEventListener("click", openPushSheet);
+    $$("[data-news]").forEach((btn) => {
+      btn.onclick = () => {
+        const n = MOCK.news.find((x) => x.id === Number(btn.dataset.news));
+        if (n) openInner(n.title, `<div class="list-pad news-open">${newsThumb(n.thumb)}<div class="news-card" style="margin-top:12px"><div class="n-body">${n.body}</div></div></div>`);
+      };
+    });
+    $("#subBack")?.addEventListener("click", () => {
+      state.sub = null;
+      render();
+    });
+    $("#staffBell")?.addEventListener("click", () => {
+      state.sub = "pushes";
+      render();
+    });
+    $$("[data-staff-sub]").forEach((b) => {
+      b.onclick = () => {
+        if (b.dataset.staffSub === "tours") {
+          state.navStack = [];
+          return openStaffTournaments();
+        }
+        state.sub = b.dataset.staffSub;
+        if (state.sub === "efir") state.efirDate = new Date(AN_TODAY);
+        render();
+      };
+    });
     $("#staffTours")?.addEventListener("click", () => {
       state.navStack = [];
       openStaffTournaments();
