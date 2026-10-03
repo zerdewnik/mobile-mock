@@ -3440,20 +3440,34 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     const list = mockAttempts();
     list.forEach((a) => attemptSubjects(a));
+    const tot = list.map((a) => a.total);
+    const avg = tot.length ? Math.round(tot.reduce((x, y) => x + y, 0) / tot.length) : 0;
+    const best = tot.length ? Math.max(...tot) : 0;
+    const prog = tot.length > 1 ? ((tot[0] - tot[1]) / Math.max(1, tot[1])) * 100 : 0;
+    const profNames = (a) => a.keys.filter((k) => !(k in ENT_MIN)).map((k) => window.PROBNIK.subjects[k].title).join(", ");
     pushScreen(
-      "Пробные тесты",
-      () => `<div class="list-pad" style="padding-top:16px">${list
-        .map(
-          (a, i) => `
-        <button type="button" class="ma-row" data-att="${i}">
-          <span class="ma-score ${a.total >= 50 ? "ok" : "bad"}"><b>${a.total}</b><small>/140</small></span>
-          <span style="flex:1;min-width:0"><b>Пробный ЕНТ · ${a.variant}-нұсқа</b><small>${a.date}</small></span>
-          ${icon("chevron_right")}
-        </button>`
-        )
-        .join("") || `<div class="empty">Пробный ЕНТ әлі тапсырылмаған</div>`}</div>`,
+      "ҰБТ сынақ тесттері",
+      () => `<div class="list-pad mt-wrap">
+        <div class="mt-tiles">
+          <div class="mt-tile"><span class="material-icons-round" style="color:#4caf50">check_circle</span><small>Тапсырылды</small><b>${list.length}</b></div>
+          <div class="mt-tile"><span class="material-icons-round" style="color:#2f8cf0">insert_chart</span><small>Орташа балл</small><b>${avg}</b></div>
+          <div class="mt-tile"><span class="material-icons-round" style="color:#f2c230">star</span><small>Үздік балл</small><b>${best}</b></div>
+        </div>
+        <div class="mt-prog"><span class="material-icons-round ${prog < 0 ? "down" : "up"}">${prog < 0 ? "trending_down" : "trending_up"}</span><div><small>Айлық прогресс</small><b class="${prog < 0 ? "down" : "up"}">${prog >= 0 ? "+" : ""}${prog.toFixed(1)}%</b></div></div>
+        <div class="mt-h">Тапсырылған тесттер тарихы</div>
+        ${list
+          .map(
+            (a, i) => `
+          <button type="button" class="mt-card" data-att="${i}">
+            <div class="mt-card-top"><b>Пробный ЕНТ: ${profNames(a)}</b><span class="mt-badge">Тапсырды</span></div>
+            <div class="mt-date">${a.date}</div>
+            <div class="mt-nums"><div><small>Балл</small><b>${a.total}/140</b></div><div><small>Пайыз</small><b>${Math.round((a.total / 140) * 100)}%</b></div></div>
+          </button>`
+          )
+          .join("") || `<div class="empty">Пробный ЕНТ әлі тапсырылмаған</div>`}
+      </div>`,
       () => $$("[data-att]").forEach((b) => (b.onclick = () => openAttemptReview(list[Number(b.dataset.att)]))),
-      { screenCls: "an-screen", centered: true }
+      { screenCls: "mt-screen", centered: true }
     );
   }
 

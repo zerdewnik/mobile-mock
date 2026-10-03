@@ -3942,3 +3942,28 @@ input[type="date"].ef-input { color-scheme: dark; }
 .an-foot { flex-shrink: 0; display: flex; justify-content: space-between; gap: 12px; padding: 16px 15px 30px; background: #1a1a1a; border-radius: 16px 16px 0 0; }
 .an-nav { height: 52px; padding: 0 26px; border-radius: 26px; border: 1px solid #3a3a42; background: #232326; color: #fff; font-family: inherit; font-size: 15px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
 .an-nav .material-icons-outlined { font-size: 24px; }
+/* ҰБТ сынақ тесттері (тізім) */
+.screen-overlay.mt-screen { background: #1b1c2e; }
+.mt-screen .appbar { background: #2b2d42; }
+.app:has(.screen-overlay.mt-screen:not([hidden])) .status-bar { background: #2b2d42; }
+.mt-wrap { padding-top: 14px; }
+.mt-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.mt-tile { background: #2b2d42; border: 1px solid #3a3c55; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.mt-tile .material-icons-round { font-size: 28px; }
+.mt-tile small { font-size: 13px; color: #c8cad4; }
+.mt-tile b { font-size: 24px; font-weight: 800; }
+.mt-prog { margin-top: 10px; background: #2b2d42; border: 1px solid #3a3c55; border-radius: 16px; padding: 16px; display: flex; align-items: center; gap: 16px; }
+.mt-prog .material-icons-round { font-size: 32px; }
+.mt-prog small { display: block; font-size: 13px; color: #c8cad4; }
+.mt-prog b { display: block; margin-top: 4px; font-size: 22px; font-weight: 800; }
+.mt-prog .up { color: #4caf50; }
+.mt-prog .down { color: #e06b5b; }
+.mt-h { margin: 24px 2px 12px; font-size: 18px; font-weight: 800; }
+.mt-card { width: 100%; text-align: left; background: #2b2d42; border: 1px solid #3a3c55; border-radius: 16px; padding: 16px; margin-bottom: 12px; color: #fff; font-family: inherit; cursor: pointer; }
+.mt-card-top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
+.mt-card-top b { font-size: 15.5px; line-height: 1.35; }
+.mt-badge { flex-shrink: 0; background: #4caf50; color: #fff; font-size: 12px; font-weight: 700; padding: 6px 12px; border-radius: 10px; }
+.mt-date { margin-top: 8px; font-size: 13px; color: #9a9db0; }
+.mt-nums { display: grid; grid-template-columns: 1fr 1fr; margin-top: 14px; }
+.mt-nums small { display: block; font-size: 12px; color: #c8cad4; }
+.mt-nums b { display: block; margin-top: 4px; font-size: 19px; font-weight: 800; }
