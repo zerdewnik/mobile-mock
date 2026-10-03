@@ -900,6 +900,9 @@
     if (id === "analytics") {
       const A = MOCK.analytics;
       const pct = (d, t) => (t ? Math.round((d / t) * 100) : 0);
+      const allDone = MOCK.myCourses.reduce((t, c) => t + c.done, 0);
+      const allTotal = MOCK.myCourses.reduce((t, c) => t + c.total, 0);
+      const T = testsSummary();
       const card = ({ emoji, tint, label, value, bar, meta, open }) => `
         <button type="button" class="an-card" ${open ? `data-an="${open}"` : ""}>
           <span class="an-ico" style="background:${tint}">${emoji}</span>
@@ -941,9 +944,9 @@
             <button type="button" class="an-goal-btn" id="setGoal">${icon("add_circle_outline", "material-icons-outlined")}Установить цель</button>
           </div>`
           }
-          ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${A.courses.done} из ${A.courses.total}`, bar: pct(A.courses.done, A.courses.total), meta: "Осталось посмотреть: 0 тестов", open: "courses" })}
-          ${card({ emoji: "👆", tint: "#4f4834", label: "Просмотрено всего уроков", value: `${A.lessons.done} из ${A.lessons.total}`, meta: `Осталось посмотреть: ${A.lessons.total - A.lessons.done} уроков` })}
-          ${card({ emoji: "📝", tint: "#34485a", label: "Пройдено всего тестов", value: `${A.tests.done} из ${A.tests.total}`, meta: `Осталось сдать: ${A.tests.total - A.tests.done} тестов` })}
+          ${card({ emoji: "🎓", tint: "#4a3a40", label: "Всего курсов", value: `${pct(allDone, allTotal)}%`, bar: pct(allDone, allTotal), meta: `Пройдено ${allDone} из ${allTotal} уроков по ${MOCK.myCourses.length} предметам`, open: "courses" })}
+          ${card({ emoji: "👆", tint: "#4f4834", label: "Просмотрено всего уроков", value: `${allDone} из ${allTotal}`, meta: `Осталось посмотреть: ${allTotal - allDone} уроков` })}
+          ${card({ emoji: "📝", tint: "#34485a", label: "Пройдено всего тестов", value: `${T.done} из ${T.total}`, bar: pct(T.done, T.total), meta: `Средний результат: ${T.avg}% · осталось сдать ${T.total - T.done}`, open: "tests" })}
           ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${A.mockTests}`, open: "mock" })}
         </div>`;
     }
@@ -1762,6 +1765,8 @@
       b.onclick = () => {
         if (b.dataset.an === "courses") {
           openCourseLevels();
+        } else if (b.dataset.an === "tests") {
+          openTestsBySubject();
         } else {
           pushScreen(
             "Пробные тесты",
@@ -2446,6 +2451,82 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { tall: true }
     );
     $(".road-step.cur")?.scrollIntoView({ block: "center" });
+  }
+
+  /* —— Студент: тесттер пәндер бойынша —— */
+  /** Пәннің сабақ тесттері: өтілгендері нәтижемен (тұрақты жалған балдар) */
+  function courseTests(c) {
+    const cc = MOCK.courseContent[c.id];
+    let items;
+    if (cc) {
+      items = courseItems(cc)
+        .filter((x) => x.kind !== "video")
+        .map((x) => ({ title: x.title, kind: x.kind, done: x.state === "done", section: cc.sections[x.si].title }));
+    } else {
+      const n = Math.round(c.total / 2);
+      items = Array.from({ length: n }, (_, i) => ({ title: `Тест ${i + 1}`, kind: "test", done: i < Math.floor(c.done / 2), section: "" }));
+    }
+    items.forEach((x, i) => {
+      if (x.done) x.score = Math.round((55 + rnd(c.id, i, 3) * 45) / 5) * 5;
+    });
+    return items;
+  }
+  function testsSummary() {
+    const all = MOCK.myCourses.flatMap((c) => courseTests(c));
+    const done = all.filter((x) => x.done);
+    return { done: done.length, total: all.length, avg: done.length ? Math.round(done.reduce((t, x) => t + x.score, 0) / done.length) : 0 };
+  }
+  function openTestsBySubject() {
+    pushScreen(
+      "Тесты по предметам",
+      () => `<div class="list-pad cl-list">${MOCK.myCourses
+        .map((c) => {
+          const items = courseTests(c);
+          const done = items.filter((x) => x.done);
+          const avg = done.length ? Math.round(done.reduce((t, x) => t + x.score, 0) / done.length) : null;
+          const p = items.length ? Math.round((done.length / items.length) * 100) : 0;
+          return `
+          <button type="button" class="cl-row" data-tc="${c.id}" style="--lc:${avg == null ? "#6c6f84" : avg >= 80 ? "#5cb36d" : avg >= 60 ? "#e0a84a" : "#e06b5b"}">
+            <div class="cl-poster">${posterHtml(c.poster, "sq")}</div>
+            <div style="flex:1;min-width:0">
+              <div class="cl-title">${c.title}</div>
+              <div class="cl-lvl">${avg == null ? "Тестов пока нет" : `Средний результат ${avg}%`}</div>
+              <div class="lvl-bar"><i style="width:${p}%;background:#6c7fd8"></i></div>
+              <div class="cl-meta">Пройдено ${done.length} из ${items.length} тестов · ${p}%</div>
+            </div>
+            ${icon("chevron_right")}
+          </button>`;
+        })
+        .join("")}</div>`,
+      () => {
+        $$("[data-tc]").forEach((b) => {
+          b.onclick = () => {
+            const c = MOCK.myCourses.find((x) => x.id === Number(b.dataset.tc));
+            const items = courseTests(c).filter((x) => x.done);
+            pushScreen(
+              c.title,
+              () =>
+                items.length
+                  ? `<div class="list-pad cl-list">${items
+                      .reverse()
+                      .map(
+                        (x) => `
+                  <div class="tl-row">
+                    ${kindIcon(x.kind)}
+                    <div style="flex:1;min-width:0"><div class="tl-title">${x.title}</div>${x.section ? `<div class="cl-meta">${x.section}</div>` : ""}</div>
+                    <b class="${x.score >= 80 ? "up" : x.score >= 60 ? "mid" : "down"}">${x.score}%</b>
+                  </div>`
+                      )
+                      .join("")}</div>`
+                  : `<div class="empty">Тестов по этому предмету пока нет</div>`,
+              null,
+              { screenCls: "an-screen", centered: true }
+            );
+          };
+        });
+      },
+      { screenCls: "an-screen", centered: true }
+    );
   }
 
   function openCourseLevels() {
