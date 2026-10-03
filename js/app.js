@@ -3265,24 +3265,20 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           b.dataset.t = b.dataset.t || b.innerHTML;
           b.innerHTML = on ? txt : b.dataset.t;
         };
+        // Макет: WhatsApp Business API арқылы жіберуді көрсетеді (сервер жоқ — PDF жасалады, жіберу имитация)
         $("#rpSend").onclick = async (e) => {
           const b = e.currentTarget;
-          busy(b, true, "Готовим PDF…");
+          const phone = studentExtra(s).parentPhone;
+          if (String(phone).replace(/\D/g, "").length < 10) return toast("Номер родителя не указан", "err");
+          busy(b, true, "Отправляем PDF…");
           try {
             const file = await pdfFile();
-            const text = `Отчёт I4U · ${s.name} · ${periodLabel(R.period, R.date)}`;
-            if (navigator.canShare && navigator.canShare({ files: [file] })) {
-              // Телефонда: «Поделиться» → WhatsApp, PDF файл болып кетеді
-              await navigator.share({ files: [file], title: text, text });
-            } else {
-              // Компьютерде: PDF жүктеледі, WhatsApp чаты ашылады — файлды чатқа салу керек
-              saveFile(file);
-              const digits = String(studentExtra(s).parentPhone).replace(/\D/g, "");
-              window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text + " (PDF во вложении)")}`, "_blank", "noopener");
-              toast("PDF скачан — прикрепите его в чате WhatsApp");
-            }
-          } catch (err) {
-            if (err?.name !== "AbortError") toast("Не удалось отправить PDF", "err");
+            await new Promise((r) => setTimeout(r, 700));
+            b.dataset.t = `${icon("check_circle")}Отправлено`;
+            toast(`PDF-отчёт отправлен в WhatsApp родителю ${phone}`);
+            (s.reportsSent = s.reportsSent || []).unshift({ at: new Date(), period: periodLabel(R.period, R.date), size: file.size });
+          } catch {
+            toast("Не удалось отправить отчёт", "err");
           }
           busy(b, false);
         };
