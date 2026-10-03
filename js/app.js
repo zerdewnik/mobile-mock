@@ -270,6 +270,23 @@
     });
     el.addEventListener("mouseup", clear);
     el.addEventListener("mouseleave", clear);
+    // Ұзақ басудан кейінгі «click» жаңалықты/картаны ашпауы үшін
+    const fire = onLongPress;
+    onLongPress = (x) => {
+      el.dataset.lp = "1";
+      fire(x);
+    };
+    el.addEventListener(
+      "click",
+      (e) => {
+        if (el.dataset.lp === "1") {
+          delete el.dataset.lp;
+          e.stopImmediatePropagation();
+          e.preventDefault();
+        }
+      },
+      true
+    );
   }
 
   /* —— Tabs / mode —— */
@@ -4614,7 +4631,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const services = [
       { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { sub: "efir", label: "Эфир", icon: "live_tv" },
-      { sub: "tours", label: "Турнирлер", svg: "assets/tournament/belt_icon.png" },
+      { sub: "tours", label: "Турнирлер", img: "assets/tournament/tournament_line.png" },
     ];
     return `
       ${bannerHtml()}
@@ -5088,6 +5105,29 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       };
     };
     draw();
+  }
+
+  function newsMenu(n, anchor) {
+    showActionMenu(anchor, [
+      { label: "Редактировать", icon: "edit", onTap: () => openNewsForm(n) },
+      {
+        label: "Удалить",
+        icon: "delete",
+        danger: true,
+        onTap: async () => {
+          const ok = await confirmDialog({
+            title: "Жаңалықты өшіру?",
+            message: `«${n.title}» ${n.banner ? "баннерден және " : ""}жаңалықтар тізімінен біржола өшіріледі.`,
+            confirmLabel: "Өшіру",
+            danger: true,
+          });
+          if (!ok) return;
+          MOCK.news = MOCK.news.filter((x) => x !== n);
+          toast("Жаңалық өшірілді");
+          render();
+        },
+      },
+    ]);
   }
 
   function newsPreviewHtml(n) {
@@ -5882,6 +5922,13 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     bindBanner();
     $$("[data-nseg]").forEach((b) => (b.onclick = () => ((state.newsSeg = b.dataset.nseg), render())));
     $("#newsNew")?.addEventListener("click", () => openNewsForm());
+    // Ұзақ басу → Редактировать / Удалить (өз жаңалығы; бас куратор — кез келгені)
+    $$("#content [data-news], #content [data-nmine], #content [data-nreview]").forEach((row) => {
+      const id = Number(row.dataset.news || row.dataset.nmine || row.dataset.nreview);
+      const n = MOCK.news.find((x) => x.id === id);
+      if (!n || !(isHead() || n.author === myName())) return;
+      bindLongPress(row, () => newsMenu(n, row));
+    });
     $$("[data-nmine]").forEach((b) => (b.onclick = () => ((state.navStack = []), openMyNews(MOCK.news.find((n) => n.id === Number(b.dataset.nmine))))));
     $$("[data-nreview]").forEach((b) => (b.onclick = () => ((state.navStack = []), openNewsReview(MOCK.news.find((n) => n.id === Number(b.dataset.nreview))))));
     $("#subBack")?.addEventListener("click", () => {

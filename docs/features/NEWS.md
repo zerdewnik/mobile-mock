@@ -19,6 +19,9 @@
 | Баннер ретінде көрсету | қосулы болса, жарияланғанда студенттің (және staff) басты бетіндегі баннер каруселіне шығады; суреті болмаса — бренд градиенті |
 | Кімге | Барлық студенттер / Автордың топтары |
 
+## Өңдеу және өшіру
+Жаңалықты **ұзақ басу** (компьютерде — оң жақ батырма) → мәзір: **Редактировать** (форма ашылады; куратор өңдесе — қайта тексеруге кетеді) / **Удалить** (растау, баннерден де алынады). Куратор — тек өз жаңалықтары, бас куратор — кез келгені.
+
 ## Мәртебелер
 `pending` (Тексеруде, сары) → `published` (Жарияланды, жасыл) немесе `rejected` (Қайтарылды, қызыл + себебі).
 Қайтарылған → автор түзетеді → қайтадан `pending`.
@@ -40,4 +43,4 @@ News { "id": 90, "title": "...", "body": "...", "imageUrl": null, "isBanner": tr
        "status": "pending | published | rejected", "rejectReason": null,
        "createdAt": "...", "reviewedBy": null, "reviewedAt": null }
 ```
-`POST /news` · `PUT /news/{id}` · `GET /news?status=published` · `GET /news?status=pending` (тексерушілер) · `POST /news/{id}/approve` · `POST /news/{id}/reject {reason}` · `GET /banners` (жарияланған `isBanner` + тұрақты).
+`POST /news` · `PUT /news/{id}` · `DELETE /news/{id}` · `GET /news?status=published` · `GET /news?status=pending` (тексерушілер) · `POST /news/{id}/approve` · `POST /news/{id}/reject {reason}` · `GET /banners` (жарияланған `isBanner` + тұрақты).

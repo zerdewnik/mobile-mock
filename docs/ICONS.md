@@ -169,9 +169,12 @@ SVG үшін `flutter_svg` пакеті: `SvgPicture.asset('assets/tournament/tr
 | `assets/logo/ai3.png` | 358×289 | Ортадағы AI батырмасы (ақ түске бояп қолданылады) | https://raw.githubusercontent.com/zerdewnik/mobile-mock/main/assets/logo/ai3.png |
 | `assets/champion/belt.png` | 520×276 | Чемпион белбеуі (уақытша алынған, кейін қайтарылады) | https://raw.githubusercontent.com/zerdewnik/mobile-mock/main/assets/champion/belt.png |
 
+### «Турнирлер» сервис иконкасы
+- `assets/tournament/tournament_line.svg` / `.png` (512×512) — басқа сервис иконкалары сияқты контурлы (stroke 32, дөңгелек ұштар), түсі алтын `#E9A825`. Staff басты бетіндегі «Турнирлер» плиткасы.
+
 ### Турнир белбеуі
 - `assets/tournament/belt.png` (520×276) — турнир беті (hero), жекпе-жектегі жеңіс.
-- `assets/tournament/belt_icon.png` (256×256, сегізбұрыш, мөлдір фон) — турнир карточкалары, кестедегі чемпион, staff басты бетіндегі «Турнирлер» плиткасы.
+- `assets/tournament/belt_icon.png` (256×256, сегізбұрыш, мөлдір фон) — турнир карточкалары, кестедегі чемпион, турнир карточкалары.
 - `trophy.svg`, `register.svg` енді қолданылмайды (резерв).
 
 ### 3D турнир иконкалары туралы
