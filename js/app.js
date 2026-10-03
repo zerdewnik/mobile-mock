@@ -2941,25 +2941,178 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         .join("")}</div>`);
   }
 
+  /* —— Отчёт: расписание бойынша апта / ай —— */
+  const SCHED_START = new Date(2026, 8, 1); // курс 1 қыркүйектен басталды
+  /** Кесте: Дс–Жм күн сайын 1 тақырып (видео + тест), Сб — апталық сынақ */
+  function scheduleFor(data, from, to) {
+    const topics = data.flat.filter((x) => x.kind === "video").map((x) => x.title);
+    const out = [];
+    let k = 0;
+    for (let d = new Date(SCHED_START); d <= to; d.setDate(d.getDate() + 1)) {
+      const wd = d.getDay();
+      if (wd === 0) continue;
+      const day = new Date(d);
+      if (wd === 6) {
+        if (day >= from) out.push({ date: day, kind: "weekly", title: `Апталық сынақ (${Math.ceil(k / 5)} - апта)` });
+        continue;
+      }
+      const title = topics[k % topics.length];
+      k++;
+      if (day >= from) {
+        out.push({ date: day, kind: "video", title });
+        out.push({ date: day, kind: "test", title });
+      }
+    }
+    return out;
+  }
+  /** Оқушы сабақты орындады ма (бүгінге дейін) */
+  function itemStatus(s, it) {
+    if (it.date > AN_TODAY) return { future: true };
+    const skill = (s.score || 0) / 100;
+    const r = rnd(s.id, dayKey(it.date), it.kind.length);
+    const done = r < 0.35 + skill * 0.6;
+    if (it.kind === "video") return { done, note: done && rnd(s.id, dayKey(it.date), 9) < 0.45 + skill * 0.5 };
+    return { done, score: done ? Math.round((45 + skill * 40 + rnd(s.id, dayKey(it.date), 11) * 20) / 5) * 5 : null };
+  }
+
   function openStudentReport(s, data) {
-    const tests = data.flat.filter((x) => x.state === "done" && x.result != null);
-    const avg = tests.length ? Math.round(tests.reduce((t, x) => t + x.result, 0) / tests.length) : 0;
-    const notes = data.flat.filter((x) => x.kind === "video" && x.state === "done");
-    openSheet(`
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">Отчёт за неделю</div>
-      <div class="sheet-sub">${s.name} · ${data.poster.title}</div>
-      <div class="rp-grid">
-        <div class="sch-stat"><b style="color:#58aa80">${data.done}/${data.total}</b><span>пройдено</span></div>
-        <div class="sch-stat"><b style="color:#6C7FD8">${avg}</b><span>средний балл</span></div>
-        <div class="sch-stat"><b style="color:#E0A84A">${notes.filter((x) => x.note === "ok").length}/${notes.length}</b><span>конспекты</span></div>
-      </div>
-      <div class="rp-text">Рейтинг в группе: ${s.rank ?? "—"} место · ${s.score ?? 0} баллов за неделю${s.pointsToday ? ` (+${s.pointsToday} сегодня)` : ""}.</div>
-      <div class="sheet-actions"><button type="button" class="btn btn-primary" id="rpSend" style="width:100%">Отправить родителю в WhatsApp</button></div>`);
-    $("#rpSend").onclick = () => {
-      closeSheet();
-      toast("Отчёт отправлен родителю");
+    const R = { period: "week", date: new Date(AN_TODAY) };
+    const WD = ["Жс", "Дс", "Сс", "Ср", "Бс", "Жм", "Сб"];
+    const calc = () => {
+      const { from, to } = periodRange(R.period, R.date);
+      const items = scheduleFor(data, from, to).map((it) => ({ ...it, st: itemStatus(s, it) }));
+      const past = items.filter((x) => !x.st.future);
+      const v = items.filter((x) => x.kind === "video");
+      const t = items.filter((x) => x.kind !== "video");
+      const vp = v.filter((x) => !x.st.future), tp = t.filter((x) => !x.st.future);
+      const scores = tp.filter((x) => x.st.done).map((x) => x.st.score);
+      return {
+        from, to, items, past,
+        plan: { videos: v.length, tests: t.length, all: items.length },
+        due: past.length,
+        watched: vp.filter((x) => x.st.done).length,
+        vDue: vp.length,
+        notes: vp.filter((x) => x.st.note).length,
+        tDone: tp.filter((x) => x.st.done).length,
+        tDue: tp.length,
+        avg: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
+        doneAll: past.filter((x) => x.st.done).length,
+      };
     };
+    const build = () => {
+      const c = calc();
+      const pct = c.due ? Math.round((c.doneAll / c.due) * 100) : 0;
+      const word = R.period === "week" ? "неделю" : "месяц";
+      const byDay = [];
+      c.items.forEach((it) => {
+        const k = dayKey(it.date);
+        let g = byDay.find((x) => x.k === k);
+        if (!g) byDay.push((g = { k, date: it.date, items: [] }));
+        g.items.push(it);
+      });
+      const badge = (it) => {
+        if (it.st.future) return `<span class="rp-st fut">${icon("schedule", "material-icons-outlined")}Предстоит</span>`;
+        if (it.kind === "video")
+          return `<span class="rp-st ${it.st.done ? "ok" : "bad"}">${icon(it.st.done ? "visibility" : "visibility_off", "material-icons-outlined")}${it.st.done ? "Просмотрено" : "Не смотрел"}</span>
+            <span class="rp-st ${it.st.note ? "ok" : "bad"}">${icon("description", "material-icons-outlined")}${it.st.note ? "Конспект сдан" : "Нет конспекта"}</span>`;
+        return it.st.done
+          ? `<span class="rp-st ok">${icon("check_circle", "material-icons-outlined")}${it.st.score} из 100</span>`
+          : `<span class="rp-st bad">${icon("cancel", "material-icons-outlined")}Не сдан</span>`;
+      };
+      return `
+        <div class="ga">
+          <div class="ga-head">
+            <div class="ga-title">${s.name}</div>
+            <div class="ga-sub">${data.poster.title} · отчёт по расписанию</div>
+          </div>
+          <div class="ga-period">
+            <div class="seg-tabs ga-seg" style="margin:0">
+              ${[["week", "Неделя"], ["month", "Месяц"]].map(([k, l]) => `<button type="button" data-rp-period="${k}" class="${R.period === k ? "on" : ""}">${l}</button>`).join("")}
+            </div>
+            <div class="ga-dnav">
+              <button type="button" class="sch-arrow" data-rp-shift="-1">${icon("chevron_left")}</button>
+              <div class="ga-date">${icon("calendar_today")}${periodLabel(R.period, R.date)}</div>
+              <button type="button" class="sch-arrow" data-rp-shift="1" ${c.to >= AN_TODAY ? "disabled" : ""}>${icon("chevron_right")}</button>
+            </div>
+          </div>
+
+          <div class="ga-card" style="margin-top:0">
+            <div class="ga-ctitle">План на ${word} по расписанию</div>
+            <div class="rp-plan">${c.plan.videos} видео · ${c.plan.tests} ${plural(c.plan.tests, "тест", "теста", "тестов")} <small>(Дс–Жм урок + тест, Сб апталық сынақ)</small></div>
+            <div class="gp-row">
+              <div class="gp-big"><b>${c.doneAll}<span style="font-size:16px;color:#8a8d9c;display:inline"> / ${c.due}</span></b><span>${c.to > AN_TODAY ? "выполнено из положенного на сегодня" : "выполнено за период"}</span></div>
+              <div class="gp-pct ${pct >= 90 ? "ok" : pct >= 60 ? "mid" : "low"}">${pct}%</div>
+            </div>
+            <div class="gp-bar"><i style="width:${pct}%"></i></div>
+          </div>
+
+          <div class="ga-tiles">
+            <div class="ga-tile"><span>${icon("visibility", "material-icons-outlined")}Уроки просмотрены</span><b>${c.watched}<small> / ${c.vDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("description", "material-icons-outlined")}Конспекты сданы</span><b>${c.notes}<small> / ${c.vDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("quiz", "material-icons-outlined")}Тесты сданы</span><b>${c.tDone}<small> / ${c.tDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("grade", "material-icons-outlined")}Средний балл тестов</span><b>${c.avg ?? "—"}<small>${c.avg != null ? " из 100" : ""}</small></b></div>
+          </div>
+
+          <div class="ga-card">
+            <div class="ga-ctitle">По дням</div>
+            ${byDay
+              .map(
+                (g) => `
+              <div class="rp-day">
+                <div class="rp-date">${WD[g.date.getDay()]}, ${pad(g.date.getDate())}.${pad(g.date.getMonth() + 1)}</div>
+                ${g.items
+                  .map(
+                    (it) => `
+                  <div class="rp-item ${it.st.future ? "fut" : ""}">
+                    ${kindIcon(it.kind)}
+                    <div style="flex:1;min-width:0">
+                      <div class="rp-title">${it.title}</div>
+                      <div class="rp-sts">${badge(it)}</div>
+                    </div>
+                  </div>`
+                  )
+                  .join("")}
+              </div>`
+              )
+              .join("")}
+          </div>
+        </div>`;
+    };
+    const waText = () => {
+      const c = calc();
+      return encodeURIComponent(
+        `Отчёт I4U · ${s.name}\n${data.poster.title}, ${R.period === "week" ? "неделя" : "месяц"} ${periodLabel(R.period, R.date)}\n` +
+          `План: ${c.plan.videos} видео, ${c.plan.tests} тестов\n` +
+          `Просмотрено уроков: ${c.watched}/${c.vDue}\nКонспекты: ${c.notes}/${c.vDue}\nТесты: ${c.tDone}/${c.tDue}` +
+          (c.avg != null ? `, средний балл ${c.avg}` : "")
+      );
+    };
+    pushScreen(
+      "Отчёт",
+      build,
+      () => {
+        $$("[data-rp-period]").forEach((b) => (b.onclick = () => ((R.period = b.dataset.rpPeriod), paintStack())));
+        $$("[data-rp-shift]").forEach((b) => {
+          b.onclick = () => {
+            const k = Number(b.dataset.rpShift);
+            const d = new Date(R.date);
+            if (R.period === "week") d.setDate(d.getDate() + 7 * k);
+            else d.setMonth(d.getMonth() + k, 1);
+            R.date = d > AN_TODAY ? new Date(AN_TODAY) : d < SCHED_START ? new Date(SCHED_START) : d;
+            paintStack();
+          };
+        });
+        $("#rpSend").onclick = () => {
+          const digits = String(studentExtra(s).parentPhone).replace(/\D/g, "");
+          window.open(`https://wa.me/${digits}?text=${waText()}`, "_blank", "noopener");
+          toast("Отчёт открыт в WhatsApp");
+        };
+      },
+      {
+        right: "<span></span>",
+        footer: () => `<div class="sticky-foot"><button type="button" class="ef-submit" id="rpSend" style="margin:0">Отправить родителю в WhatsApp</button></div>`,
+      }
+    );
   }
 
   function openStudentEdit(s) {
