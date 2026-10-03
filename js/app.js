@@ -238,6 +238,21 @@
     });
   }
 
+  /** Элементті тек өз контейнерінің ішінде ортаға жылжыту (бүкіл бетті/телефонды жылжытпайды) */
+  function centerIn(el, axis) {
+    if (!el) return;
+    let p = el.parentElement;
+    const can = (n) => {
+      const st = getComputedStyle(n);
+      return axis === "x" ? /(auto|scroll)/.test(st.overflowX) && n.scrollWidth > n.clientWidth : /(auto|scroll)/.test(st.overflowY) && n.scrollHeight > n.clientHeight;
+    };
+    while (p && !can(p)) p = p.parentElement;
+    if (!p || p === document.body || p === document.documentElement) return;
+    const er = el.getBoundingClientRect(), pr = p.getBoundingClientRect();
+    if (axis === "x") p.scrollLeft += er.left - pr.left - (pr.width - er.width) / 2;
+    else p.scrollTop += er.top - pr.top - (pr.height - er.height) / 2;
+  }
+
   function bindLongPress(el, onLongPress) {
     let timer = null;
     let startX = 0;
@@ -1838,8 +1853,8 @@
           else return finish(false);
           paintStack();
         };
-        $(".tq-num.on")?.scrollIntoView({ inline: "center", block: "nearest" });
-        $(".ent-sub.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+        centerIn($(".tq-num.on"), "x");
+        centerIn($(".ent-sub.on"), "x");
         const t = $("#entTimer");
         clearInterval(timer);
         timer = setInterval(() => {
@@ -3356,7 +3371,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <div class="road-scroll">${levelRoadHtml(done, total)}</div>`,
       { tall: true }
     );
-    $(".road-step.cur")?.scrollIntoView({ block: "center" });
+    centerIn($(".road-step.cur"), "y");
   }
 
   /* —— Студент: тесттер пәндер бойынша —— */
@@ -3558,8 +3573,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             else if (R.s < subs.length - 1) (R.s++, (R.q[R.s] = 0));
             paintStack();
           };
-          $(".an-num.on")?.scrollIntoView({ inline: "center", block: "nearest" });
-          $(".an-sub.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+          centerIn($(".an-num.on"), "x");
+          centerIn($(".an-sub.on"), "x");
         },
         { screenCls: "an-dark", footer: anaFoot }
       );
@@ -6193,7 +6208,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
               paintStack();
             } else finishLesson(c, cc, i);
           });
-        $(".tq-num.on")?.scrollIntoView({ inline: "center", block: "nearest" });
+        centerIn($(".tq-num.on"), "x");
       },
       { footer }
     );
