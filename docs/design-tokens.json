@@ -1,0 +1,45 @@
+{
+  "$schema": "i4u design tokens v1 — макет: https://zerdewnik.github.io/mobile-mock/",
+  "font": { "family": "Roboto", "files": ["assets/fonts/Roboto-Regular.ttf", "assets/fonts/Roboto-Medium.ttf", "assets/fonts/Roboto-Bold.ttf"], "display": "Oswald 500/700 (Google Fonts) — тек чемпион карточкасы" },
+  "device": { "width": 390, "height": 844, "statusBar": 44, "appBar": 48, "bottomNav": 58, "sidePadding": 15 },
+  "color": {
+    "student": { "primary": "#5B6EC2", "primaryDeep": "#3B4089", "appBar": "#2B3553", "primaryLight": "#8A8FD6" },
+    "staff": { "primary": "#58AA80", "primaryDeep": "#3F8F68", "appBar": "#58AA80" },
+    "surface": { "background": "#121212", "card": "#1E1E1E", "cardRaised": "#262628", "cardTop": "#26262C", "cardBottom": "#1E1E22", "input": "#181818", "border": "#2C2C33", "borderStrong": "#34343C", "divider": "rgba(255,255,255,0.12)", "bottomEdge3d": "#0C0C10" },
+    "text": { "primary": "#FFFFFF", "secondary": "#C8CAD4", "hint": "#8A8D9C", "muted": "#6C6F84", "onLight": "#1C1C22" },
+    "status": { "success": "#5CB36D", "successBg": "#1F2E24", "warning": "#E0A84A", "orange": "#E0873A", "danger": "#E06B5B", "dangerBg": "#3A2020", "info": "#6C7FD8" },
+    "gold": { "light": "#FFF1B8", "main": "#FFD24D", "dark": "#E0A21B", "edge": "#9A6608" },
+    "medal": { "gold": "#FFC107", "silver": "#B0BEC5", "bronze": "#CD7F32" },
+    "ent": { "background": "#E9EAEE", "bar": "#3B4089", "questionNumber": "#B6B9D0", "questionAnswered": "#7D82B8", "card": "#FFFFFF" },
+    "lessonKind": { "video": "#4FB1BA", "test": "#5CB36D", "weekly": "#A05AD8", "final": "#E0604A" },
+    "duelRound": { "easy": "#5CB36D", "medium": "#E0A84A", "hard": "#E0604A" },
+    "levels": { "Bronze": "#CD7F32", "Silver": "#B8C2CC", "Gold": "#F2C230", "Platinum": "#7FD3E8", "Diamond": "#4F9BFF", "Heroic": "#B07CFF", "Master": "#FFB547", "Grandmaster": "#FF6A3D", "Elite Master": "#FFD84D", "Grandmaster Elite": "#FFE27A" },
+    "subject": { "Математика": "#4690C6", "Физика": "#5853C7", "Химия": "#8F2EA8", "Биология": "#2D8B48", "Ағылшын тілі": "#1E3A8A", "Дүниежүзі тарихы": "#4F6D7A", "Қазақстан тарихы": "#2B8073", "География": "#13A4C8", "Информатика": "#B13B5D", "Қазақ тілі": "#3B7BBF" }
+  },
+  "radius": { "xs": 6, "sm": 8, "md": 12, "lg": 15, "xl": 16, "card3d": 18, "sheet": 20, "pill": 999 },
+  "spacing": { "xxs": 4, "xs": 6, "sm": 8, "md": 12, "lg": 16, "xl": 20, "page": 15 },
+  "typography": {
+    "appBarTitle": { "size": 18, "weight": 700 },
+    "screenTitle": { "size": 21, "weight": 800 },
+    "cardTitle": { "size": 15.5, "weight": 800 },
+    "body": { "size": 14, "weight": 400 },
+    "bodyStrong": { "size": 14, "weight": 600 },
+    "caption": { "size": 11.5, "weight": 400 },
+    "label": { "size": 12, "weight": 700, "letterSpacing": 0.6, "uppercase": true },
+    "navLabel": { "size": 10, "weight": 500, "activeWeight": 700 },
+    "stat": { "size": 22, "weight": 700 },
+    "hero": { "size": 40, "weight": 800 }
+  },
+  "shadow3d": {
+    "card": [ { "inset": true, "x": 0, "y": 1, "blur": 0, "color": "rgba(255,255,255,0.07)" }, { "x": 0, "y": 4, "blur": 0, "color": "#0C0C10" }, { "x": 0, "y": 10, "blur": 24, "color": "rgba(0,0,0,0.35)" } ],
+    "button": [ { "inset": true, "x": 0, "y": 1, "blur": 0, "color": "rgba(255,255,255,0.35)" }, { "x": 0, "y": 4, "blur": 0, "color": "primary mixed 45% with black" }, { "x": 0, "y": 10, "blur": 20, "color": "rgba(0,0,0,0.35)" } ],
+    "pressed": "translateY(3px), нижняя тень 4px → 1px"
+  },
+  "gradient": {
+    "card3d": ["#26262C", "#1E1E22"],
+    "button3d": ["primary + 30% white", "primary", "primary + 25% black"],
+    "gold3d": ["#FFF1B8", "#FFD24D", "#E0A21B"],
+    "heroGlow": "radial: primary 35% → #1E1E22 at 70%"
+  },
+  "motion": { "press": "80ms", "sheet": "220ms ease", "toast": "2.2s" }
+}

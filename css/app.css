@@ -3600,3 +3600,108 @@ html[data-theme="light"] .phone .app .sp-badge { filter: invert(1) hue-rotate(18
 .du-rr.easy { border-color: #5cb36d; }
 .du-rr.mid { border-color: #e0a84a; }
 .du-rr.hard { border-color: #e0604a; }
+
+/* ============================================================
+   ТУРНИР v2 — 3D стиль, I4U түстері
+   Негізгі: --primary (студент #5B6EC2 / staff #58AA80), терең #3B4089,
+   бет #1E1E1E, алтын тек кубок/жеңіс үшін #FFD24D → #E0A21B
+   3D ережесі: жоғарғы жарық жиек (inset 0 1px 0 rgba(255,255,255,.08)),
+   төменгі «қалыңдық» (0 4px 0 #0c0c10) және жұмсақ көлеңке (0 10px 24px rgba(0,0,0,.35))
+   ============================================================ */
+.t3-sec { margin: 18px 2px 10px; font-size: 12px; font-weight: 700; letter-spacing: 0.6px; text-transform: uppercase; color: #8a8d9c; }
+.t3-sec:first-child { margin-top: 4px; }
+.t3-card, .t3-panel, .t3-hero, .tr-vs, .t3-ok {
+  background: linear-gradient(180deg, #26262c 0%, #1e1e22 100%);
+  border: 1px solid #2f2f38;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 4px 0 #0c0c10, 0 10px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 18px;
+}
+.t3-card { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 12px 14px 14px; margin-bottom: 14px; color: #fff; font-family: inherit; text-align: left; cursor: pointer; transition: transform 0.08s, box-shadow 0.08s; }
+.t3-card:active { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 1px 0 #0c0c10, 0 4px 10px rgba(0, 0, 0, 0.3); }
+.t3-card > .material-icons-round { color: #6c6f84; }
+.t3-ico { width: 58px; height: 58px; flex-shrink: 0; filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.4)); }
+.t3-body { flex: 1; min-width: 0; }
+.t3-top { display: flex; gap: 6px; flex-wrap: wrap; }
+.t3-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+.t3-badge .material-icons-round { font-size: 13px; }
+.t3-badge.reg { background: color-mix(in srgb, var(--primary) 22%, transparent); color: color-mix(in srgb, var(--primary) 60%, #fff); }
+.t3-badge.live { background: rgba(224, 96, 74, 0.2); color: #ff8a70; }
+.t3-badge.done { background: rgba(255, 210, 77, 0.16); color: #ffd24d; }
+.t3-badge.ok { background: rgba(92, 179, 109, 0.18); color: #5cb36d; }
+.t3-title { margin-top: 6px; font-size: 15.5px; font-weight: 800; }
+.t3-title.lg { margin-top: 10px; font-size: 21px; text-align: center; }
+.t3-sub { margin-top: 3px; font-size: 11.5px; color: #9a9db0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t3-hero .t3-sub { text-align: center; white-space: normal; }
+.t3-line { margin-top: 8px; display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: #c8cad4; }
+.t3-line .material-icons-round, .t3-line .material-icons-outlined { font-size: 15px; color: var(--primary); }
+.t3-hero { padding: 20px 16px 18px; text-align: center; background: radial-gradient(ellipse at top, color-mix(in srgb, var(--primary) 35%, #1e1e22), #1e1e22 70%); border-color: color-mix(in srgb, var(--primary) 40%, #2f2f38); }
+.t3-hero img { width: 96px; height: 96px; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5)); }
+.t3-panel { margin-top: 14px; padding: 16px; }
+.t3-panel-h { display: flex; align-items: center; gap: 12px; }
+.t3-panel-h img { width: 48px; height: 48px; }
+.t3-panel-h b { display: block; font-size: 14px; }
+.t3-panel-h span { display: block; margin-top: 3px; font-size: 11.5px; color: #9a9db0; }
+.t3-info { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2c2c33; }
+.t3-info:last-child { border-bottom: 0; }
+.t3-info > span { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #9a9db0; flex-shrink: 0; }
+.t3-info > span .material-icons-outlined { font-size: 17px; color: var(--primary); }
+.t3-info b { font-size: 13px; font-weight: 600; text-align: right; }
+.t3-info.col { flex-direction: column; }
+.t3-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.t3-chips i { font-style: normal; font-size: 11.5px; padding: 5px 10px; border-radius: 999px; background: color-mix(in srgb, var(--primary) 16%, #26262c); border: 1px solid color-mix(in srgb, var(--primary) 35%, transparent); }
+.t3-tl { margin-top: 12px; position: relative; padding-left: 4px; }
+.t3-tl-i { position: relative; display: flex; align-items: baseline; gap: 10px; padding: 0 0 14px 22px; }
+.t3-tl-i::before { content: ""; position: absolute; left: 6px; top: 12px; bottom: -2px; width: 2px; background: #34343c; }
+.t3-tl-i:last-child::before { display: none; }
+.t3-tl-i i { position: absolute; left: 0; top: 3px; width: 14px; height: 14px; border-radius: 50%; background: #34343c; box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.3); }
+.t3-tl-i.done i { background: linear-gradient(180deg, #7fe09a, #2e8b4e); }
+.t3-tl-i.done::before { background: #2e8b4e; }
+.t3-tl-i.cur i { background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 60%, #fff), var(--primary)); box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 25%, transparent); }
+.t3-tl-i b { font-size: 13px; }
+.t3-tl-i span { font-size: 11.5px; color: #9a9db0; margin-left: auto; }
+.t3-tl-i.cur b { color: color-mix(in srgb, var(--primary) 55%, #fff); }
+.t3-ppl { margin-top: 12px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.t3-ppl > span { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.t3-ppl small { font-size: 10.5px; color: #c8cad4; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.t3-ok { display: flex; align-items: center; gap: 12px; margin-top: 14px; padding: 14px 16px; border-color: rgba(92, 179, 109, 0.35); background: linear-gradient(180deg, #1f2e24, #1b231e); }
+.t3-ok > .material-icons-round, .t3-ok > .material-icons-outlined { font-size: 30px; color: #5cb36d; }
+.t3-ok.out { border-color: #2f2f38; background: linear-gradient(180deg, #26262c, #1e1e22); }
+.t3-ok.out > .material-icons-outlined { color: #8a8d9c; }
+.t3-ok.gold { border-color: #6a5420; background: linear-gradient(180deg, #3a2f12, #241e10); }
+.t3-ok img { width: 44px; height: 44px; }
+.t3-ok b { display: block; font-size: 14px; }
+.t3-ok span { display: block; margin-top: 3px; font-size: 11.5px; color: #c8cad4; }
+.t3-note { margin-top: 14px; display: flex; gap: 8px; font-size: 11.5px; line-height: 1.5; color: #9a9db0; background: #1a1a1e; border-radius: 12px; padding: 10px 12px; }
+.t3-note .material-icons-outlined { font-size: 17px; color: var(--primary); }
+.t3-ro { display: flex; align-items: center; gap: 6px; color: #c8cad4; }
+.t3-ro small { color: #6c6f84; }
+.t3-all { border: 0; background: transparent; color: var(--primary); font-family: inherit; font-size: 12px; font-weight: 600; cursor: pointer; margin-left: 6px; }
+input[type="datetime-local"].ef-input { color-scheme: dark; }
+
+/* 3D батырма */
+.btn3d {
+  width: 100%; height: 50px; margin-top: 14px; border: 0; border-radius: 14px; cursor: pointer;
+  font-family: inherit; font-size: 15px; font-weight: 800; color: #fff;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 70%, #fff) 0%, var(--primary) 45%, color-mix(in srgb, var(--primary) 75%, #000) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 4px 0 color-mix(in srgb, var(--primary) 45%, #000), 0 10px 20px rgba(0, 0, 0, 0.35);
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+.btn3d:active { transform: translateY(3px); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 0 color-mix(in srgb, var(--primary) 45%, #000), 0 4px 10px rgba(0, 0, 0, 0.3); }
+.btn3d.gold { color: #2a2006; background: linear-gradient(180deg, #fff1b8 0%, #ffd24d 45%, #e0a21b 100%); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 0 #9a6608, 0 10px 20px rgba(224, 162, 27, 0.25); }
+.btn3d.gold:active { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 1px 0 #9a6608, 0 4px 10px rgba(224, 162, 27, 0.2); }
+.btn3d.ghost { height: 44px; font-size: 13.5px; font-weight: 600; color: #c8cad4; background: linear-gradient(180deg, #2c2c33, #232329); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 3px 0 #0c0c10; }
+.btn3d .material-icons-round, .btn3d .material-icons-outlined { font-size: 22px; }
+
+/* VS блогы — біздің көк, 3D */
+.tr-vs { margin-top: 14px; padding: 16px; text-align: center; background: radial-gradient(ellipse at top, color-mix(in srgb, var(--primary) 40%, #1e1e22), #1e1e22 75%); border-color: color-mix(in srgb, var(--primary) 45%, #2f2f38); }
+.tr-vs-h { color: color-mix(in srgb, var(--primary) 50%, #fff); }
+img.tr-vs-x { width: 54px; height: 54px; filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.5)); }
+.du-av.lg { box-shadow: 0 0 0 3px #1e1e22, 0 0 0 5px color-mix(in srgb, var(--primary) 60%, transparent), 0 8px 16px rgba(0, 0, 0, 0.45); }
+.br-m { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 0 #0c0c10; }
+.br-m.live { border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary), 0 0 14px color-mix(in srgb, var(--primary) 45%, transparent); }
+.br-p.me span { color: color-mix(in srgb, var(--primary) 50%, #fff); }
+.br-p.bye span { color: #6c6f84; font-style: italic; font-size: 10.5px; }
+.br-m.champ img { width: 34px; height: 34px; }
+.du-res-ico img { width: 96px; height: 96px; filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.5)); }
+.tr-rule { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 3px 0 #0c0c10; }
