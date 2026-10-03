@@ -3473,3 +3473,9 @@ html[data-theme="light"] .phone .app .sp-badge { filter: invert(1) hue-rotate(18
 .student-group .rank-row { cursor: default; }
 .student-group .rank-phone { display: none; }
 .student-group .rank-progress, .student-group .rank-points-today { display: none; }
+/* Студент: орын өзгерісі балдың сол жағында, кішкентай белгі */
+.student-group .rank-score-line { gap: 6px; }
+.student-group .rank-change { order: -1; font-size: 11px; padding: 1px 6px 1px 2px; border-radius: 999px; }
+.student-group .rank-change.up { background: rgba(92, 179, 109, 0.15); color: #5cb36d; }
+.student-group .rank-change.down { background: rgba(224, 107, 91, 0.15); color: #e06b5b; }
+.student-group .rank-change .material-icons-round { font-size: 18px; margin: 0 -2px 0 0; }
