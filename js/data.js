@@ -36,21 +36,13 @@ window.MOCK = {
   ],
   /** Мои группы. students жоқ топтарға тізім data.js соңында генерацияланады */
   groups: [
-    { id: 1, name: "құқық", courseId: 12, courseLabel: "құқық · Назгүл", curatorId: 4, studentsCount: 8 },
-    { id: 2, name: "Math Empire", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 9 },
-    { id: 3, name: "Хронос 3", courseId: 13, courseLabel: "тарих · Назгүл", curatorId: 4, studentsCount: 29 },
-    { id: 4, name: "Нейрондар 2", courseId: 14, courseLabel: "Химия · Балайым", curatorId: 6, studentsCount: 7 },
-    { id: 5, name: "Пифагор ұрпақтары", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 15 },
-    { id: 6, name: "Хронос 2", courseId: 13, courseLabel: "тарих · Диана", curatorId: 1, studentsCount: 31 },
-    { id: 7, name: "НЕЙРОНДАР", courseId: 15, courseLabel: "био · Балайым", curatorId: 6, studentsCount: 17 },
-    { id: 8, name: "СИНАПСТАР", courseId: 15, courseLabel: "био · Балайым", curatorId: 6, studentsCount: 12 },
     {
       id: 9,
       name: "Викингтер",
       courseId: 10,
       courseLabel: "ДЖТ · Диана",
       curatorId: 1,
-      studentsCount: 7,
+      studentsCount: 15,
       students: [
         { id: 14, name: "Іңкәр Жақсылық", phone: "+7 777 595 80 03", initials: "ІЖ", color: "#D9707A", rank: 1, medal: "gold", score: 82, progress: "48/77", lastSeen: "был 1 час назад", pointsToday: 0, rankChange: 0 },
         { id: 15, name: "динара исенбай", phone: "+7 778 294 84 81", initials: "ДИ", color: "#E8A070", rank: 2, medal: "silver", score: 65, progress: "24/77", lastSeen: "был 1 час назад", pointsToday: 0, rankChange: 0 },
@@ -61,7 +53,6 @@ window.MOCK = {
         { id: 17, name: "Сабыржан Жарылқасын", phone: "+7 771 498 87 10", initials: "СЖ", color: "#E8A070", rank: 7, medal: null, score: 0, progress: "8/77", lastSeen: "был 24.09.26", pointsToday: 0, rankChange: 0 },
       ],
     },
-    { id: 10, name: "Future Leaders", courseId: 16, courseLabel: "ағылшын · Диана", curatorId: 1, studentsCount: 11 },
   ],
   students: [
     { id: 11, name: "Томирис Досымхан", phone: "+7 778 215 35 57", initials: "ТД", color: "#5B6EC2", status: "online", course: "ДЖТ", progress: "48/77", blocked: false },
@@ -78,18 +69,18 @@ window.MOCK = {
   ],
   /** Хабарлама (пуштар). stats = «получили / прочитали» */
   pushes: [
-    { id: 1, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтап қалмаймыз,бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:31", audience: "Хронос 3", stats: "27 / 2" },
-    { id: 2, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтай қалмаймыз,бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:30", audience: "Хронос 2", stats: "30 / 1" },
-    { id: 3, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтап қалмаймыз, бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:21", audience: "Хронос", stats: "30 / 0" },
-    { id: 4, title: "БИО эфирге 20 МИНУТ қалдыы🔥 🔥 🔥", type: "Объявление", body: "жасушамызды бірге зерттейік", time: "30.09.26 17:39", audience: "СИНАПСТАР", stats: "12 / 0" },
-    { id: 5, title: "Ертең 19:00-де тарих эфирі", type: "Напоминание", body: "Хронос 2, сілтемені группадан аласыздар", time: "29.09.26 20:05", audience: "Хронос 2", stats: "31 / 18" },
+    { id: 1, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтап қалмаймыз,бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:31", audience: "Викингтер", stats: "15 / 2" },
+    { id: 2, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтай қалмаймыз,бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:30", audience: "Викингтер", stats: "15 / 1" },
+    { id: 3, title: "10:00 АПТАЛЫҚ СЫНАҚ‼️ (зачет)", type: "Объявление", body: "ұйықтап қалмаймыз, бәріміз қосыламыз🥰 ✅", time: "Сегодня 21:21", audience: "Викингтер", stats: "15 / 0" },
+    { id: 4, title: "БИО эфирге 20 МИНУТ қалдыы🔥 🔥 🔥", type: "Объявление", body: "жасушамызды бірге зерттейік", time: "30.09.26 17:39", audience: "Викингтер", stats: "15 / 0" },
+    { id: 5, title: "Ертең 19:00-де тарих эфирі", type: "Напоминание", body: "Викингтер, сілтемені группадан аласыздар", time: "29.09.26 20:05", audience: "Викингтер", stats: "15 / 15" },
   ],
   /** Эфир: date = YYYY-MM-DD */
   efirs: [
-    { id: 1, title: "Тарих: Қазақ хандығы", link: "https://meet.google.com/abc-defg-hij", date: "2026-10-03", time: "19:00", groups: [6] },
+    { id: 1, title: "Тарих: Қазақ хандығы", link: "https://meet.google.com/abc-defg-hij", date: "2026-10-03", time: "19:00", groups: [9] },
     { id: 2, title: "ДЖТ разбор апталық сынақ", link: "https://zoom.us/j/123456789", date: "2026-10-03", time: "20:30", groups: [9] },
-    { id: 3, title: "Тарих: Алаш қозғалысы", link: "https://meet.google.com/xyz-abcd-efg", date: "2026-10-05", time: "19:00", groups: [6, 3] },
-    { id: 4, title: "Разбор ЕНТ", link: "https://meet.google.com/ent-rzbr-001", date: "2026-10-01", time: "18:00", groups: [9, 10] },
+    { id: 3, title: "Тарих: Алаш қозғалысы", link: "https://meet.google.com/xyz-abcd-efg", date: "2026-10-05", time: "19:00", groups: [9] },
+    { id: 4, title: "Разбор ЕНТ", link: "https://meet.google.com/ent-rzbr-001", date: "2026-10-01", time: "18:00", groups: [9] },
   ],
   pushTypes: [
     { value: "announcement", label: "Объявление" },
@@ -490,8 +481,9 @@ window.MOCK = {
   const seen = ["был 4 минуты назад", "был 1 час назад", "был 3 часа назад", "был 12 часов назад", "был вчера", "был 29.09.26"];
   let id = 500;
   window.MOCK.groups.forEach((g, gi) => {
-    if (g.students) return;
-    g.students = Array.from({ length: g.studentsCount }, (_, i) => {
+    const have = g.students || [];
+    if (have.length >= g.studentsCount) return;
+    const extra = Array.from({ length: g.studentsCount - have.length }, (_, i) => {
       const name = `${first[(i * 7 + gi * 3) % first.length]} ${last[(i * 3 + gi) % last.length]}`;
       return {
         id: id++,
@@ -508,6 +500,16 @@ window.MOCK = {
         rankChange: i % 5 === 2 ? 1 : i % 5 === 4 ? -1 : 0,
       };
     });
+    if (have.length) {
+      // Бар оқушылардан төмен балл: 40-тан төмен қарай
+      extra.forEach((x, i) => {
+        x.score = Math.max(0, 40 - i * 5);
+        x.progress = `${Math.max(4, 44 - i * 4)}/77`;
+      });
+    }
+    g.students = [...have, ...extra]
+      .sort((a, b) => b.score - a.score)
+      .map((x, i) => ({ ...x, rank: i + 1, medal: i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : null }));
   });
   /* Өткен апта чемпионы (21–27 қыркүйек): апта бойы ауыспайды */
   const champ = { 9: { id: 13, score: 91 } };
