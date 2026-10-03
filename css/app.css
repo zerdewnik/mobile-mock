@@ -3194,3 +3194,21 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .ga-ent-none .material-icons-outlined { font-size: 20px; }
 .ga-bar.none span { opacity: 0.4; }
 .ga-tile b small { white-space: normal; }
+
+/* Уровни */
+.lvl-badge { display: inline-flex; align-items: center; gap: 4px; padding: 5px 11px; border-radius: 999px; font-size: 12.5px; font-weight: 600; color: var(--lc); background: color-mix(in srgb, var(--lc) 14%, #1a1a1a); border: 1px solid color-mix(in srgb, var(--lc) 45%, transparent); }
+.lvl-badge.sm { padding: 3px 8px; font-size: 11px; }
+.lvl-card { background: linear-gradient(135deg, color-mix(in srgb, var(--lc) 16%, #1e1e1e), #1e1e1e 65%); border: 1px solid color-mix(in srgb, var(--lc) 35%, #2c2c33); border-radius: 16px; padding: 16px; margin-bottom: 12px; }
+.lvl-top { display: flex; align-items: center; gap: 12px; }
+.lvl-emoji { width: 50px; height: 50px; border-radius: 14px; display: grid; place-items: center; font-size: 28px; background: color-mix(in srgb, var(--lc) 18%, #141414); flex-shrink: 0; }
+.lvl-over { font-size: 11.5px; color: #9a9db0; }
+.lvl-name { margin-top: 3px; font-size: 19px; font-weight: 800; color: var(--lc); }
+.lvl-bar { margin-top: 14px; height: 8px; border-radius: 5px; background: #2a2a2e; overflow: hidden; }
+.lvl-bar i { display: block; height: 100%; border-radius: 5px; background: var(--lc); }
+.lvl-meta { margin-top: 8px; display: flex; justify-content: space-between; gap: 8px; font-size: 11.5px; color: #c8cad4; }
+.lvl-meta span { color: #8a8d9c; }
+.lvl-steps { margin-top: 12px; display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; }
+.lvl-steps span { height: 28px; border-radius: 7px; background: #262628; display: grid; place-items: center; font-size: 14px; filter: grayscale(1); opacity: 0.35; }
+.lvl-steps span.done { filter: none; opacity: 0.85; }
+.lvl-steps span.cur { filter: none; opacity: 1; background: color-mix(in srgb, var(--lc) 25%, #262628); box-shadow: inset 0 0 0 1.5px var(--lc); }
+.sp-lvl { margin: 0 15px; }

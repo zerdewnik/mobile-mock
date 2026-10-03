@@ -2324,6 +2324,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-avatar" style="background:${s.color}">${s.initials}</div>
           <div class="sp-name">${s.name.toUpperCase()}</div>
           <div class="sp-seen">${s.lastSeen || ""}</div>
+          <div style="margin-top:10px">${levelBadge(data.done, data.total)}</div>
         </div>
         <div class="sp-actions">
           <button type="button" class="sp-act" id="spCall">${icon("call", "material-icons-outlined")}<span>Звонок</span></button>
@@ -2339,6 +2340,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-f"><span>Класс</span><b>${ex.grade}</b></div>
           <div class="sp-f"><span>UUID</span><b class="mono">${ex.uuid}</b></div>
         </div>
+        <div class="sp-lvl">${levelCardHtml(data.done, data.total, data.poster.title)}</div>
         <button type="button" class="sp-course" id="spCourse">
           ${pend ? `<span class="sp-badge">${pend}</span>` : ""}
           <div class="sp-poster">${posterHtml(data.poster)}</div>
@@ -2362,6 +2364,57 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       },
       { screenCls: "sp-screen", right: `<button type="button" class="sp-hist" id="spHistory">История входа</button>` }
     );
+  }
+
+  /* —— Уровни: курстың әр 10%-ы — бір деңгей —— */
+  const LEVELS = [
+    { name: "Bronze", emoji: "🥉", color: "#CD7F32" },
+    { name: "Silver", emoji: "🥈", color: "#B8C2CC" },
+    { name: "Gold", emoji: "🥇", color: "#F2C230" },
+    { name: "Platinum", emoji: "💎", color: "#7FD3E8" },
+    { name: "Diamond", emoji: "💠", color: "#4F9BFF" },
+    { name: "Heroic", emoji: "🦅", color: "#B07CFF" },
+    { name: "Master", emoji: "👑", color: "#FFB547" },
+    { name: "Grandmaster", emoji: "🔥", color: "#FF6A3D" },
+    { name: "Elite Master", emoji: "⭐", color: "#FFD84D" },
+    { name: "Grandmaster Elite", emoji: "🏆", color: "#FFE27A" },
+  ];
+  /** done / total → { i (0..9), level, next, toNext (сабақ), pct ішіндегі прогресс } */
+  function levelOf(done, total) {
+    const step = total / 10;
+    const i = Math.min(9, Math.floor(done / step));
+    const nextAt = Math.floor(step * (i + 1)) + 1; // 12,8 → 13-сабақта келесі деңгей
+    return {
+      i,
+      level: LEVELS[i],
+      next: i < 9 ? LEVELS[i + 1] : null,
+      toNext: i < 9 ? Math.max(1, nextAt - done) : 0,
+      pct: i < 9 ? Math.min(100, ((done - step * i) / step) * 100) : 100,
+    };
+  }
+  function levelBadge(done, total, small) {
+    const L = levelOf(done, total);
+    return `<span class="lvl-badge ${small ? "sm" : ""}" style="--lc:${L.level.color}">${L.level.emoji} ${L.level.name}</span>`;
+  }
+  function levelCardHtml(done, total, title) {
+    const L = levelOf(done, total);
+    return `
+      <div class="lvl-card" style="--lc:${L.level.color}">
+        <div class="lvl-top">
+          <span class="lvl-emoji">${L.level.emoji}</span>
+          <div style="flex:1;min-width:0">
+            <div class="lvl-over">Уровень ${L.i + 1} из 10${title ? ` · ${title}` : ""}</div>
+            <div class="lvl-name">${L.level.name}</div>
+          </div>
+        </div>
+        <div class="lvl-bar"><i style="width:${L.pct}%"></i></div>
+        <div class="lvl-meta">${
+          L.next
+            ? `До ${L.next.emoji} ${L.next.name}: ещё ${L.toNext} ${plural(L.toNext, "урок", "урока", "уроков")}`
+            : "Максимальный уровень достигнут"
+        }<span>${done} / ${total}</span></div>
+        <div class="lvl-steps">${LEVELS.map((lv, k) => `<span class="${k < L.i ? "done" : k === L.i ? "cur" : ""}" title="${lv.name} · с ${Math.floor((total / 10) * k) + (k ? 1 : 0)} урока">${lv.emoji}</span>`).join("")}</div>
+      </div>`;
   }
 
   /** «Звонок» / «Написать» → Ученику | Родителю */
@@ -3547,7 +3600,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const open = { [items[cc.cur]?.si ?? 0]: true };
     const build = () => {
       const flat = courseItems(cc);
-      return `<div class="list-pad course-secs" style="--acc:${cc.accent || "#2a3647"}">${cc.sections
+      return `<div class="list-pad course-secs" style="--acc:${cc.accent || "#2a3647"}">${levelCardHtml(c.done, c.total)}${cc.sections
         .map((sec, si) => {
           const rows = flat.map((x, i) => ({ ...x, i })).filter((x) => x.si === si);
           const dim = cc.dimLocked && rows.every((x) => x.state === "locked");
@@ -3906,6 +3959,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
                   <div class="purchase-title">${c.title}</div>
                   <div class="purchase-meta">Всего ${c.total} ${plural(c.total, "урок", "урока", "уроков")}</div>
                   <div class="purchase-meta">Пройдено ${c.done} ${plural(c.done, "урок", "урока", "уроков")}</div>
+                  <div style="margin-top:8px">${levelBadge(c.done, c.total, true)}</div>
                 </div>
               </div>
               <div class="purchase-bar"><i style="width:${(c.done / c.total) * 100}%"></i></div>
