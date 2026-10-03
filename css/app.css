@@ -3873,3 +3873,4 @@ input[type="date"].ef-input { color-scheme: dark; }
 .ma-score.bad { background: rgba(224,107,91,.18); color: #e06b5b; }
 .ent-light .tr-a.mine { color: #c0392b; }
 .ent-light .tr-a.mine .material-icons-outlined { font-size: 18px; }
+.ent-light .er-row > .material-icons-round { color: #9aa0b4; font-size: 22px; margin-left: -4px; }

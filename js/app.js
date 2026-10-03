@@ -3461,7 +3461,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const subs = attemptSubjects(att);
     let cur = 0;
     const build = () => {
-      const sub = subs[cur];
       const passAll = subs.every((s2) => s2.score >= (ENT_MIN[s2.key] || 5));
       return `
         <div class="er-head">
@@ -3474,14 +3473,24 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           ${subs
             .map((s2, i) => {
               const min = ENT_MIN[s2.key] || 5;
-              return `<button type="button" class="er-row ${i === cur ? "on" : ""}" data-masub="${i}">
+              return `<button type="button" class="er-row" data-masub="${i}">
                 <span class="er-name">${s2.title}</span>
                 <span class="er-min ${s2.score >= min ? "ok" : "bad"}">${icon(s2.score >= min ? "check_circle" : "error_outline", "material-icons-outlined")}мин ${min}</span>
                 <b>${s2.score}<small> / ${s2.max}</small></b>
+                ${icon("chevron_right")}
               </button>`;
             })
             .join("")}
-          <div class="er-title">Разбор: ${sub.title}</div>
+        </div>`;
+    };
+    const subBuild = () => {
+      const sub = subs[cur];
+      return `
+        <div class="er-head">
+          <div class="er-total"><b>${sub.score}</b> / ${sub.max}</div>
+          <div class="er-sub">${sub.title} · дұрыс: ${sub.qs.filter((q) => sub.qScore(q) === sub.qMax(q)).length} / ${sub.qs.length} сұрақ</div>
+        </div>
+        <div class="list-pad">
           ${sub.qs
             .map((q, i) => {
               const got = sub.qScore(q), mx = sub.qMax(q);
@@ -3508,7 +3517,13 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       build,
       () => {
         renderMath($("#screenOverlay"));
-        $$("[data-masub]").forEach((b) => (b.onclick = () => ((cur = Number(b.dataset.masub)), paintStack(), $(".er-title:last-of-type")?.scrollIntoView({ block: "start" }))));
+        $$("[data-masub]").forEach(
+          (b) =>
+            (b.onclick = () => {
+              cur = Number(b.dataset.masub);
+              pushScreen(`Разбор: ${subs[cur].title}`, subBuild, () => renderMath($("#screenOverlay")), { screenCls: "ent-light" });
+            })
+        );
         $("#maCert").onclick = () => {
           const me = MOCK.me;
           const grp = MOCK.groups.find((g) => g.students?.some((x) => x.phone === me.phone));
