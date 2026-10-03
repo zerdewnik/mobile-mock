@@ -3531,10 +3531,60 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
   }
 
+  /** Оқушының кесте бойынша жағдайы: бүгін / апта / мерзімі өткен */
+  function staffSchedule(s, data) {
+    const items = scheduleFor(data, SCHED_START, periodRange("week", AN_TODAY).to).flatMap((r) => {
+      const st = rowStatus(s, r);
+      if (r.type === "lesson")
+        return [
+          { date: r.date, kind: "video", title: r.title, done: !!st.watched, future: !!st.future },
+          { date: r.date, kind: "test", title: r.title, done: !!st.tested, future: !!st.future, score: st.score },
+        ];
+      if (r.type === "weekly") return [{ date: r.date, kind: "weekly", title: r.title, done: !!st.done, future: !!st.future, score: st.score }];
+      return [];
+    });
+    const wk = periodRange("week", AN_TODAY);
+    const same = (a, b) => dayKey(a) === dayKey(b);
+    return {
+      today: items.filter((x) => same(x.date, AN_TODAY)),
+      week: items.filter((x) => x.date >= wk.from && x.date <= wk.to),
+      overdue: items.filter((x) => x.date < new Date(AN_TODAY.getFullYear(), AN_TODAY.getMonth(), AN_TODAY.getDate()) && !x.done),
+    };
+  }
+  function staffSchedHtml(S, f) {
+    const tile = (k, n, label, c) => `<button type="button" class="sch-stat ${f === k ? "on" : ""}" data-ssf="${k}" style="--c:${c}"><b>${n}</b><span>${label}</span></button>`;
+    const WD = ["Жс", "Дс", "Сс", "Ср", "Бс", "Жм", "Сб"];
+    const list = f ? S[f] : [];
+    const badge = (x) =>
+      x.done ? `<span class="sch-badge ok">${x.score != null ? `${x.score} из 100` : "Пройден"}</span>` : x.date > AN_TODAY || dayKey(x.date) === dayKey(AN_TODAY) ? `<span class="sch-badge">Предстоит</span>` : `<span class="sch-badge bad">Просрочено</span>`;
+    return `
+      <div class="sch-stats ss-stats">
+        ${tile("today", S.today.length, "Сегодня", "#5CB36D")}
+        ${tile("week", S.week.length, "На неделе", "#6C7FD8")}
+        ${tile("overdue", S.overdue.length, "Просрочено", "#E86B6B")}
+      </div>
+      ${
+        f
+          ? `<div class="sch-list-head" style="margin:16px 2px 10px"><span>${{ today: "По расписанию сегодня", week: "Уроки на неделе", overdue: "Просроченные уроки" }[f]}</span><button type="button" id="ssClose">К модулям</button></div>
+             ${list.length ? list.map((x) => `
+               <div class="sch-card">
+                 ${kindIcon(x.kind)}
+                 <div style="flex:1;min-width:0">
+                   <div class="sch-course">${WD[x.date.getDay()]}, ${pad(x.date.getDate())}.${pad(x.date.getMonth() + 1)}</div>
+                   <div class="sch-lesson">${x.title}</div>
+                   <div class="sch-tags"><span>${{ video: "Видео", test: "Тест", weekly: "Апталық сынақ" }[x.kind]}</span></div>
+                 </div>
+                 ${badge(x)}
+               </div>`).join("") : `<div class="empty" style="padding:24px">Нет уроков</div>`}`
+          : ""
+      }`;
+  }
+
   function openStaffCourse(s, data) {
     const open = {};
+    let ssf = null;
     const build = () => `
-      <div class="list-pad course-secs staff-secs" style="--acc:#2e3a34">${data.sections
+      <div class="list-pad course-secs staff-secs" style="--acc:#2e3a34">${staffSchedHtml(staffSchedule(s, data), ssf)}${ssf ? "" : `<div style="height:12px"></div>`}${ssf ? "" : data.sections
         .map((title, si) => {
           const rows = data.flat.map((x, i) => ({ ...x, i })).filter((x) => x.si === si);
           const dim = rows.every((x) => x.state === "locked");
@@ -3575,6 +3625,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         })
         .join("")}</div>`;
     pushScreen(data.poster.title, build, () => {
+      $$("[data-ssf]").forEach((b) => (b.onclick = () => ((ssf = ssf === b.dataset.ssf ? null : b.dataset.ssf), paintStack())));
+      $("#ssClose")?.addEventListener("click", () => ((ssf = null), paintStack()));
       $$("[data-ssec]").forEach((b) => (b.onclick = () => ((open[b.dataset.ssec] = !open[b.dataset.ssec]), paintStack())));
       $$("[data-sitem]").forEach((b) => {
         b.onclick = () => {
