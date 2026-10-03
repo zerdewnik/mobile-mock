@@ -2990,6 +2990,93 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return { done, score: done ? Math.round((50 + skill * 40 + rnd(s.id, k, 13) * 15) / 5) * 5 : null, time: done ? at(10, Math.floor(rnd(s.id, k, 14) * 50)) : null };
   }
 
+  /* —— Отчёт → PDF (ақ бланк, A4) —— */
+  let pdfLibs = null;
+  function loadPdfLibs() {
+    if (!pdfLibs)
+      pdfLibs = Promise.all([
+        loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+        loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
+      ]);
+    return pdfLibs;
+  }
+  function reportDocHtml(s, data, c, label, periodWord) {
+    const ex = studentExtra(s);
+    const cell = (v, cls = "") => `<td class="${cls}">${v}</td>`;
+    const st = (ok, yes, no) => `<span class="${ok ? "ok" : "bad"}">${ok ? yes : no}</span>`;
+    const noteTxt = { none: ["bad", "Не сдан"], pending: ["warn", "На проверке"], ok: ["ok", "Принят"], back: ["bad", "На доработке"] };
+    const rows = c.rows
+      .map((r) => {
+        const t = r.st;
+        if (t.future) return `<tr class="fut">${cell(r.n ? r.n + "." : "")}${cell(r.type === "lesson" ? "Урок" : r.type === "efir" ? "Эфир" : "Апталық сынақ")}${cell(r.title)}<td colspan="4">Предстоит</td></tr>`;
+        if (r.type === "lesson")
+          return `<tr>${cell(r.n + ".")}${cell("Видео")}${cell(r.title)}${cell(`${t.min} / ${t.len} мин`)}${cell(st(t.watched, "Пройден", t.min ? "Не досмотрел" : "Не пройден"))}${cell(t.vTime ? hm(t.vTime) : "—")}${cell(`<span class="${noteTxt[t.note][0]}">${noteTxt[t.note][1]}</span>`)}</tr>
+            <tr>${cell("")}${cell("Тест")}${cell(r.title)}${cell(t.tested ? `${t.score} из 100` : "—")}${cell(st(t.tested, "Пройден", "Не сдан"))}${cell(t.tTime ? hm(t.tTime) : "—")}${cell("—")}</tr>`;
+        if (r.type === "efir") return `<tr class="sp">${cell("")}${cell("Эфир")}${cell(r.title)}${cell("—")}${cell(st(t.attended, "Присутствовал", "Не был"))}${cell(hm(r.date))}${cell("—")}</tr>`;
+        return `<tr class="sp">${cell("")}${cell("Апталық сынақ")}${cell(r.title)}${cell(t.done ? `${t.score} из 100` : "—")}${cell(st(t.done, "Пройден", "Не сдан"))}${cell(t.time ? hm(t.time) : hm(r.date))}${cell("—")}</tr>`;
+      })
+      .join("");
+    const pct = c.due ? Math.round((c.done / c.due) * 100) : 0;
+    return `
+      <div class="pdoc">
+        <div class="pdoc-head"><b>I4U</b><div>I4U.kz Білім беру орталығы<br>Образовательный центр I4U.kz</div></div>
+        <h1>Отчёт об успеваемости</h1>
+        <div class="pdoc-sub">${periodWord === "week" ? "Неделя" : "Месяц"}: ${label} · сформирован ${dmy(new Date())}</div>
+        <table class="pdoc-info">
+          <tr><td>Ученик</td><td><b>${s.name}</b></td><td>Курс</td><td><b>${data.poster.title}</b></td></tr>
+          <tr><td>Телефон</td><td>${s.phone}</td><td>Группа</td><td>${MOCK.groups.find((g) => g.students.includes(s))?.name || "—"}</td></tr>
+          <tr><td>Родитель</td><td>${ex.parentName}</td><td>Куратор</td><td>Диана</td></tr>
+        </table>
+        <div class="pdoc-plan">План по расписанию: <b>${c.plan.lessons}</b> уроков · <b>${c.plan.efirs}</b> эфир · <b>${c.plan.weekly}</b> апталық сынақ.
+          Выполнено <b>${c.done} из ${c.due}</b> (${pct}%).</div>
+        <table class="pdoc-sum">
+          <tr><th>Видео</th><th>Конспекты</th><th>Тесты</th><th>Эфиры</th><th>Апталық сынақ</th><th>Средний балл</th></tr>
+          <tr><td>${c.watched} / ${c.lDue}</td><td>${c.notes} / ${c.lDue}</td><td>${c.tests} / ${c.lDue}</td><td>${c.efirs} / ${c.eDue}</td><td>${c.weekly} / ${c.wDue}</td><td>${c.avg ?? "—"}</td></tr>
+        </table>
+        <table class="pdoc-tbl">
+          <tr><th>№</th><th>Тип</th><th>Название</th><th>Прогресс</th><th>Статус</th><th>Дата и время</th><th>Конспект</th></tr>
+          ${rows}
+        </table>
+        <div class="pdoc-foot">Отчёт сформирован автоматически в приложении I4U.</div>
+      </div>`;
+  }
+  async function makeReportPdf(html, fileName) {
+    await loadPdfLibs();
+    const box = document.createElement("div");
+    box.className = "pdoc-host";
+    box.innerHTML = html;
+    document.body.appendChild(box);
+    try {
+      const canvas = await window.html2canvas(box.firstElementChild, { scale: 2, backgroundColor: "#ffffff" });
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF({ unit: "pt", format: "a4" });
+      const pw = pdf.internal.pageSize.getWidth();
+      const ph = pdf.internal.pageSize.getHeight();
+      const pagePx = Math.floor((canvas.width * ph) / pw);
+      for (let y = 0, i = 0; y < canvas.height; y += pagePx, i++) {
+        const part = document.createElement("canvas");
+        part.width = canvas.width;
+        part.height = Math.min(pagePx, canvas.height - y);
+        part.getContext("2d").drawImage(canvas, 0, y, canvas.width, part.height, 0, 0, canvas.width, part.height);
+        if (i) pdf.addPage();
+        pdf.addImage(part.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pw, (part.height * pw) / canvas.width);
+      }
+      return new File([pdf.output("blob")], fileName, { type: "application/pdf" });
+    } finally {
+      box.remove();
+    }
+  }
+  function saveFile(file) {
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = file.name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
   function openStudentReport(s, data) {
     const R = { period: "week", date: new Date(AN_TODAY) };
     const calc = () => {
@@ -3167,15 +3254,53 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             openConspect(s, x);
           };
         });
-        $("#rpSend").onclick = () => {
-          const digits = String(studentExtra(s).parentPhone).replace(/\D/g, "");
-          window.open(`https://wa.me/${digits}?text=${waText()}`, "_blank", "noopener");
-          toast("Отчёт открыт в WhatsApp");
+        const pdfFile = async () => {
+          const c = calc();
+          const label = periodLabel(R.period, R.date);
+          const name = `I4U_otchet_${s.name.replace(/\s+/g, "_")}_${label.replace(/[^\dа-яёәіңғүұқөһa-z]+/gi, "-")}.pdf`;
+          return makeReportPdf(reportDocHtml(s, data, c, label, R.period), name);
+        };
+        const busy = (b, on, txt) => {
+          b.disabled = on;
+          b.dataset.t = b.dataset.t || b.innerHTML;
+          b.innerHTML = on ? txt : b.dataset.t;
+        };
+        $("#rpPdf").onclick = async (e) => {
+          const b = e.currentTarget;
+          busy(b, true, "Готовим PDF…");
+          try {
+            saveFile(await pdfFile());
+            toast("PDF сохранён");
+          } catch {
+            toast("Не удалось создать PDF", "err");
+          }
+          busy(b, false);
+        };
+        $("#rpSend").onclick = async (e) => {
+          const b = e.currentTarget;
+          busy(b, true, "Готовим PDF…");
+          try {
+            const file = await pdfFile();
+            const text = `Отчёт I4U · ${s.name} · ${periodLabel(R.period, R.date)}`;
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+              // Телефонда: «Поделиться» → WhatsApp, PDF файл болып кетеді
+              await navigator.share({ files: [file], title: text, text });
+            } else {
+              // Компьютерде: PDF жүктеледі, WhatsApp чаты ашылады — файлды чатқа салу керек
+              saveFile(file);
+              const digits = String(studentExtra(s).parentPhone).replace(/\D/g, "");
+              window.open(`https://wa.me/${digits}?text=${encodeURIComponent(text + " (PDF во вложении)")}`, "_blank", "noopener");
+              toast("PDF скачан — прикрепите его в чате WhatsApp");
+            }
+          } catch (err) {
+            if (err?.name !== "AbortError") toast("Не удалось отправить PDF", "err");
+          }
+          busy(b, false);
         };
       },
       {
         right: "<span></span>",
-        footer: () => `<div class="sticky-foot"><button type="button" class="ef-submit" id="rpSend" style="margin:0">Отправить родителю в WhatsApp</button></div>`,
+        footer: () => `<div class="sticky-foot rp-foot"><button type="button" class="rp-pdf" id="rpPdf">${icon("picture_as_pdf", "material-icons-outlined")}PDF</button><button type="button" class="ef-submit" id="rpSend" style="margin:0">${waSvg()}Отправить родителю</button></div>`,
       }
     );
   }
