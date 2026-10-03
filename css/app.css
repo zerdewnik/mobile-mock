@@ -3370,3 +3370,37 @@ html[data-mode="staff"] .fab-core { background: #3f8f68; }
 .rp-st.bad { background: #3a2020; color: #e06b5b; }
 .rp-st.fut { background: #262628; color: #9a9db0; }
 .ga-date { pointer-events: none; }
+
+/* Отчёт: ретімен (видео → конспект → тест, эфир, апталық сынақ) */
+.rp-tiles { grid-template-columns: repeat(3, 1fr); }
+.rp-tiles .ga-tile { padding: 10px; gap: 6px; }
+.rp-tiles .ga-tile span { font-size: 10.5px; }
+.rp-tiles .ga-tile b { font-size: 18px; }
+.rt-week { margin: 16px 0 4px; font-size: 11.5px; font-weight: 700; color: #8a8d9c; text-transform: uppercase; letter-spacing: 0.5px; }
+.rt-lesson { display: flex; gap: 6px; padding: 8px 0; border-bottom: 1px solid #2c2c33; }
+.rt-lesson:nth-of-type(odd) { background: transparent; }
+.rt-lesson.special { background: #232329; margin: 6px -8px 0; padding: 4px 8px; border-radius: 10px; border-bottom: 0; }
+.rt-lesson.fut { opacity: 0.55; }
+.rt-n { width: 20px; flex-shrink: 0; padding-top: 10px; font-size: 12.5px; color: #8a8d9c; }
+.rt-row { display: flex; gap: 10px; padding: 7px 0; }
+.rt-row + .rt-row { border-top: 1px dashed #2c2c33; }
+.rt-ico { width: 20px; flex-shrink: 0; padding-top: 1px; display: flex; justify-content: center; }
+.rt-ico .material-icons-outlined, .rt-ico .material-icons-round { font-size: 19px; color: #5cb36d; }
+.rt-ico .ls-ico { width: 18px; height: 18px; }
+.rt-main { flex: 1; min-width: 0; }
+.rt-title { font-size: 13px; font-weight: 500; color: #7fc49a; line-height: 1.35; }
+.rt-line { margin-top: 4px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 11.5px; color: #c8cad4; }
+.rt-prog b { font-weight: 600; }
+.rt-prog b.g { color: #5cb36d; }
+.rt-prog b.b { color: #6c9fe0; }
+.rt-prog b.ok { color: #5cb36d; }
+.rt-prog b.mid { color: #e0a84a; }
+.rt-prog b.low { color: #e06b5b; }
+.rt-st { font-size: 11px; font-weight: 600; }
+.rt-st.ok { color: #5cb36d; }
+.rt-st.bad { color: #e06b5b; }
+.rt-st.warn { color: #e0873a; }
+.rt-st.fut { color: #9a9db0; font-weight: 400; }
+.rt-dash { color: #6c6f84; }
+.rt-time { margin-top: 3px; font-size: 10.5px; color: #8a8d9c; }
+.rt-see { align-self: center; flex-shrink: 0; border: 1px solid #3a3a40; background: #262628; color: #fff; font-family: inherit; font-size: 11.5px; padding: 6px 10px; border-radius: 9px; cursor: pointer; }

@@ -2943,82 +2943,156 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
   /* —— Отчёт: расписание бойынша апта / ай —— */
   const SCHED_START = new Date(2026, 8, 1); // курс 1 қыркүйектен басталды
-  /** Кесте: Дс–Жм күн сайын 1 тақырып (видео + тест), Сб — апталық сынақ */
+  /**
+   * Кесте: Дс–Жм күн сайын 1 сабақ (видео → конспект → тест),
+   * Жм кешке эфир, Сб апталық сынақ. Апта ретімен: сабақтар, эфир, апталық сынақ.
+   */
   function scheduleFor(data, from, to) {
     const topics = data.flat.filter((x) => x.kind === "video").map((x) => x.title);
-    const out = [];
-    let k = 0;
+    const rows = [];
+    let n = 0, week = 1;
     for (let d = new Date(SCHED_START); d <= to; d.setDate(d.getDate() + 1)) {
       const wd = d.getDay();
-      if (wd === 0) continue;
       const day = new Date(d);
-      if (wd === 6) {
-        if (day >= from) out.push({ date: day, kind: "weekly", title: `Апталық сынақ (${Math.ceil(k / 5)} - апта)` });
-        continue;
-      }
-      const title = topics[k % topics.length];
-      k++;
-      if (day >= from) {
-        out.push({ date: day, kind: "video", title });
-        out.push({ date: day, kind: "test", title });
+      if (wd === 1 && day > SCHED_START) week++;
+      if (wd >= 1 && wd <= 5) {
+        n++;
+        const title = topics[(n - 1) % topics.length];
+        if (day >= from) rows.push({ type: "lesson", n, week, date: day, title });
+        if (wd === 5 && day >= from) rows.push({ type: "efir", week, date: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 19, 0), title: `Эфир: разбор ${week}-недели` });
+      } else if (wd === 6 && day >= from) {
+        rows.push({ type: "weekly", week, date: new Date(day.getFullYear(), day.getMonth(), day.getDate(), 10, 0), title: `Апталық сынақ (${week} - апта)` });
       }
     }
-    return out;
+    return rows;
   }
-  /** Оқушы сабақты орындады ма (бүгінге дейін) */
-  function itemStatus(s, it) {
-    if (it.date > AN_TODAY) return { future: true };
+  const hm = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  /** Оқушының орындауы (тұрақты жалған деректер) */
+  function rowStatus(s, r) {
+    if (r.date > AN_TODAY) return { future: true };
     const skill = (s.score || 0) / 100;
-    const r = rnd(s.id, dayKey(it.date), it.kind.length);
-    const done = r < 0.35 + skill * 0.6;
-    if (it.kind === "video") return { done, note: done && rnd(s.id, dayKey(it.date), 9) < 0.45 + skill * 0.5 };
-    return { done, score: done ? Math.round((45 + skill * 40 + rnd(s.id, dayKey(it.date), 11) * 20) / 5) * 5 : null };
+    const k = dayKey(r.date);
+    const at = (h, m) => new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate(), h, m);
+    if (r.type === "lesson") {
+      const len = 12 + Math.floor(rnd(s.id, k, 1) * 9);
+      const watched = rnd(s.id, k, 2) < 0.35 + skill * 0.6;
+      const min = watched ? len : Math.floor(len * rnd(s.id, k, 3) * 0.6);
+      const vt = at(15 + Math.floor(rnd(s.id, k, 4) * 7), Math.floor(rnd(s.id, k, 5) * 60));
+      const noteSent = watched && rnd(s.id, k, 6) < 0.45 + skill * 0.5;
+      const fresh = (AN_TODAY - r.date) / 864e5 <= 2;
+      const note = !noteSent ? "none" : fresh ? "pending" : rnd(s.id, k, 7) < 0.85 ? "ok" : "back";
+      const tested = watched && rnd(s.id, k, 8) < 0.4 + skill * 0.6;
+      const score = tested ? Math.round((45 + skill * 40 + rnd(s.id, k, 9) * 20) / 5) * 5 : null;
+      return { watched, min, len, vTime: watched || min ? vt : null, note, tested, score, tTime: tested ? new Date(vt.getTime() + (25 + rnd(s.id, k, 10) * 40) * 6e4) : null };
+    }
+    if (r.type === "efir") return { attended: rnd(s.id, k, 11) < 0.4 + skill * 0.5 };
+    const done = rnd(s.id, k, 12) < 0.5 + skill * 0.5;
+    return { done, score: done ? Math.round((50 + skill * 40 + rnd(s.id, k, 13) * 15) / 5) * 5 : null, time: done ? at(10, Math.floor(rnd(s.id, k, 14) * 50)) : null };
   }
 
   function openStudentReport(s, data) {
     const R = { period: "week", date: new Date(AN_TODAY) };
-    const WD = ["Жс", "Дс", "Сс", "Ср", "Бс", "Жм", "Сб"];
     const calc = () => {
       const { from, to } = periodRange(R.period, R.date);
-      const items = scheduleFor(data, from, to).map((it) => ({ ...it, st: itemStatus(s, it) }));
-      const past = items.filter((x) => !x.st.future);
-      const v = items.filter((x) => x.kind === "video");
-      const t = items.filter((x) => x.kind !== "video");
-      const vp = v.filter((x) => !x.st.future), tp = t.filter((x) => !x.st.future);
-      const scores = tp.filter((x) => x.st.done).map((x) => x.st.score);
+      const rows = scheduleFor(data, from, to).map((r) => ({ ...r, st: rowStatus(s, r) }));
+      const L = rows.filter((r) => r.type === "lesson"), Lp = L.filter((r) => !r.st.future);
+      const E = rows.filter((r) => r.type === "efir"), Ep = E.filter((r) => !r.st.future);
+      const W = rows.filter((r) => r.type === "weekly"), Wp = W.filter((r) => !r.st.future);
+      const scores = [...Lp.filter((r) => r.st.tested).map((r) => r.st.score), ...Wp.filter((r) => r.st.done).map((r) => r.st.score)];
+      const due = Lp.length * 3 + Ep.length + Wp.length;
+      const done = Lp.reduce((t, r) => t + (r.st.watched ? 1 : 0) + (r.st.note !== "none" ? 1 : 0) + (r.st.tested ? 1 : 0), 0) + Ep.filter((r) => r.st.attended).length + Wp.filter((r) => r.st.done).length;
       return {
-        from, to, items, past,
-        plan: { videos: v.length, tests: t.length, all: items.length },
-        due: past.length,
-        watched: vp.filter((x) => x.st.done).length,
-        vDue: vp.length,
-        notes: vp.filter((x) => x.st.note).length,
-        tDone: tp.filter((x) => x.st.done).length,
-        tDue: tp.length,
+        from, to, rows,
+        plan: { lessons: L.length, efirs: E.length, weekly: W.length },
+        due, done,
+        watched: Lp.filter((r) => r.st.watched).length, lDue: Lp.length,
+        notes: Lp.filter((r) => r.st.note !== "none").length,
+        tests: Lp.filter((r) => r.st.tested).length,
+        efirs: Ep.filter((r) => r.st.attended).length, eDue: Ep.length,
+        weekly: Wp.filter((r) => r.st.done).length, wDue: Wp.length,
         avg: scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : null,
-        doneAll: past.filter((x) => x.st.done).length,
       };
     };
+    const pctCls = (v) => (v >= 80 ? "ok" : v >= 60 ? "mid" : "low");
+    const row = (iconHtml, title, prog, status, time, extra = "") => `
+      <div class="rt-row">
+        <span class="rt-ico">${iconHtml}</span>
+        <div class="rt-main">
+          <div class="rt-title">${title}</div>
+          <div class="rt-line">${prog}${status}</div>
+          ${time ? `<div class="rt-time">${time}</div>` : ""}
+        </div>
+        ${extra}
+      </div>`;
+    const FUT = `<span class="rt-st fut">Предстоит</span>`;
     const build = () => {
       const c = calc();
-      const pct = c.due ? Math.round((c.doneAll / c.due) * 100) : 0;
+      const pct = c.due ? Math.round((c.done / c.due) * 100) : 0;
       const word = R.period === "week" ? "неделю" : "месяц";
-      const byDay = [];
-      c.items.forEach((it) => {
-        const k = dayKey(it.date);
-        let g = byDay.find((x) => x.k === k);
-        if (!g) byDay.push((g = { k, date: it.date, items: [] }));
-        g.items.push(it);
-      });
-      const badge = (it) => {
-        if (it.st.future) return `<span class="rp-st fut">${icon("schedule", "material-icons-outlined")}Предстоит</span>`;
-        if (it.kind === "video")
-          return `<span class="rp-st ${it.st.done ? "ok" : "bad"}">${icon(it.st.done ? "visibility" : "visibility_off", "material-icons-outlined")}${it.st.done ? "Просмотрено" : "Не смотрел"}</span>
-            <span class="rp-st ${it.st.note ? "ok" : "bad"}">${icon("description", "material-icons-outlined")}${it.st.note ? "Конспект сдан" : "Нет конспекта"}</span>`;
-        return it.st.done
-          ? `<span class="rp-st ok">${icon("check_circle", "material-icons-outlined")}${it.st.score} из 100</span>`
-          : `<span class="rp-st bad">${icon("cancel", "material-icons-outlined")}Не сдан</span>`;
-      };
+      let lastWeek = null;
+      const list = c.rows
+        .map((r) => {
+          let head = "";
+          if (R.period === "month" && r.week !== lastWeek) {
+            lastWeek = r.week;
+            head = `<div class="rt-week">${r.week}-апта</div>`;
+          }
+          const st = r.st;
+          if (r.type === "lesson") {
+            const noteTag = st.future
+              ? `<span class="rt-dash">—</span>`
+              : {
+                  none: `<span class="rt-st bad">Не сдан</span>`,
+                  pending: `<span class="rt-st warn">На проверке</span>`,
+                  ok: `<span class="rt-st ok">Принят</span>`,
+                  back: `<span class="rt-st bad">На доработке</span>`,
+                }[st.note];
+            return `${head}
+              <div class="rt-lesson ${st.future ? "fut" : ""}">
+                <div class="rt-n">${r.n}.</div>
+                <div style="flex:1;min-width:0">
+                  ${row(
+                    PLAY_SVG,
+                    r.title,
+                    st.future ? "" : `<span class="rt-prog"><b class="g">${st.min}</b> мин из <b class="b">${st.len}</b> мин</span>`,
+                    st.future ? FUT : `<span class="rt-st ${st.watched ? "ok" : "bad"}">${st.watched ? "Пройден" : st.min ? "Не досмотрел" : "Не пройден"}</span>`,
+                    st.vTime ? hm(st.vTime) : ""
+                  )}
+                  ${row(
+                    icon("description", "material-icons-outlined"),
+                    "Конспект",
+                    "",
+                    noteTag,
+                    "",
+                    !st.future && st.note !== "none" ? `<button type="button" class="rt-see" data-rt-note="${r.n}">Посмотреть</button>` : ""
+                  )}
+                  ${row(
+                    icon("assignment_turned_in", "material-icons-outlined"),
+                    r.title,
+                    st.tested ? `<span class="rt-prog"><b class="g">${st.score}</b> из <b class="b">100</b> <b class="${pctCls(st.score)}">(${st.score}%)</b></span>` : "",
+                    st.future ? FUT : `<span class="rt-st ${st.tested ? "ok" : "bad"}">${st.tested ? "Пройден" : "Не сдан"}</span>`,
+                    st.tTime ? hm(st.tTime) : ""
+                  )}
+                </div>
+              </div>`;
+          }
+          if (r.type === "efir")
+            return `${head}<div class="rt-lesson special ${st.future ? "fut" : ""}"><div class="rt-n"></div><div style="flex:1;min-width:0">${row(
+              icon("live_tv", "material-icons-outlined"),
+              r.title,
+              "",
+              st.future ? FUT : `<span class="rt-st ${st.attended ? "ok" : "bad"}">${st.attended ? "Присутствовал" : "Не был"}</span>`,
+              hm(r.date)
+            )}</div></div>`;
+          return `${head}<div class="rt-lesson special ${st.future ? "fut" : ""}"><div class="rt-n"></div><div style="flex:1;min-width:0">${row(
+            `<span class="material-icons-outlined" style="color:#A05AD8">calendar_month</span>`,
+            r.title,
+            st.done ? `<span class="rt-prog"><b class="g">${st.score}</b> из <b class="b">100</b> <b class="${pctCls(st.score)}">(${st.score}%)</b></span>` : "",
+            st.future ? FUT : `<span class="rt-st ${st.done ? "ok" : "bad"}">${st.done ? "Пройден" : "Не сдан"}</span>`,
+            st.time ? hm(st.time) : hm(r.date)
+          )}</div></div>`;
+        })
+        .join("");
       return `
         <div class="ga">
           <div class="ga-head">
@@ -3038,43 +3112,27 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
 
           <div class="ga-card" style="margin-top:0">
             <div class="ga-ctitle">План на ${word} по расписанию</div>
-            <div class="rp-plan">${c.plan.videos} видео · ${c.plan.tests} ${plural(c.plan.tests, "тест", "теста", "тестов")} <small>(Дс–Жм урок + тест, Сб апталық сынақ)</small></div>
+            <div class="rp-plan">${c.plan.lessons} ${plural(c.plan.lessons, "урок", "урока", "уроков")} · ${c.plan.efirs} ${plural(c.plan.efirs, "эфир", "эфира", "эфиров")} · ${c.plan.weekly} апталық сынақ
+              <small>Каждый урок: видео → конспект → тест · в конце недели эфир и апталық сынақ</small></div>
             <div class="gp-row">
-              <div class="gp-big"><b>${c.doneAll}<span style="font-size:16px;color:#8a8d9c;display:inline"> / ${c.due}</span></b><span>${c.to > AN_TODAY ? "выполнено из положенного на сегодня" : "выполнено за период"}</span></div>
+              <div class="gp-big"><b>${c.done}<span style="font-size:16px;color:#8a8d9c;display:inline"> / ${c.due}</span></b><span>${c.to > AN_TODAY ? "выполнено из положенного на сегодня" : "выполнено за период"}</span></div>
               <div class="gp-pct ${pct >= 90 ? "ok" : pct >= 60 ? "mid" : "low"}">${pct}%</div>
             </div>
             <div class="gp-bar"><i style="width:${pct}%"></i></div>
           </div>
 
-          <div class="ga-tiles">
-            <div class="ga-tile"><span>${icon("visibility", "material-icons-outlined")}Уроки просмотрены</span><b>${c.watched}<small> / ${c.vDue}</small></b></div>
-            <div class="ga-tile"><span>${icon("description", "material-icons-outlined")}Конспекты сданы</span><b>${c.notes}<small> / ${c.vDue}</small></b></div>
-            <div class="ga-tile"><span>${icon("quiz", "material-icons-outlined")}Тесты сданы</span><b>${c.tDone}<small> / ${c.tDue}</small></b></div>
-            <div class="ga-tile"><span>${icon("grade", "material-icons-outlined")}Средний балл тестов</span><b>${c.avg ?? "—"}<small>${c.avg != null ? " из 100" : ""}</small></b></div>
+          <div class="ga-tiles rp-tiles">
+            <div class="ga-tile"><span>${icon("smart_display", "material-icons-outlined")}Видео</span><b>${c.watched}<small> / ${c.lDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("description", "material-icons-outlined")}Конспекты</span><b>${c.notes}<small> / ${c.lDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("assignment_turned_in", "material-icons-outlined")}Тесты</span><b>${c.tests}<small> / ${c.lDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("live_tv", "material-icons-outlined")}Эфиры</span><b>${c.efirs}<small> / ${c.eDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("calendar_month", "material-icons-outlined")}Апталық сынақ</span><b>${c.weekly}<small> / ${c.wDue}</small></b></div>
+            <div class="ga-tile"><span>${icon("grade", "material-icons-outlined")}Средний балл</span><b>${c.avg ?? "—"}<small>${c.avg != null ? " из 100" : ""}</small></b></div>
           </div>
 
           <div class="ga-card">
-            <div class="ga-ctitle">По дням</div>
-            ${byDay
-              .map(
-                (g) => `
-              <div class="rp-day">
-                <div class="rp-date">${WD[g.date.getDay()]}, ${pad(g.date.getDate())}.${pad(g.date.getMonth() + 1)}</div>
-                ${g.items
-                  .map(
-                    (it) => `
-                  <div class="rp-item ${it.st.future ? "fut" : ""}">
-                    ${kindIcon(it.kind)}
-                    <div style="flex:1;min-width:0">
-                      <div class="rp-title">${it.title}</div>
-                      <div class="rp-sts">${badge(it)}</div>
-                    </div>
-                  </div>`
-                  )
-                  .join("")}
-              </div>`
-              )
-              .join("")}
+            <div class="ga-ctitle">По порядку</div>
+            ${list || `<div class="ga-csub" style="margin-top:10px">Нет уроков в этом периоде</div>`}
           </div>
         </div>`;
     };
@@ -3082,9 +3140,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       const c = calc();
       return encodeURIComponent(
         `Отчёт I4U · ${s.name}\n${data.poster.title}, ${R.period === "week" ? "неделя" : "месяц"} ${periodLabel(R.period, R.date)}\n` +
-          `План: ${c.plan.videos} видео, ${c.plan.tests} тестов\n` +
-          `Просмотрено уроков: ${c.watched}/${c.vDue}\nКонспекты: ${c.notes}/${c.vDue}\nТесты: ${c.tDone}/${c.tDue}` +
-          (c.avg != null ? `, средний балл ${c.avg}` : "")
+          `План: ${c.plan.lessons} уроков, ${c.plan.efirs} эфир, ${c.plan.weekly} апталық сынақ\n` +
+          `Видео: ${c.watched}/${c.lDue}\nКонспекты: ${c.notes}/${c.lDue}\nТесты: ${c.tests}/${c.lDue}\nЭфиры: ${c.efirs}/${c.eDue}\nАпталық сынақ: ${c.weekly}/${c.wDue}` +
+          (c.avg != null ? `\nСредний балл: ${c.avg}` : "")
       );
     };
     pushScreen(
@@ -3100,6 +3158,13 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             else d.setMonth(d.getMonth() + k, 1);
             R.date = d > AN_TODAY ? new Date(AN_TODAY) : d < SCHED_START ? new Date(SCHED_START) : d;
             paintStack();
+          };
+        });
+        $$("[data-rt-note]").forEach((b) => {
+          b.onclick = () => {
+            const r = calc().rows.find((x) => x.type === "lesson" && x.n === Number(b.dataset.rtNote));
+            const x = { title: r.title, date: hm(r.st.vTime || r.date), note: r.st.note === "pending" ? "pending" : r.st.note };
+            openConspect(s, x);
           };
         });
         $("#rpSend").onclick = () => {
