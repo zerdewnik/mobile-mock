@@ -2132,7 +2132,7 @@
       if (staff) {
         action =
           T.status === "registration"
-            ? `<button type="button" class="btn3d gold" id="tStart">${icon("play_arrow")}Тіркелуді жабу және бастау</button>
+            ? `<button type="button" class="btn3d" id="tStart">${icon("play_arrow")}Тіркелуді жабу және бастау</button>
                <button type="button" class="btn3d ghost danger" id="tDel">${icon("delete_outline", "material-icons-outlined")}Турнирді өшіру</button>`
             : T.status === "running"
               ? `<button type="button" class="btn3d ghost danger" id="tStop">${icon("block", "material-icons-outlined")}Турнирді тоқтату</button>`
@@ -2142,7 +2142,7 @@
         action = isReg(T)
           ? `<div class="t3-ok">${icon("check_circle")}<div><b>Сен тіркелдің</b><span>Турнир ${fmtDT(T.start)} басталады. 1/8 жұбың сол күні шығады.</span></div></div>
              <button type="button" class="btn3d ghost" id="tUnreg">Тіркелуден бас тарту</button>`
-          : `<button type="button" class="btn3d gold" id="tReg">${icon("how_to_reg", "material-icons-outlined")}Тіркелу</button>`;
+          : `<button type="button" class="btn3d" id="tReg">${icon("how_to_reg", "material-icons-outlined")}Тіркелу</button>`;
       } else if (T.champion?.me) action = `<div class="t3-ok gold"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>Сен чемпионсың!</b><span>${T.title} сенікі</span></div></div>`;
       else if (mm)
         action = `
@@ -2154,7 +2154,7 @@
               <div class="tr-vs-p">${avatarHtml(opp, "lg")}<b>${opp.name}</b><small>рейтингте ${opp.rank}-орын</small></div>
             </div>
             <div class="tr-vs-meta">3 раунд · 13 сұрақ · макс ${DUEL_MAX} ұпай · ${stages.find((s) => s.name === stageName(cur.length))?.date.getDate()} ${KZ_MON_SHORT[new Date(T.start).getMonth()]} дейін</div>
-            <button type="button" class="btn3d gold" id="tourPlay">${icon("sports_kabaddi")}Жекпе-жекті бастау</button>
+            <button type="button" class="btn3d" id="tourPlay">${icon("sports_kabaddi")}Жекпе-жекті бастау</button>
           </div>`;
       else if (meOut(T)) action = `<div class="t3-ok out">${icon("flag", "material-icons-outlined")}<div><b>Сен турнирден шықтың</b><span>Кестені бақылай бер. Келесі турнирде сәттілік!</span></div></div>`;
       else if (T.status === "running" && isReg(T)) action = `<div class="t3-ok">${icon("hourglass_top", "material-icons-outlined")}<div><b>Келесі кезеңді күт</b><span>Басқа жұптар ойнап жатыр</span></div></div>`;
@@ -3802,6 +3802,125 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       }`;
   }
 
+  /* —— Апталық сынақ: куратор оқушымен өткізеді (ашық / жабық сұрақ) —— */
+  async function weeklyQuestions(courseId, seed) {
+    try {
+      await loadProbnik();
+      const P = window.PROBNIK.subjects[STAFF_SUBJ[courseId] || "world_history"];
+      const all = Object.values(P.variants).flat().filter((q) => q.type === "single_choice" && !q.ctx && q.options.filter((o) => o.correct).length === 1);
+      return [...all].sort((a, b) => rnd(seed, a.id.length + a.stem.length) - rnd(seed, b.id.length + b.stem.length)).slice(0, 10).map((q) => ({ q: q.stem, options: q.options.map((o) => o.content), answer: q.options.findIndex((o) => o.correct), explain: q.note || "" }));
+    } catch {
+      return MOCK.practice[10].questions.concat(MOCK.practice[11].questions).slice(0, 10);
+    }
+  }
+  function openWeeklyMode(s, g, data, x) {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="ef-head"><span>${x.title}</span><button type="button" id="wmClose">${icon("close")}</button></div>
+      <div class="ga-csub" style="margin:-4px 0 14px">${s.name} · 10 сұрақ · ${x.result != null ? `қазір ${x.result} из 100` : "әлі тапсырылмаған"}</div>
+      <button type="button" class="wm-opt" data-wm="open">${icon("record_voice_over", "material-icons-outlined")}<span><b>Ашық сұрақ</b><small>Сұрақ пен жауабы ғана көрінеді. Оқушы ауызша жауап береді, сіз «Дұрыс / Дұрыс емес» белгілейсіз</small></span>${icon("chevron_right")}</button>
+      <button type="button" class="wm-opt" data-wm="closed">${icon("checklist", "material-icons-outlined")}<span><b>Жабық сұрақ</b><small>Тренажёрдағыдай жауап нұсқаларымен</small></span>${icon("chevron_right")}</button>`);
+    $("#wmClose").onclick = closeSheet;
+    $$("[data-wm]").forEach((b) => (b.onclick = () => (closeSheet(), runWeekly(s, g, data, x, b.dataset.wm))));
+  }
+  async function runWeekly(s, g, data, x, mode) {
+    const qs = await weeklyQuestions(data.cid, s.id * 31 + x.title.length);
+    const W = { i: 0, correct: 0, answered: 0, picked: null, checked: false, done: false };
+    const total = qs.length;
+    const finish = () => {
+      W.done = true;
+      const score = Math.round((W.correct / total) * 100);
+      const old = x.result;
+      x.result = score;
+      x.wMode = mode;
+      if (old != null) s.score = Math.max(0, (s.score || 0) - Math.round(old / 10) + Math.round(score / 10));
+      else s.score = (s.score || 0) + Math.round(score / 10);
+      if (g) {
+        g.students.sort((a, b) => b.score - a.score);
+        g.students.forEach((y, i) => ((y.rank = i + 1), (y.medal = i === 0 ? "gold" : i === 1 ? "silver" : i === 2 ? "bronze" : null)));
+      }
+      W.old = old;
+      W.score = score;
+      paintStack();
+    };
+    const build = () => {
+      if (W.done)
+        return `<div class="pr-result">
+          <div class="pr-result-ico">${W.score >= 80 ? "🎉" : W.score >= 50 ? "👍" : "💪"}</div>
+          <div class="pr-result-title">Апталық сынақ аяқталды</div>
+          <div class="pr-result-score">${W.score} <small style="font-size:16px;color:#9a9db0">из 100</small></div>
+          <div class="pr-result-sub">Дұрыс: ${W.correct} / ${total} сұрақ (${mode === "open" ? "ашық" : "жабық"})${W.old != null ? `<br>Бұрынғы нәтиже ${W.old} → ${W.score}` : ""}<br>Рейтингке жазылды</div>
+        </div>`;
+      const q = qs[W.i];
+      const head = `<div class="pr-head">
+          <div class="pr-top"><span class="pr-badge">${mode === "open" ? "Ашық сұрақ" : "Жабық сұрақ"}</span><b>${W.correct} / ${W.answered}</b></div>
+          <div class="pr-bar warm"><i style="width:${(W.answered / total) * 100}%"></i></div>
+          <div class="pr-status">Сұрақ ${W.i + 1} из ${total} · ${s.name}</div>
+        </div>`;
+      if (mode === "open")
+        return `${head}<div class="pr-body">
+          <div class="pr-q">${md(q.q)}</div>
+          <div class="wk-ans"><div class="wk-l">Жауабы</div><b>${md(q.options[q.answer])}</b>${q.explain ? `<div class="pr-explain wk-ex">${md(q.explain)}</div>` : ""}</div>
+        </div>`;
+      return `${head}<div class="pr-body">
+        <div class="pr-q">${md(q.q)}</div>
+        ${q.options
+          .map((o, k) => {
+            let cls = "";
+            if (W.checked && k === q.answer) cls = "ok";
+            else if (W.checked && k === W.picked) cls = "bad";
+            else if (!W.checked && k === W.picked) cls = "sel";
+            return `<button type="button" class="pr-opt ${cls}" data-wq="${k}"><span class="pr-radio"></span><span>${md(o)}</span></button>`;
+          })
+          .join("")}
+        ${W.checked ? `<div class="pr-fb ${W.picked === q.answer ? "ok" : "bad"}"><div class="pr-fb-title">${W.picked === q.answer ? "Верно" : "Неверно"}</div><div class="pr-explain">${W.picked === q.answer ? "<b>Дұрыс!</b> " : `<b>Дұрыс емес.</b> Дұрыс жауабы: <b>${md(q.options[q.answer])}</b> `}${md(q.explain || "")}</div></div>` : ""}
+      </div>`;
+    };
+    const footer = () => {
+      if (W.done) return `<div class="sticky-foot"><button type="button" class="ef-submit" id="wkBack" style="margin:0">Курсқа оралу</button></div>`;
+      if (mode === "open")
+        return `<div class="sticky-foot wk-foot"><button type="button" class="wk-btn bad" id="wkNo">${icon("close")}Дұрыс емес</button><button type="button" class="wk-btn ok" id="wkYes">${icon("check")}Дұрыс</button></div>`;
+      const label = !W.checked ? "Ответить" : W.i + 1 < total ? "Дальше" : "Завершить";
+      return `<div class="sticky-foot"><button type="button" class="smart-btn pr-go" id="wkGo">${label}</button></div>`;
+    };
+    const next = () => {
+      W.i += 1;
+      W.picked = null;
+      W.checked = false;
+      if (W.i >= total) finish();
+      else paintStack();
+    };
+    pushScreen(
+      x.title,
+      build,
+      () => {
+        renderMath($("#screenOverlay"));
+        $("#wkYes")?.addEventListener("click", () => ((W.correct += 1), (W.answered += 1), next()));
+        $("#wkNo")?.addEventListener("click", () => ((W.answered += 1), next()));
+        $$("[data-wq]").forEach((b) => (b.onclick = () => !W.checked && ((W.picked = Number(b.dataset.wq)), paintStack())));
+        $("#wkGo")?.addEventListener("click", () => {
+          if (!W.checked) {
+            if (W.picked == null) return toast("Жауапты таңдаңыз", "err");
+            W.checked = true;
+            W.answered += 1;
+            if (W.picked === qs[W.i].answer) W.correct += 1;
+            paintStack();
+          } else next();
+        });
+        $("#wkFlag")?.addEventListener("click", async () => {
+          if (W.done) return;
+          const ok = await confirmDialog({ title: "Сынақты аяқтау?", message: `Жауап берілгені: ${W.answered} / ${total}. Қалған сұрақтар қате деп есептеледі. Балл ${total} сұраққа шаққанда есептеледі.`, confirmLabel: "Аяқтау" });
+          if (ok) finish();
+        });
+        $("#wkBack")?.addEventListener("click", () => {
+          state.navStack.pop();
+          paintStack();
+        });
+      },
+      { footer, right: `<button type="button" class="appbar-icon-btn" id="wkFlag" title="Аяқтау">${icon("outlined_flag")}</button>` }
+    );
+  }
+
   function openStaffCourse(s, data) {
     const open = {};
     let ssf = null;
@@ -3854,6 +3973,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         b.onclick = () => {
           const x = data.flat[Number(b.dataset.sitem)];
           if (x.state === "locked") return toast("Студент ещё не открыл этот урок", "err");
+          if (x.kind === "weekly") return openWeeklyMode(s, MOCK.groups.find((gg) => gg.students.includes(s)), data, x);
           if (x.state === "current") return toast("Студент ещё не прошёл этот урок");
           if (x.kind === "video") {
             if (x.note === "none") return toast("Студент не прикрепил конспект");
