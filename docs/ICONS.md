@@ -170,7 +170,10 @@ SVG үшін `flutter_svg` пакеті: `SvgPicture.asset('assets/tournament/tr
 | `assets/champion/belt.png` | 520×276 | Чемпион белбеуі (уақытша алынған, кейін қайтарылады) | https://raw.githubusercontent.com/zerdewnik/mobile-mock/main/assets/champion/belt.png |
 
 ### «Турнирлер» сервис иконкасы
-- `assets/tournament/tournament_line.svg` / `.png` (512×512) — басқа сервис иконкалары сияқты контурлы (stroke 32, дөңгелек ұштар), түсі алтын `#E9A825`. Staff басты бетіндегі «Турнирлер» плиткасы.
+- `assets/tournament/tournament_line.svg` / `.png` (512×512) — басқа сервис иконкалары сияқты контурлы (stroke 32, дөңгелек ұштар), түсі алтын `#E9A825`. Staff және студент басты бетіндегі «Турнир(лер)» плиткасы.
+
+### «Батл» сервис иконкасы
+- `assets/tournament/battle_line.svg` / `.png` (512×512) — айқасқан екі қылыш, контурлы (stroke 32), түсі `#E2574C`. Студенттің басты бетіндегі «Батл» плиткасы және батл беті.
 
 ### Турнир белбеуі
 - `assets/tournament/belt.png` (520×276) — турнир беті (hero), жекпе-жектегі жеңіс.

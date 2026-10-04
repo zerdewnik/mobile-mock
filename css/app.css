@@ -3982,3 +3982,4 @@ input[type="date"].ef-input { color-scheme: dark; }
 .wk-btn.ok { background: linear-gradient(180deg, #6fcf86, #3a9a55); box-shadow: 0 4px 0 #23663a; }
 .wk-btn.bad { background: linear-gradient(180deg, #f08a7e, #c9483c); box-shadow: 0 4px 0 #8a2a22; }
 .wk-btn:active { transform: translateY(3px); box-shadow: none; }
+.hist-card { background: #1e1e1e; border-color: #2c2c33; }

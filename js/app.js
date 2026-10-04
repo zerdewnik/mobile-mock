@@ -861,24 +861,32 @@
     if (id === "tests") {
       const tabs = [
         ["ent", "ЕНТ"],
-        ["tournament", "Турнир"],
+        ["history", "История"],
       ];
       const head = `<div class="seg-tabs">${tabs
         .map(([k, l]) => `<button type="button" data-svctab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`)
         .join("")}</div>`;
       const attempts = MOCK.entAttempts || [];
-      if (tab === "tournament") return tournamentHtml(head);
       if (tab === "history") {
-        return `${head}<div class="list-pad" style="padding-top:16px">
-          ${
-            attempts
-              .map(
-                (a) => `<div class="news-card"><div class="n-title">Пробный ЕНТ · ${a.variant}-нұсқа <span class="eh-score">${a.total}</span></div>
-                <div class="n-body">${a.date}<br>${a.subjects.map((x) => `${x.title}: ${x.score}/${x.max}`).join(" · ")}</div></div>`
-              )
-              .join("") || `<div class="empty">Әзірге пробный ЕНТ тапсырылмаған.<br>«ЕНТ» қойындысынан бастаңыз.</div>`
-          }
-        </div>`;
+        if (!window.PROBNIK) {
+          loadProbnik().then(() => paintStack());
+          return `${head}<div class="empty">Жүктелуде…</div>`;
+        }
+        const list = mockAttempts();
+        list.forEach((x) => attemptSubjects(x));
+        const profNames = (x) => x.keys.filter((k) => !(k in ENT_MIN)).map((k) => window.PROBNIK.subjects[k].title).join(", ");
+        return `${head}<div class="list-pad" style="padding-top:16px">${
+          list
+            .map(
+              (x, i) => `
+          <button type="button" class="mt-card hist-card" data-hatt="${i}">
+            <div class="mt-card-top"><b>Пробный ЕНТ: ${profNames(x)}</b><span class="mt-badge">Тапсырды</span></div>
+            <div class="mt-date">${x.date} · ${x.variant}-нұсқа</div>
+            <div class="mt-nums"><div><small>Балл</small><b>${x.total}/140</b></div><div><small>Пайыз</small><b>${Math.round((x.total / 140) * 100)}%</b></div></div>
+          </button>`
+            )
+            .join("") || `<div class="empty">Әзірге пробный ЕНТ тапсырылмаған</div>`
+        }</div>`;
       }
       if (tab === "stats") {
         const best = attempts.reduce((m, a) => Math.max(m, a.total), 0);
@@ -935,6 +943,26 @@
         </div>
         <div class="guide-card prof-list">
           ${rows.map((r) => (isUni ? uniRowHtml(r) : specRowHtml(r))).join("") || `<div class="empty">Ничего не найдено</div>`}
+        </div>`;
+    }
+    if (id === "tournament") {
+      return `<div class="list-pad tour" style="padding-top:12px">${tourSegHtml(tournaments(), false)}</div>`;
+    }
+    if (id === "battle") {
+      const duels = MOCK.duels || [];
+      const win = duels.filter((d) => d.win).length;
+      return `
+        <div class="list-pad tour" style="padding-top:12px">
+          <div class="t3-hero"><img src="assets/tournament/battle_line.png" alt="" style="width:84px;height:84px" /><div class="t3-title lg">Батл</div><div class="t3-sub">Сыныптасыңды жекпе-жекке шақыр · 3 раунд · 13 сұрақ</div></div>
+          <button type="button" class="btn3d" id="duelInvite">${icon("person_add", "material-icons-outlined")}Жарысқа шақыру</button>
+          <div class="t3-panel">
+            <div class="ga-ctitle">Ережелер</div>
+            <div class="tr-rules">${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} сұрақ × ${r.pts} ұпай</span></div>`).join("")}</div>
+          </div>
+          <div class="t3-panel">
+            <div class="ga-ctitle">Менің батлдарым ${duels.length ? `· ${win} жеңіс / ${duels.length - win} жеңіліс` : ""}</div>
+            ${duels.map((d) => `<div class="tr-hist">${avatarHtml(d.opp)}<div style="flex:1;min-width:0"><b>${d.opp.name}</b><small>${d.subjectTitle} · ${d.date}</small></div><span class="${d.win ? "up" : "down"}">${d.my} : ${d.op}</span></div>`).join("") || `<div class="ga-csub" style="margin-top:8px">Әзірге батл болмады</div>`}
+          </div>
         </div>`;
     }
     if (id === "analytics") {
@@ -1810,7 +1838,7 @@
         $("#entExit") &&
           ($("#entExit").onclick = () => {
             state.navStack.pop();
-            state.svc.tab = "ent";
+            state.svc.tab = "history";
             paintStack();
           });
         if (E.done) return;
@@ -2700,6 +2728,7 @@
         }
       };
     });
+    $$("[data-hatt]").forEach((b) => (b.onclick = () => openAttemptReview(mockAttempts()[Number(b.dataset.hatt)])));
     $$("[data-trainer]").forEach((btn) => {
       btn.onclick = () => openTrainerSubject(trainerList().find((x) => x.id === Number(btn.dataset.trainer)));
     });
@@ -5668,6 +5697,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { id: "trainer", label: "Тренажёр", icon: "track_changes", color: "#E07A3D" },
       { id: "professions", label: "Профессии", img: "assets/v2/profv2.png" },
       { id: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
+      { id: "tournament", label: "Турнир", img: "assets/tournament/tournament_line.png" },
+      { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png" },
       { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png", soon: true },
     ];
     return `
