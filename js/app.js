@@ -950,19 +950,34 @@
       return `<div class="list-pad tour" style="padding-top:12px">${tourSegHtml(tournaments(), false)}</div>`;
     }
     if (id === "battle") {
+      const B = battleState();
       const duels = MOCK.duels || [];
       const win = duels.filter((d) => d.win).length;
+      let streak = 0;
+      for (const d of duels) { if (d.win) streak++; else break; }
       return `
         <div class="list-pad tour" style="padding-top:12px">
-          <div class="t3-hero"><img src="assets/tournament/battle_line.png" alt="" style="width:84px;height:84px" /><div class="t3-title lg">Батл</div><div class="t3-sub">Сыныптасыңды жекпе-жекке шақыр · 3 раунд · 13 сұрақ</div></div>
-          <button type="button" class="btn3d" id="duelInvite">${icon("person_add", "material-icons-outlined")}Жарысқа шақыру</button>
+          <div class="bt-stats">
+            <div><b>${B.rating}</b><small>Батл рейтингі</small></div>
+            <div><b>${win}<i>/</i>${duels.length - win}</b><small>Жеңіс / жеңіліс</small></div>
+            <div><b>${streak ? "🔥" + streak : "—"}</b><small>Серия</small></div>
+          </div>
+          <div class="bt-play">
+            <button type="button" class="bt-btn rand" id="btRandom">${icon("shuffle")}<b>Кездейсоқ қарсылас</b><small>Топтан деңгейі жақын оқушы</small></button>
+            <button type="button" class="bt-btn friend" id="duelInvite">${icon("person_add", "material-icons-outlined")}<b>Досты шақыру</b><small>Сыныптасты таңда</small></button>
+          </div>
+          ${B.incoming.length ? `<div class="t3-sec">Саған шақыру · ${B.incoming.length}</div>${B.incoming.map((c, i) => `
+            <div class="bt-inv">${avatarHtml(c.opp)}<div style="flex:1;min-width:0"><b>${c.opp.name}</b><small>${c.subjectTitle} · ${c.left} қалды</small></div>
+              <button type="button" class="bt-no" data-btno="${i}">${icon("close")}</button><button type="button" class="bt-yes" data-btyes="${i}">Қабылдау</button></div>`).join("")}` : ""}
+          ${B.outgoing.length ? `<div class="t3-sec">Жауап күтуде</div>${B.outgoing.map((c) => `<div class="bt-inv wait">${avatarHtml(c.opp)}<div style="flex:1;min-width:0"><b>${c.opp.name}</b><small>${c.subjectTitle} · сен ${c.my} ұпай жинадың · ${c.left} қалды</small></div>${icon("hourglass_top", "material-icons-outlined")}</div>`).join("")}` : ""}
           <div class="t3-panel">
             <div class="ga-ctitle">Ережелер</div>
             <div class="tr-rules">${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} сұрақ × ${r.pts} ұпай</span></div>`).join("")}</div>
+            <div class="ga-csub" style="margin-top:10px">Кезекпен ойналады: шақыруға 24 сағат ішінде жауап беру керек. Жеңіс +15 рейтинг, жеңіліс −10.</div>
           </div>
           <div class="t3-panel">
-            <div class="ga-ctitle">Менің батлдарым ${duels.length ? `· ${win} жеңіс / ${duels.length - win} жеңіліс` : ""}</div>
-            ${duels.map((d) => `<div class="tr-hist">${avatarHtml(d.opp)}<div style="flex:1;min-width:0"><b>${d.opp.name}</b><small>${d.subjectTitle} · ${d.date}</small></div><span class="${d.win ? "up" : "down"}">${d.my} : ${d.op}</span></div>`).join("") || `<div class="ga-csub" style="margin-top:8px">Әзірге батл болмады</div>`}
+            <div class="ga-ctitle">Менің батлдарым</div>
+            ${duels.map((d, i) => `<div class="tr-hist">${avatarHtml(d.opp)}<div style="flex:1;min-width:0"><b>${d.opp.name}</b><small>${d.subjectTitle} · ${d.date}</small></div><span class="${d.win ? "up" : "down"}">${d.my} : ${d.op}</span><button type="button" class="bt-re" data-btre="${i}" title="Реванш">${icon("replay")}</button></div>`).join("") || `<div class="ga-csub" style="margin-top:8px">Әзірге батл болмады</div>`}
           </div>
         </div>`;
     }
@@ -1981,6 +1996,7 @@
     }
   }
   function startTournament(T) {
+    if (T.format && T.format !== "knockout") return startStandings(T);
     T.status = "running";
     buildBracket(T);
     // Бірінші кезеңнің бір бөлігі ойналып қойған (макет)
@@ -2046,6 +2062,13 @@
   const isReg = (T) => T.participants.some((p) => p.me);
   /** Кезеңдер кестесі: басталу күнінен әр кезең stageDays күн */
   function tourStages(T) {
+    if (T.format === "swiss")
+      return Array.from({ length: T.rounds_n || 5 }, (_, k) => {
+        const d = new Date(T.start);
+        d.setDate(d.getDate() + k * (T.stageDays || 1));
+        return { name: `${k + 1}-раунд`, date: d };
+      });
+    if (T.format === "arena") return [{ name: `Арена · ${T.arenaHours === 24 ? "1 күн" : `${T.arenaHours} сағат`}`, date: new Date(T.start) }];
     if (T.stageDates && !T.size) {
       const all = [16, 8, 4, 2, 1].filter((x) => x <= (T.firstStage || 8));
       return all.map((m, k) => ({ name: stageName(m), date: new Date(T.stageDates[k]) }));
@@ -2093,11 +2116,13 @@
     return `<div class="br">${cols.join("")}</div>`;
   }
 
+  const modLabel = (T) => (T.module.split(" · ").length > 1 ? `${T.module.split(" · ").length} модуль` : T.module);
   function tourCard(T, staff = false) {
     const st = { registration: ["reg", "Тіркелу ашық"], running: ["live", "Өтіп жатыр"], finished: ["done", "Аяқталды"], cancelled: ["off", "Тоқтатылды"] }[T.status];
     const cur = T.rounds?.[T.rounds.length - 1];
     let line;
-    if (T.status === "registration") line = `${icon("event", "material-icons-outlined")}Тіркелу ${fmtDT(T.regTo)} дейін · ${T.participants.length} тіркелді`;
+    if (T.status === "registration") line = `${icon("event", "material-icons-outlined")}${countdown(T.start) ? `Басталуына ${countdown(T.start)}` : `Тіркелу ${fmtDT(T.regTo)} дейін`} · ${T.participants.length} тіркелді`;
+    else if (T.status === "running" && T.standings) line = `${icon("bolt")}${T_FORMATS[T.format].name} · ${T.standings.length} қатысушы`;
     else if (T.status === "running") line = `${icon("bolt")}${stageName(cur.length)} · ${staff ? `${cur.filter((m) => m.w).length}/${cur.length} жекпе-жек өтті` : myMatch(T) ? "сенің кезегің!" : "жұптар ойнап жатыр"}`;
     else if (T.status === "cancelled") line = `${icon("block", "material-icons-outlined")}Куратор тоқтатты · ${fmtDT(T.start)}`;
     else line = `${icon("emoji_events", "material-icons-outlined")}Чемпион: ${T.champion?.me ? "Сен" : T.champion?.name} · ${fmtDT(T.start)}`;
@@ -2107,7 +2132,7 @@
         <div class="t3-body">
           <div class="t3-top"><span class="t3-badge ${st[0]}">${st[1]}</span>${isReg(T) && T.status === "registration" ? `<span class="t3-badge ok">${icon("check")}Тіркелдің</span>` : ""}</div>
           <div class="t3-title">${T.title}</div>
-          <div class="t3-sub">${COURSE_TITLE[T.courseId]} · ${T.module}</div>
+          <div class="t3-sub">${COURSE_TITLE[T.courseId]} · ${modLabel(T)}</div>
           <div class="t3-line">${line}</div>
         </div>
         ${icon("chevron_right")}
@@ -2173,9 +2198,17 @@
                  <button type="button" class="btn3d ghost danger" id="tDel">${icon("delete_outline", "material-icons-outlined")}Архивтен өшіру</button>`;
       } else if (T.status === "registration") {
         action = isReg(T)
-          ? `<div class="t3-ok">${icon("check_circle")}<div><b>Сен тіркелдің</b><span>Турнир ${fmtDT(T.start)} басталады. 1/8 жұбың сол күні шығады.</span></div></div>
+          ? `<div class="t3-ok">${icon("check_circle")}<div><b>Сен тіркелдің</b><span>Турнир ${fmtDT(T.start)} басталады.${T.checkin ? " Басталардан 30 мин бұрын «Қатысамын» деп растау керек." : ""}</span></div></div>
              <button type="button" class="btn3d ghost" id="tUnreg">Тіркелуден бас тарту</button>`
           : `<button type="button" class="btn3d" id="tReg">${icon("how_to_reg", "material-icons-outlined")}Тіркелу</button>`;
+      } else if (T.standings && T.status === "running" && isReg(T)) {
+        const me = T.standings.find((r) => r.p.me);
+        const place = [...T.standings].sort((a, b) => b.pts - a.pts || b.w - a.w).indexOf(me) + 1;
+        action = `<div class="tr-vs">
+            <div class="tr-vs-h">${T_FORMATS[T.format].name}${T.format === "swiss" ? ` · ${T.round}-раунд / ${T.rounds_n}` : ` · ${T.arenaHours === 24 ? "1 күн" : `${T.arenaHours} сағ`}`}</div>
+            <div class="sd-me"><div><b>${place}</b><small>орын</small></div><div><b>${me.pts}</b><small>ұпай</small></div><div><b>${me.w}/${me.l}</b><small>жеңіс/жеңіліс</small></div>${T.format === "arena" ? `<div><b>${me.streak ? "🔥" + me.streak : "—"}</b><small>серия</small></div>` : ""}</div>
+            <button type="button" class="btn3d" id="tStGame">${icon("sports_kabaddi")}${T.format === "arena" ? "Келесі ойын" : "Раундты ойнау"}</button>
+          </div>`;
       } else if (T.champion?.me) action = `<div class="t3-ok gold"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>Сен чемпионсың!</b><span>${T.title} сенікі</span></div></div>`;
       else if (mm)
         action = `
@@ -2193,18 +2226,20 @@
       else if (T.status === "running" && isReg(T)) action = `<div class="t3-ok">${icon("hourglass_top", "material-icons-outlined")}<div><b>Келесі кезеңді күт</b><span>Басқа жұптар ойнап жатыр</span></div></div>`;
       else if (T.status === "running") action = `<div class="t3-ok out">${icon("visibility", "material-icons-outlined")}<div><b>Сен тіркелмегенсің</b><span>Турнирді бақылай аласың</span></div></div>`;
 
+      const cd = T.status === "registration" ? countdown(T.start) : null;
       return `
         <div class="list-pad tour">
+          ${cd ? `<div class="t3-cd">${icon("timer", "material-icons-outlined")}Басталуына: <b>${cd}</b></div>` : ""}
           <div class="t3-hero">
             <img class="t3-belt" src="assets/tournament/belt.png" alt="" />
             <div class="t3-title lg">${T.title}</div>
-            <div class="t3-sub">${COURSE_TITLE[T.courseId]}</div>
+            <div class="t3-sub">${COURSE_TITLE[T.courseId]} · ${T_FORMATS[T.format || "knockout"].name}</div>
           </div>
           ${action}
           <div class="t3-panel">
             <div class="t3-info"><span>${icon("person", "material-icons-outlined")}Ұйымдастырушы</span><b>${T.organizer}</b></div>
             <div class="t3-info"><span>${icon("groups", "material-icons-outlined")}Қатысатын топтар</span><b>${groups}</b></div>
-            <div class="t3-info"><span>${icon("menu_book", "material-icons-outlined")}Модуль</span><b>${T.module}</b></div>
+            ${T.module.split(" · ").length > 1 ? `<div class="t3-info col"><span>${icon("menu_book", "material-icons-outlined")}Модульдер · ${T.module.split(" · ").length}</span><div class="t3-chips">${T.module.split(" · ").map((m) => `<i>${m}</i>`).join("")}</div></div>` : `<div class="t3-info"><span>${icon("menu_book", "material-icons-outlined")}Модуль</span><b>${T.module}</b></div>`}
             <div class="t3-info col"><span>${icon("label", "material-icons-outlined")}Тақырыптар</span><div class="t3-chips">${T.topics.map((t) => `<i>${t}</i>`).join("")}</div></div>
             <div class="t3-info"><span>${icon("how_to_reg", "material-icons-outlined")}Тіркелгендер</span><b>${T.participants.length} оқушы</b></div>
           </div>
@@ -2220,10 +2255,12 @@
                 })
                 .join("")}
             </div>
-            <div class="ga-csub" style="margin-top:8px">${T.stageDates ? "Әр кезеңнің уақытын куратор белгіледі." : `Әр кезең ${STAGE_DAYS[T.stageDays]}.`} Жұп осы уақыт ішінде ойнамаса — жоғары рейтингтегі оқушы өтеді.</div>
+            <div class="ga-csub" style="margin-top:8px">${T.format === "arena" ? "Уақыт ішінде кез келген сыныптаспен ойнайсың. Ойын саны шектелмейді." : T.format === "swiss" ? "Әр раундта ұпайы жақын оқушымен кездесесің. Ешкім шықпайды." : `Әр кезең ${STAGE_DAYS[T.stageDays] || T.stageDays + " күн"}.`} ${T.format && T.format !== "knockout" ? "" : "Жұп осы уақыт ішінде ойнамаса — жоғары рейтингтегі оқушы өтеді."}</div>
           </div>
           ${
-            T.rounds
+            T.standings
+              ? `<div class="t3-panel"><div class="ga-ctitle">Ұпай кестесі</div><div class="ga-csub">${T.format === "arena" ? "Жеңіс 2 ұпай · 3 жеңістен бастап 🔥 4 ұпай" : "Жеңіс 1 ұпай · келесі раундта ұпайы тең оқушылар кездеседі"}</div>${standingsHtml(T)}</div>`
+              : T.rounds
               ? `<div class="t3-panel"><div class="ga-ctitle">Турнир кестесі</div><div class="ga-csub">Жеңімпаз келесі кезеңге өтеді · солға-оңға жылжыт</div><div class="br-scroll">${bracketHtml(T)}</div></div>`
               : `<div class="t3-panel"><div class="ga-ctitle">Тіркелгендер</div><div class="t3-ppl">${T.participants.map((p) => `<span title="${p.name}">${avatarHtml(p)}<small>${firstName(p)}</small></span>`).join("")}</div></div>`
           }
@@ -2275,6 +2312,7 @@
         toast("Турнир тоқтатылды — архивте");
         paintStack();
       });
+      $("#tStGame")?.addEventListener("click", () => playStandingsGame(T));
       $("#tourPlay")?.addEventListener("click", () => {
         const m = myMatch(T);
         startDuel({ opp: m.a.me ? m.b : m.a, subject: STAFF_SUBJ[T.courseId], subjectTitle: COURSE_TITLE[T.courseId], match: m, T });
@@ -2300,89 +2338,199 @@
     );
   }
 
+  /* —— Турнир форматтары (Challonge / chess.com үлгісімен) —— */
+  const T_FORMATS = {
+    knockout: { name: "Олимпиялық", icon: "account_tree", desc: "Жұптар, жеңілген шығады. Кезең саны → қатысушылар саны" },
+    swiss: { name: "Швейцар жүйесі", icon: "swap_horiz", desc: "Ешкім шықпайды. Әр раундта ұпайы тең оқушылар кездеседі" },
+    arena: { name: "Арена", icon: "bolt", desc: "Уақыт ішінде қанша көп ойнасаң — сонша ұпай. Жеңіс сериясына бонус" },
+  };
+  function countdown(to) {
+    const ms = new Date(to) - AN_TODAY;
+    if (ms <= 0) return null;
+    const d = Math.floor(ms / 864e5), h = Math.floor((ms % 864e5) / 36e5), m = Math.floor((ms % 36e5) / 6e4);
+    return d ? `${d} күн ${h} сағ` : `${h} сағ ${m} мин`;
+  }
+  /** Швейцар/арена: кесте орнына ұпай тізімі */
+  function startStandings(T) {
+    T.status = "running";
+    T.round = 1;
+    T.standings = T.participants.map((p) => ({ p, pts: 0, w: 0, l: 0, streak: 0 }));
+    T.standings.forEach((r) => {
+      if (r.p.me) return;
+      const games = T.format === "arena" ? 2 + Math.floor(rnd(r.p.id, T.id, 1) * 5) : 1;
+      for (let i = 0; i < games; i++) {
+        const win = rnd(r.p.id, T.id, i + 7) < 0.35 + (r.p.score || 0) / 180;
+        standingsAdd(T, r, win);
+      }
+    });
+  }
+  function standingsAdd(T, r, win) {
+    if (win) {
+      r.w++;
+      r.streak++;
+      r.pts += T.format === "arena" ? (r.streak >= 3 ? 4 : 2) : 1;
+    } else {
+      r.l++;
+      r.streak = 0;
+    }
+  }
+  function standingsHtml(T) {
+    const rows = [...T.standings].sort((a, b) => b.pts - a.pts || b.w - a.w);
+    return `<div class="sd-head"><span>#</span><span>Қатысушы</span><span>Ж/Ж</span><span>Ұпай</span></div>${rows
+      .map(
+        (r, i) => `<div class="sd-row ${r.p.me ? "me" : ""}"><span class="sd-n ${i < 3 ? "top" : ""}">${i + 1}</span><span class="sd-p">${avatarHtml(r.p)}<b>${firstName(r.p)}</b>${T.format === "arena" && r.streak >= 2 ? `<i class="sd-fire">🔥${r.streak}</i>` : ""}</span><span>${r.w}/${r.l}</span><b>${r.pts}</b></div>`
+      )
+      .join("")}`;
+  }
+  function playStandingsGame(T) {
+    const me = T.standings.find((r) => r.p.me);
+    const others = T.standings.filter((r) => !r.p.me);
+    const opp = (T.format === "swiss" ? [...others].sort((a, b) => Math.abs(a.pts - me.pts) - Math.abs(b.pts - me.pts))[0] : others[Math.floor(Math.random() * others.length)]).p;
+    startDuel({
+      opp,
+      subject: STAFF_SUBJ[T.courseId],
+      subjectTitle: COURSE_TITLE[T.courseId],
+      onDone: (win) => {
+        standingsAdd(T, me, win);
+        const or = T.standings.find((r) => r.p === opp);
+        standingsAdd(T, or, !win);
+        if (T.format === "swiss") T.round = Math.min(T.rounds_n || 5, (T.round || 1) + 1);
+      },
+    });
+  }
+
   function openTourForm() {
     const g0 = visibleGroups()[0] || MOCK.groups[0];
     const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    const STAGES = [16, 8, 4, 2, 1]; // жұп саны: 1/16, 1/8, 1/4, жартылай, финал
-    const f = { title: "", groups: new Set([g0.id]), courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", first: 8, dates: {}, gap: 1 };
+    const STAGES = [16, 8, 4, 2, 1];
+    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1 };
     const secs = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
     const stageList = () => STAGES.filter((n) => n <= f.first);
     const pool = () => MOCK.groups.filter((g) => f.groups.has(g.id)).reduce((t, g) => t + g.studentsCount, 0);
-    const stageDate = (n, k) => {
+    const cap = () => (f.format === "knockout" ? f.first * 2 : null);
+    const stageDate = (k) => {
       const d = new Date(f.start);
       d.setDate(d.getDate() + k * f.gap);
       return iso2(d);
     };
     const check = (on) => icon(on ? "check_box" : "check_box_outline_blank");
-    const draw = () => {
-      const S = secs();
-      const topics = S.filter((x) => f.mods.has(x.t)).flatMap((x) => x.topics.map((t) => ({ t, m: x.t })));
-      openSheet(
-        `
-        <div class="sheet-handle"></div>
-        <div class="ef-head"><span>Жаңа турнир</span><button type="button" id="tfClose">${icon("close")}</button></div>
-        <div class="ef-label">Атауы <i>*</i></div>
-        <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
-        <div class="tf-row3">
-          <div><div class="ef-label">Кезең саны <i>*</i></div>
-            <div class="tf-step"><button type="button" data-tfs="-1" ${f.first <= 2 ? "disabled" : ""}>${icon("remove")}</button><b>${Math.log2(f.first) + 1}</b><button type="button" data-tfs="1" ${f.first >= 16 ? "disabled" : ""}>${icon("add")}</button></div></div>
-          <div><div class="ef-label">Қатысушылар</div><div class="tf-cap"><b>${f.first * 2}</b> адам</div></div>
-        </div>
-        <div class="tf-sum">${stageList().map((n) => stageName(n)).join(" → ")}</div>
-        <div class="ef-label">Қатысатын топтар <i>*</i></div>
-        <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
-        <div class="tf-sum ${pool() < f.first * 2 ? "warn" : ""}">${icon("groups", "material-icons-outlined")}Таңдалған топтарда ${pool()} оқушы${pool() < f.first * 2 ? ` — ${f.first * 2} орынға жетпейді, бос орындар BYE болады` : pool() > f.first * 2 ? ` — алғашқы ${f.first * 2} тіркелген қатысады` : ""}</div>
-        <div class="ef-label">Пән <i>*</i></div>
-        <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
-        <div class="ef-label">Модульдер <i>*</i></div>
-        <button type="button" class="ef-select tf-dd ${f.mods.size ? "" : "ph"} ${f.openM ? "open" : ""}" id="tfDdM"><span>${f.mods.size ? [...f.mods].join(", ") : "Модульдерді таңдаңыз"}</span>${f.mods.size ? `<em>${f.mods.size}</em>` : ""}${icon(f.openM ? "expand_less" : "expand_more")}</button>
-        ${f.openM ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllM">барлығын таңдау</button><div class="tf-checks">${S.map((x) => `<button type="button" class="tf-check ${f.mods.has(x.t) ? "on" : ""}" data-tfm="${x.t.replace(/"/g, "&quot;")}">${check(f.mods.has(x.t))}<span>${x.t}</span></button>`).join("")}</div></div>` : ""}
-        <div class="ef-label">Тақырыптар <i>*</i></div>
-        <button type="button" class="ef-select tf-dd ${f.topics.size ? "" : "ph"} ${f.openT ? "open" : ""}" id="tfDdT" ${f.mods.size ? "" : "disabled"}><span>${f.topics.size ? [...f.topics].join(", ") : f.mods.size ? "Тақырыптарды таңдаңыз" : "Алдымен модуль таңдаңыз"}</span>${f.topics.size ? `<em>${f.topics.size}</em>` : ""}${icon(f.openT ? "expand_less" : "expand_more")}</button>
-        ${f.openT && topics.length ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllT">барлығын таңдау</button><div class="tf-checks">${topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")}</div></div>` : ""}
+    const STEPS = ["Формат", "Қатысушылар", "Мазмұн", "Уақыт"];
+    const valid = (k) =>
+      k === 0 ? !!f.title.trim() : k === 1 ? f.groups.size > 0 : k === 2 ? f.mods.size > 0 && f.topics.size > 0 : !!(f.regTo && f.start && new Date(f.start) > new Date(f.regTo));
+    const err = ["Атауын жазыңыз", "Кемінде бір топ таңдаңыз", "Модуль мен тақырып таңдаңыз", "Турнир тіркелу аяқталғаннан кейін басталуы керек"];
+    const stepHtml = () => {
+      if (f.step === 0)
+        return `
+          <div class="ef-label">Атауы <i>*</i></div>
+          <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
+          <div class="ef-label">Формат <i>*</i></div>
+          ${Object.entries(T_FORMATS).map(([k, x]) => `<button type="button" class="wm-opt tf-fmt ${f.format === k ? "on" : ""}" data-tffmt="${k}">${icon(x.icon, "material-icons-outlined")}<span><b>${x.name}</b><small>${x.desc}</small></span>${icon(f.format === k ? "radio_button_checked" : "radio_button_unchecked")}</button>`).join("")}
+          ${
+            f.format === "knockout"
+              ? `<div class="tf-row3"><div><div class="ef-label">Кезең саны</div><div class="tf-step"><button type="button" data-tfs="-1" ${f.first <= 2 ? "disabled" : ""}>${icon("remove")}</button><b>${Math.log2(f.first) + 1}</b><button type="button" data-tfs="1" ${f.first >= 16 ? "disabled" : ""}>${icon("add")}</button></div></div><div><div class="ef-label">Қатысушылар</div><div class="tf-cap"><b>${f.first * 2}</b> адам</div></div></div>
+                 <div class="tf-sum">${stageList().map(stageName).join(" → ")}</div>`
+              : f.format === "swiss"
+                ? `<div class="ef-label">Раунд саны</div><div class="tf-step tf-step-w"><button type="button" data-tfr="-1" ${f.swissRounds <= 3 ? "disabled" : ""}>${icon("remove")}</button><b>${f.swissRounds} раунд</b><button type="button" data-tfr="1" ${f.swissRounds >= 9 ? "disabled" : ""}>${icon("add")}</button></div><div class="tf-sum">Қатысушылар саны шектелмейді · жеңіс = 1 ұпай</div>`
+                : `<div class="ef-label">Арена ұзақтығы</div><div class="ent-chips">${[1, 3, 24].map((h) => `<button type="button" class="ent-chip ${f.arenaHours === h ? "on" : ""}" style="--c:var(--primary)" data-tfa="${h}">${h === 24 ? "1 күн" : `${h} сағат`}</button>`).join("")}</div><div class="tf-sum">Жеңіс = 2 ұпай, 3 жеңістен бастап серия 🔥 = 4 ұпай</div>`
+          }`;
+      if (f.step === 1)
+        return `
+          <div class="ef-label">Қатысатын топтар <i>*</i></div>
+          <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
+          <div class="tf-sum ${cap() && pool() < cap() ? "warn" : ""}">${icon("groups", "material-icons-outlined")}Топтарда ${pool()} оқушы${cap() ? (pool() < cap() ? ` — ${cap()} орынға жетпейді, бос орын BYE` : pool() > cap() ? ` — алғашқы ${cap()} тіркелген қатысады` : " — дәл сай") : ""}</div>
+          <div class="ef-label">Жұптастыру</div>
+          <div class="ent-chips">${[["rating", "Рейтинг бойынша"], ["random", "Кездейсоқ"]].map(([k, l]) => `<button type="button" class="ent-chip ${f.seeding === k ? "on" : ""}" style="--c:var(--primary)" data-tfseed="${k}">${l}</button>`).join("")}</div>
+          <div class="tf-sum">${f.seeding === "rating" ? "Күштілер бірінші кезеңде кездеспейді (1-орын 16-орынмен ойнайды)" : "Жұптар жеребе арқылы"}</div>
+          <div class="nf-toggle-row"><div><b>Check-in</b><small>Басталардан 30 мин бұрын оқушы «Қатысамын» деп растайды; растамағандар кестеге кірмейді</small></div><button type="button" class="toggle ${f.checkin ? "on" : ""}" id="tfCheck"></button></div>`;
+      if (f.step === 2) {
+        const S = secs();
+        const topics = S.filter((x) => f.mods.has(x.t)).flatMap((x) => x.topics.map((t) => ({ t, m: x.t })));
+        return `
+          <div class="ef-label">Пән <i>*</i></div>
+          <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
+          <div class="ef-label">Модульдер <i>*</i></div>
+          <button type="button" class="ef-select tf-dd ${f.mods.size ? "" : "ph"} ${f.openM ? "open" : ""}" id="tfDdM"><span>${f.mods.size ? [...f.mods].join(", ") : "Модульдерді таңдаңыз"}</span>${f.mods.size ? `<em>${f.mods.size}</em>` : ""}${icon(f.openM ? "expand_less" : "expand_more")}</button>
+          ${f.openM ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllM">барлығын таңдау</button><div class="tf-checks">${S.map((x) => `<button type="button" class="tf-check ${f.mods.has(x.t) ? "on" : ""}" data-tfm="${x.t.replace(/"/g, "&quot;")}">${check(f.mods.has(x.t))}<span>${x.t}</span></button>`).join("")}</div></div>` : ""}
+          <div class="ef-label">Тақырыптар <i>*</i></div>
+          <button type="button" class="ef-select tf-dd ${f.topics.size ? "" : "ph"} ${f.openT ? "open" : ""}" id="tfDdT" ${f.mods.size ? "" : "disabled"}><span>${f.topics.size ? [...f.topics].join(", ") : f.mods.size ? "Тақырыптарды таңдаңыз" : "Алдымен модуль таңдаңыз"}</span>${f.topics.size ? `<em>${f.topics.size}</em>` : ""}${icon(f.openT ? "expand_less" : "expand_more")}</button>
+          ${f.openT && topics.length ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllT">барлығын таңдау</button><div class="tf-checks">${topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")}</div></div>` : ""}`;
+      }
+      const sched = f.format === "knockout" ? stageList().map((n, k) => { const d = new Date(stageDate(k)); return `${stageName(n)} — ${d.getDate()} ${KZ_MON_SHORT[d.getMonth()]}`; }).join(" · ") : f.format === "swiss" ? `${f.swissRounds} раунд, әр раунд ${f.gap === 7 ? "аптасына" : `${f.gap} күн сайын`}` : `Басталғаннан ${f.arenaHours === 24 ? "1 күн" : `${f.arenaHours} сағат`} бойы`;
+      return `
         <div class="tf-row">
           <div><div class="ef-label">Тіркелу аяқталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfReg" value="${f.regTo}" /></div>
           <div><div class="ef-label">Турнир басталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfStart" value="${f.start}" /></div>
         </div>
-        <div class="ef-label">Кезеңдер аралығы</div>
-        <div class="ent-chips">${[1, 2, 3, 7].map((d) => `<button type="button" class="ent-chip ${f.gap === d ? "on" : ""}" style="--c:var(--primary)" data-tfgap="${d}">${d === 7 ? "1 апта" : `${d} күн`}</button>`).join("")}</div>
-        <div class="tf-sum">${icon("event", "material-icons-outlined")}${stageList().map((n, k) => { const d = new Date(stageDate(n, k)); return `${stageName(n)} — ${d.getDate()} ${KZ_MON_SHORT[d.getMonth()]}`; }).join(" · ")}</div>
-        <button type="button" class="ef-submit" id="tfCreate">Турнирді жариялау</button>`,
+        ${f.format !== "arena" ? `<div class="ef-label">${f.format === "knockout" ? "Кезеңдер" : "Раундтар"} аралығы</div><div class="ent-chips">${[1, 2, 3, 7].map((d) => `<button type="button" class="ent-chip ${f.gap === d ? "on" : ""}" style="--c:var(--primary)" data-tfgap="${d}">${d === 7 ? "1 апта" : `${d} күн`}</button>`).join("")}</div>` : ""}
+        <div class="tf-sum">${icon("event", "material-icons-outlined")}${sched}</div>
+        <div class="tf-preview">
+          <div class="tf-pv-h"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>${f.title || "Атауы"}</b><small>${T_FORMATS[f.format].name} · ${COURSE_TITLE[f.courseId]}</small></div></div>
+          <div class="tf-pv-r"><span>Қатысушылар</span><b>${cap() ? `${cap()} орын` : "шектеусіз"} · ${[...f.groups].map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ")}</b></div>
+          <div class="tf-pv-r"><span>Тақырыптар</span><b>${f.topics.size} тақырып · ${f.mods.size} модуль</b></div>
+          <div class="tf-pv-r"><span>Жұптастыру</span><b>${f.seeding === "rating" ? "рейтинг" : "кездейсоқ"}${f.checkin ? " · check-in" : ""}</b></div>
+        </div>`;
+    };
+    const draw = () => {
+      openSheet(
+        `
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Жаңа турнир</span><button type="button" id="tfClose">${icon("close")}</button></div>
+        <div class="tf-steps">${STEPS.map((x, k) => `<button type="button" class="tf-sp ${k === f.step ? "on" : k < f.step ? "done" : ""}" data-tfstep="${k}"><i>${k < f.step ? icon("check") : k + 1}</i><span>${x}</span></button>`).join("")}</div>
+        ${stepHtml()}
+        <div class="sheet-actions btn-row" style="margin-top:18px">
+          ${f.step ? `<button type="button" class="btn btn-ghost" id="tfPrev">Артқа</button>` : `<button type="button" class="btn btn-ghost" id="tfClose2">Болдырмау</button>`}
+          <button type="button" class="btn btn-primary" id="tfNext">${f.step === 3 ? "Жариялау" : "Әрі қарай"}</button>
+        </div>`,
         { tall: true }
       );
       const keep = () => {
-        f.title = $("#tfTitle").value;
-        f.regTo = $("#tfReg").value;
-        f.start = $("#tfStart").value;
+        if ($("#tfTitle")) f.title = $("#tfTitle").value;
+        if ($("#tfReg")) f.regTo = $("#tfReg").value;
+        if ($("#tfStart")) f.start = $("#tfStart").value;
       };
+      const on = (sel, fn) => $$(sel).forEach((b) => (b.onclick = () => (keep(), fn(b), draw())));
       $("#tfClose").onclick = closeSheet;
-      $$("[data-tfg]").forEach((b) => (b.onclick = () => (keep(), f.groups.has(+b.dataset.tfg) ? f.groups.delete(+b.dataset.tfg) : f.groups.add(+b.dataset.tfg), draw())));
-      $("#tfCourse").onchange = (e) => (keep(), (f.courseId = +e.target.value), f.mods.clear(), f.topics.clear(), draw());
-      $$("[data-tfm]").forEach((b) => (b.onclick = () => {
-        keep();
+      $("#tfClose2")?.addEventListener("click", closeSheet);
+      on("[data-tffmt]", (b) => (f.format = b.dataset.tffmt));
+      on("[data-tfs]", (b) => (f.first = Math.max(2, Math.min(16, b.dataset.tfs === "1" ? f.first * 2 : f.first / 2))));
+      on("[data-tfr]", (b) => (f.swissRounds += +b.dataset.tfr));
+      on("[data-tfa]", (b) => (f.arenaHours = +b.dataset.tfa));
+      on("[data-tfg]", (b) => (f.groups.has(+b.dataset.tfg) ? f.groups.delete(+b.dataset.tfg) : f.groups.add(+b.dataset.tfg)));
+      on("[data-tfseed]", (b) => (f.seeding = b.dataset.tfseed));
+      on("#tfCheck", () => (f.checkin = !f.checkin));
+      on("#tfDdM", () => ((f.openM = !f.openM), (f.openT = false)));
+      on("#tfDdT", () => ((f.openT = !f.openT), (f.openM = false)));
+      on("#tfAllM", () => secs().forEach((x) => f.mods.add(x.t)));
+      on("#tfAllT", () => secs().filter((x) => f.mods.has(x.t)).forEach((x) => x.topics.forEach((t) => f.topics.add(t))));
+      on("[data-tfm]", (b) => {
         const m = b.dataset.tfm;
-        if (f.mods.has(m)) {
-          f.mods.delete(m);
-          (secs().find((x) => x.t === m)?.topics || []).forEach((t) => f.topics.delete(t));
-        } else f.mods.add(m);
+        if (f.mods.has(m)) (f.mods.delete(m), (secs().find((x) => x.t === m)?.topics || []).forEach((t) => f.topics.delete(t)));
+        else f.mods.add(m);
+      });
+      on("[data-tft]", (b) => (f.topics.has(b.dataset.tft) ? f.topics.delete(b.dataset.tft) : f.topics.add(b.dataset.tft)));
+      on("[data-tfgap]", (b) => (f.gap = +b.dataset.tfgap));
+      $("#tfCourse")?.addEventListener("change", (e) => (keep(), (f.courseId = +e.target.value), f.mods.clear(), f.topics.clear(), draw()));
+      $("#tfStart")?.addEventListener("change", () => (keep(), draw()));
+      $$("[data-tfstep]").forEach((b) => (b.onclick = () => {
+        keep();
+        const k = +b.dataset.tfstep;
+        for (let i = 0; i < k; i++) if (!valid(i)) return toast(err[i], "err");
+        f.step = k;
         draw();
       }));
-      $("#tfAllM")?.addEventListener("click", () => (keep(), secs().forEach((x) => f.mods.add(x.t)), draw()));
-      $("#tfDdM").onclick = () => (keep(), (f.openM = !f.openM), (f.openT = false), draw());
-      $("#tfDdT").onclick = () => (keep(), (f.openT = !f.openT), (f.openM = false), draw());
-      $("#tfAllT")?.addEventListener("click", () => (keep(), topics.forEach((x) => f.topics.add(x.t)), draw()));
-      $$("[data-tft]").forEach((b) => (b.onclick = () => (keep(), f.topics.has(b.dataset.tft) ? f.topics.delete(b.dataset.tft) : f.topics.add(b.dataset.tft), draw())));
-      $("#tfStart").onchange = () => (keep(), draw());
-      $$("[data-tfs]").forEach((b) => (b.onclick = () => (keep(), (f.first = Math.max(2, Math.min(16, b.dataset.tfs === "1" ? f.first * 2 : f.first / 2))), draw())));
-      $$("[data-tfgap]").forEach((b) => (b.onclick = () => (keep(), (f.gap = +b.dataset.tfgap), draw())));
-      $("#tfCreate").onclick = () => {
+      $("#tfPrev")?.addEventListener("click", () => (keep(), f.step--, draw()));
+      $("#tfNext").onclick = () => {
         keep();
-        if (!f.title.trim() || !f.groups.size || !f.mods.size || !f.topics.size || !f.regTo || !f.start) return toast("Барлық міндетті өрістерді толтырыңыз", "err");
-        if (new Date(f.start) <= new Date(f.regTo)) return toast("Турнир тіркелу аяқталғаннан кейін басталуы керек", "err");
-        const dates = stageList().map((n, k) => stageDate(n, k));
+        if (!valid(f.step)) return toast(err[f.step], "err");
+        if (f.step < 3) return (f.step++, draw());
         tournaments().unshift({
           id: nextId(),
           title: f.title.trim(),
+          format: f.format,
+          rounds_n: f.swissRounds,
+          arenaHours: f.arenaHours,
+          seeding: f.seeding,
+          checkin: f.checkin,
           organizer: `${myName()} · ${state.staffRole === "head" ? "бас куратор" : "куратор"}`,
           groups: [...f.groups],
           courseId: f.courseId,
@@ -2390,9 +2538,9 @@
           topics: [...f.topics],
           regTo: f.regTo,
           start: f.start,
-          stageDays: 1,
+          stageDays: f.gap,
           firstStage: f.first,
-          stageDates: dates,
+          stageDates: f.format === "knockout" ? stageList().map((n, k) => stageDate(k)) : null,
           participants: [],
           status: "registration",
         });
@@ -2402,6 +2550,215 @@
       };
     };
     draw();
+  }
+
+  async function duelQuestions(subject, seed) {
+    const pick = (arr, n, k) => {
+      const a = [...arr].sort((x, y) => rnd(seed, k, x.id.length + x.stem.length) - rnd(seed, k, y.id.length + y.stem.length));
+      return a.slice(0, n);
+    };
+    try {
+      await loadProbnik();
+      const P = window.PROBNIK.subjects[subject];
+      const all = Object.values(P.variants).flat().filter((q) => q.type === "single_choice" && !q.ctx && q.options.filter((o) => o.correct).length === 1);
+      const easy = all.filter((q) => (q.n || 0) <= 12), mid = all.filter((q) => (q.n || 0) > 12 && q.n <= 25), hard = all.filter((q) => (q.n || 0) > 25);
+      const e = pick(easy.length >= 5 ? easy : all, 5, 1), m = pick(mid.length >= 5 ? mid : all, 5, 2), h = pick(hard.length >= 3 ? hard : all, 3, 3);
+      return [...e, ...m, ...h].map((q) => ({ stem: q.stem, options: q.options.map((o) => o.content), answer: q.options.findIndex((o) => o.correct) }));
+    } catch {
+      const bank = Object.values(MOCK.practice).flatMap((p) => p.questions);
+      return Array.from({ length: 13 }, (_, i) => {
+        const q = bank[i % bank.length];
+        return { stem: q.q, options: q.options, answer: q.answer };
+      });
+    }
+  }
+
+  async function startDuel({ opp, subject, subjectTitle, match, T, onDone }) {
+    toast("Сұрақтар дайындалуда…");
+    const seed = Date.now() % 100000;
+    const qs = await duelQuestions(subject, seed);
+    const plan = DUEL_ROUNDS.flatMap((r, ri) => Array.from({ length: r.n }, () => ({ ri, pts: r.pts })));
+    const D = { i: 0, my: 0, op: 0, myT: 0, opT: 0, pick: null, reveal: false, splash: 0, done: false, left: 20, res: [] };
+    const me = { name: "Сен", initials: MOCK.me.initials, color: "#5B6EC2" };
+    let timer = null;
+    const oppCorrect = (i) => rnd(opp.id, seed, i) < [0.78, 0.6, 0.42][plan[i].ri] * (0.65 + (opp.score || 0) / 220);
+    const answer = (k) => {
+      if (D.reveal) return;
+      clearInterval(timer);
+      const q = qs[D.i], p = plan[D.i];
+      D.pick = k;
+      D.reveal = true;
+      const ok = k === q.answer;
+      const opOk = oppCorrect(D.i);
+      const opTime = 4 + rnd(opp.id, seed, D.i + 50) * 13;
+      D.myT += 20 - D.left;
+      D.opT += opTime;
+      if (ok) D.my += p.pts;
+      if (opOk) D.op += p.pts;
+      D.res.push({ ok, opOk, ri: p.ri });
+      paintStack();
+      setTimeout(() => {
+        D.reveal = false;
+        D.pick = null;
+        D.i += 1;
+        if (D.i >= plan.length) finish();
+        else if (plan[D.i].ri !== plan[D.i - 1].ri) D.splash = plan[D.i].ri;
+        else startTimer();
+        paintStack();
+      }, 1100);
+    };
+    const startTimer = () => {
+      D.left = 20;
+      clearInterval(timer);
+      timer = setInterval(() => {
+        const el = $("#duTime");
+        if (!el) return clearInterval(timer);
+        D.left -= 1;
+        el.textContent = D.left;
+        $("#duTimeBar").style.width = `${(D.left / 20) * 100}%`;
+        if (D.left <= 0) answer(-1);
+      }, 1000);
+    };
+    const finish = () => {
+      clearInterval(timer);
+      D.done = true;
+      const win = D.my > D.op || (D.my === D.op && D.myT <= D.opT);
+      D.win = win;
+      (MOCK.duels = MOCK.duels || []).unshift({ opp, my: D.my, op: D.op, win, subjectTitle, date: dmy(new Date()) });
+      onDone?.(win, D.my, D.op);
+      if (match) {
+        const meA = match.a.me;
+        match.sa = meA ? D.my : D.op;
+        match.sb = meA ? D.op : D.my;
+        if (match.sa === match.sb) meA === win ? (match.sb -= 0.5) : (match.sa -= 0.5);
+        match.w = win ? (meA ? match.a : match.b) : meA ? match.b : match.a;
+        match.sa = Math.ceil(match.sa);
+        match.sb = Math.ceil(match.sb);
+        tourAdvance(T);
+      }
+    };
+    const scoreBar = () => `
+      <div class="du-top">
+        <div class="du-side">${avatarHtml(me)}<div><b>Сен</b><span class="du-pts">${D.my}</span></div></div>
+        <div class="du-mid"><span class="du-round ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].cls}">${plan[Math.min(D.i, plan.length - 1)].ri + 1}-раунд · ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].name}</span><small>${subjectTitle}</small></div>
+        <div class="du-side r"><div><b>${opp.name.split(" ")[0]}</b><span class="du-pts">${D.op}</span></div>${avatarHtml(opp)}</div>
+      </div>
+      <div class="du-dots">${plan.map((p, i) => {
+        const r = D.res[i];
+        return `<i class="${DUEL_ROUNDS[p.ri].cls} ${r ? (r.ok ? "ok" : "bad") : i === D.i ? "cur" : ""}"></i>`;
+      }).join("")}</div>`;
+    const build = () => {
+      if (D.done) {
+        const per = DUEL_ROUNDS.map((r, ri) => ({ r, my: D.res.filter((x) => x.ri === ri && x.ok).length * r.pts, op: D.res.filter((x) => x.ri === ri && x.opOk).length * r.pts }));
+        return `
+          <div class="du-res ${D.win ? "win" : "lose"}">
+            <div class="du-res-ico">${D.win ? `<img src="assets/tournament/belt.png" alt="" class="du-belt" />` : icon("sentiment_dissatisfied", "material-icons-outlined")}</div>
+            <div class="du-res-t">${D.win ? "Жеңіс!" : "Бұл жолы жеңіліс"}</div>
+            <div class="du-res-s">${avatarHtml(me)}<b>${D.my}</b><span>:</span><b>${D.op}</b>${avatarHtml(opp)}</div>
+            ${D.my === D.op ? `<div class="du-res-n">Ұпай тең — ${D.win ? "сен" : opp.name.split(" ")[0]} жылдамырақ жауап берді</div>` : ""}
+            ${match ? `<div class="du-res-n">${D.win ? "Сен келесі кезеңге өттің!" : "Турнир сен үшін аяқталды"}</div>` : ""}
+          </div>
+          <div class="list-pad">${per
+            .map((x, i) => `<div class="du-rr ${x.r.cls}"><span>${i + 1}-раунд · ${x.r.name}</span><b>${x.my} : ${x.op}</b></div>`)
+            .join("")}</div>`;
+      }
+      if (D.splash) {
+        const r = DUEL_ROUNDS[D.splash];
+        return `${scoreBar()}<div class="du-splash ${r.cls}"><div class="du-sp-n">${D.splash + 1}-раунд</div><div class="du-sp-t">${r.name}</div><div class="du-sp-s">${r.n} сұрақ · әр сұрақ ${r.pts} ұпай</div><button type="button" class="tr-play" id="duGo">Бастау</button></div>`;
+      }
+      const q = qs[D.i];
+      return `${scoreBar()}
+        <div class="du-timer"><i id="duTimeBar" style="width:${(D.left / 20) * 100}%"></i><span id="duTime">${D.left}</span></div>
+        <div class="du-q">
+          <div class="du-qn">Сұрақ ${D.i + 1} / ${plan.length} · +${plan[D.i].pts} ұпай</div>
+          <div class="tq-q">${md(q.stem)}</div>
+          ${q.options
+            .map((o, k) => {
+              let cls = "";
+              if (D.reveal && k === q.answer) cls = "ok";
+              else if (D.reveal && k === D.pick) cls = "bad";
+              return `<button type="button" class="pr-opt ${cls}" data-du="${k}"><span class="pr-radio"></span><span>${md(o)}</span></button>`;
+            })
+            .join("")}
+          ${D.reveal ? `<div class="du-op">${opp.name.split(" ")[0]}: ${D.res[D.res.length - 1].opOk ? `<span class="up">дұрыс жауап берді</span>` : `<span class="down">қателесті</span>`}</div>` : ""}
+        </div>`;
+    };
+    pushScreen(
+      "Жекпе-жек",
+      build,
+      () => {
+        renderMath($("#screenOverlay"));
+        $$("[data-du]").forEach((b) => (b.onclick = () => answer(Number(b.dataset.du))));
+        $("#duGo")?.addEventListener("click", () => {
+          D.splash = 0;
+          startTimer();
+          paintStack();
+        });
+        $("#duBack")?.addEventListener("click", () => {
+          state.navStack.pop();
+          paintStack();
+        });
+        $("#duAgain")?.addEventListener("click", () => {
+          state.navStack.pop();
+          startDuel({ opp, subject, subjectTitle });
+        });
+      },
+      {
+        screenCls: "duel",
+        footer: () =>
+          D.done
+            ? `<div class="sticky-foot rp-foot">${match ? "" : `<button type="button" class="rp-pdf" id="duAgain">${icon("replay")}Реванш</button>`}<button type="button" class="ef-submit" id="duBack" style="margin:0">${match ? "Турнирге оралу" : "Дайын"}</button></div>`
+            : "",
+      }
+    );
+    D.splash = 0;
+    paintStack();
+    startTimer();
+  }
+
+  /** Батл: рейтинг (Elo сияқты), келген және жіберілген шақырулар */
+  function battleState() {
+    if (!MOCK.battle) {
+      const st = MOCK.groups[0].students;
+      MOCK.battle = {
+        rating: 1000,
+        incoming: [
+          { opp: st[1], subjectTitle: "Дүниежүзі Тарихы", subject: "world_history", left: "18 сағ" },
+          { opp: st[4], subjectTitle: "Математика", subject: "mathematics", left: "5 сағ" },
+        ],
+        outgoing: [{ opp: st[2], subjectTitle: "Биология", my: 17, left: "21 сағ" }],
+      };
+    }
+    return MOCK.battle;
+  }
+  function battleDone(win) {
+    const B = battleState();
+    B.rating = Math.max(0, B.rating + (win ? 15 : -10));
+  }
+  function bindBattle() {
+    const B = battleState();
+    $("#btRandom")?.addEventListener("click", () => {
+      const st = MOCK.groups[0].students;
+      const near = [...st].sort((a, b) => Math.abs(a.score - 60) - Math.abs(b.score - 60)).slice(0, 5);
+      const opp = near[Math.floor(Math.random() * near.length)];
+      const c = MOCK.myCourses.find((x) => T_SUBJ[x.id]);
+      toast(`Қарсылас табылды: ${opp.name}`);
+      setTimeout(() => startDuel({ opp, subject: T_SUBJ[c.id], subjectTitle: c.title, onDone: battleDone }), 500);
+    });
+    $$("[data-btyes]").forEach((b) => (b.onclick = () => {
+      const c = B.incoming.splice(Number(b.dataset.btyes), 1)[0];
+      startDuel({ opp: c.opp, subject: c.subject, subjectTitle: c.subjectTitle, onDone: battleDone });
+    }));
+    $$("[data-btno]").forEach((b) => (b.onclick = () => {
+      B.incoming.splice(Number(b.dataset.btno), 1);
+      toast("Шақырудан бас тарттың");
+      paintStack();
+    }));
+    $$("[data-btre]").forEach((b) => (b.onclick = () => {
+      const d = MOCK.duels[Number(b.dataset.btre)];
+      const c = MOCK.myCourses.find((x) => x.title === d.subjectTitle) || MOCK.myCourses.find((x) => T_SUBJ[x.id]);
+      startDuel({ opp: d.opp, subject: T_SUBJ[c.id] || "world_history", subjectTitle: d.subjectTitle, onDone: battleDone });
+    }));
   }
 
   function openDuelInvite() {
@@ -2430,13 +2787,14 @@
         const c = MOCK.myCourses.find((x) => x.id === st.sub);
         closeSheet();
         toast(`${opp.name.split(" ")[0]} шақыруды қабылдады!`);
-        setTimeout(() => startDuel({ opp, subject: T_SUBJ[c.id], subjectTitle: c.title }), 500);
+        setTimeout(() => startDuel({ opp, subject: T_SUBJ[c.id], subjectTitle: c.title, onDone: battleDone }), 500);
       };
     };
     draw();
   }
 
   function bindTournament() {
+    bindBattle();
     bindTourSeg(paintStack);
     $("#duelInvite")?.addEventListener("click", openDuelInvite);
     $$("[data-tour]").forEach((b) => (b.onclick = () => openTournament(tournaments().find((t) => t.id === Number(b.dataset.tour)))));
@@ -6879,5 +7237,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     applyPrefs();
   }
 
+  window.__i4u = { tournaments, startTournament }; // макетті тексеру үшін
   document.addEventListener("DOMContentLoaded", init);
 })();

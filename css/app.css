@@ -4038,3 +4038,63 @@ input[type="date"].ef-input { color-scheme: dark; }
 .tf-sum .material-icons-outlined { font-size: 15px; color: var(--primary); margin-top: 1px; }
 .tf-sum.warn { color: #e0a84a; }
 .tf-sum.warn .material-icons-outlined { color: #e0a84a; }
+/* Турнир: қадамдық құру, кері санақ, ұпай кестесі */
+.tf-steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 2px 0 8px; }
+.tf-sp { border: 0; background: transparent; color: #6c6f84; font-family: inherit; font-size: 10.5px; display: flex; flex-direction: column; align-items: center; gap: 5px; cursor: pointer; position: relative; }
+.tf-sp i { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-weight: 700; font-size: 12.5px; background: #262628; color: #9a9db0; }
+.tf-sp i .material-icons-round { font-size: 16px; }
+.tf-sp.on { color: #fff; }
+.tf-sp.on i { background: var(--primary); color: #fff; box-shadow: 0 0 0 4px color-mix(in srgb, var(--primary) 25%, transparent); }
+.tf-sp.done { color: #c8cad4; }
+.tf-sp.done i { background: #2f5e3a; color: #fff; }
+.tf-fmt { margin-bottom: 8px; }
+.tf-fmt.on { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 12%, #181818); }
+.tf-fmt > .material-icons-round:last-child { color: var(--primary); }
+.tf-step-w b { font-size: 15px; }
+.tf-preview { margin-top: 14px; padding: 14px; border-radius: 14px; background: #181818; border: 1px solid color-mix(in srgb, var(--primary) 35%, #2e2e36); }
+.tf-pv-h { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.tf-pv-h img { width: 40px; height: 40px; }
+.tf-pv-h b { display: block; font-size: 15px; }
+.tf-pv-h small { font-size: 11.5px; color: #9a9db0; }
+.tf-pv-r { display: flex; justify-content: space-between; gap: 10px; padding: 7px 0; border-top: 1px solid #2c2c33; font-size: 12px; }
+.tf-pv-r span { color: #8a8d9c; flex-shrink: 0; }
+.tf-pv-r b { font-weight: 600; text-align: right; }
+.t3-cd { display: flex; align-items: center; justify-content: center; gap: 6px; margin-bottom: 12px; padding: 10px; border-radius: 12px; background: color-mix(in srgb, var(--primary) 16%, #1e1e1e); font-size: 13px; color: #c8cad4; }
+.t3-cd .material-icons-outlined { font-size: 18px; color: var(--primary); }
+.t3-cd b { color: #fff; }
+.sd-head, .sd-row { display: grid; grid-template-columns: 28px 1fr 52px 44px; align-items: center; gap: 8px; }
+.sd-head { margin-top: 12px; padding: 0 0 6px; font-size: 10.5px; color: #8a8d9c; text-transform: uppercase; border-bottom: 1px solid #2c2c33; }
+.sd-row { padding: 8px 0; border-bottom: 1px solid #26262c; font-size: 12.5px; }
+.sd-row.me { background: color-mix(in srgb, var(--primary) 12%, transparent); border-radius: 8px; }
+.sd-n { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: #262628; font-weight: 700; font-size: 11.5px; }
+.sd-n.top { background: rgba(255, 210, 77, .18); color: #ffd24d; }
+.sd-p { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.sd-p .du-av { width: 26px; height: 26px; font-size: 10px; }
+.sd-p b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sd-fire { font-style: normal; font-size: 11px; }
+.sd-row > b { text-align: right; font-size: 14px; }
+.sd-me { display: grid; grid-auto-flow: column; gap: 8px; margin-top: 12px; }
+.sd-me div { background: rgba(0,0,0,.2); border-radius: 10px; padding: 8px 4px; }
+.sd-me b { display: block; font-size: 17px; }
+.sd-me small { font-size: 10px; color: #9a9db0; }
+/* Батл */
+.bt-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bt-stats div { background: linear-gradient(180deg, #26262c, #1e1e22); border: 1px solid #2f2f38; border-radius: 14px; padding: 12px 6px; text-align: center; box-shadow: 0 3px 0 #0c0c10; }
+.bt-stats b { display: block; font-size: 19px; }
+.bt-stats b i { font-style: normal; color: #6c6f84; margin: 0 2px; }
+.bt-stats small { font-size: 10.5px; color: #9a9db0; }
+.bt-play { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+.bt-btn { border: 0; border-radius: 16px; padding: 16px 12px; color: #fff; font-family: inherit; text-align: left; cursor: pointer; display: flex; flex-direction: column; gap: 6px; transition: transform .08s; }
+.bt-btn:active { transform: translateY(3px); }
+.bt-btn .material-icons-round, .bt-btn .material-icons-outlined { font-size: 28px; }
+.bt-btn b { font-size: 14px; }
+.bt-btn small { font-size: 11px; opacity: .85; }
+.bt-btn.rand { background: linear-gradient(160deg, color-mix(in srgb, var(--primary) 75%, #fff 10%), color-mix(in srgb, var(--primary) 70%, #000)); box-shadow: 0 4px 0 color-mix(in srgb, var(--primary) 40%, #000); }
+.bt-btn.friend { background: linear-gradient(160deg, #e2574c, #a8322a); box-shadow: 0 4px 0 #6e1f19; }
+.bt-inv { display: flex; align-items: center; gap: 10px; padding: 12px; margin-bottom: 8px; border-radius: 14px; background: #1e1e1e; border: 1px solid #2c2c33; }
+.bt-inv b { display: block; font-size: 13.5px; }
+.bt-inv small { font-size: 11px; color: #8a8d9c; }
+.bt-inv.wait .material-icons-outlined { color: #e0a84a; }
+.bt-yes { border: 0; height: 34px; padding: 0 12px; border-radius: 10px; background: var(--primary); color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 700; cursor: pointer; }
+.bt-no { border: 0; width: 34px; height: 34px; border-radius: 10px; background: #2a2a2e; color: #9a9db0; display: grid; place-items: center; cursor: pointer; }
+.bt-re { border: 0; background: transparent; color: #6c6f84; cursor: pointer; padding: 0 0 0 6px; }
