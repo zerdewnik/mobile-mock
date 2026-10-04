@@ -4020,3 +4020,10 @@ input[type="date"].ef-input { color-scheme: dark; }
 .lt-card.ok .lt-st { color: #5cb36d; }
 .lt-card.bad .lt-st { color: #e06b5b; }
 .lt-card .an-opt { min-height: 46px; margin-bottom: 8px; padding: 10px 14px; font-size: 13.5px; }
+.tf-dd { height: auto; min-height: 44px; padding: 10px 12px 10px 14px; gap: 8px; }
+.tf-dd > span:first-child { white-space: normal; line-height: 1.35; flex: 1; text-align: left; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tf-dd em { font-style: normal; font-size: 11px; font-weight: 700; min-width: 22px; height: 22px; border-radius: 11px; background: var(--primary); color: #fff; display: grid; place-items: center; padding: 0 6px; flex-shrink: 0; }
+.tf-dd.open { border: 1px solid var(--primary); }
+.tf-dd:disabled { opacity: .5; cursor: default; }
+.tf-drop { margin-top: 8px; padding: 10px; border-radius: 12px; background: #141414; border: 1px solid #2e2e36; }
+.tf-drop .t3-all { margin: 0 0 8px; }

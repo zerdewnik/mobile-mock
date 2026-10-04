@@ -2327,14 +2327,12 @@
         <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
         <div class="ef-label">Пән <i>*</i></div>
         <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
-        <div class="ef-label">Модульдер <i>*</i> <button type="button" class="t3-all" id="tfAllM">барлығы</button></div>
-        <div class="tf-checks">${S.map((x) => `<button type="button" class="tf-check ${f.mods.has(x.t) ? "on" : ""}" data-tfm="${x.t.replace(/"/g, "&quot;")}">${check(f.mods.has(x.t))}<span>${x.t}</span></button>`).join("")}</div>
-        <div class="ef-label">Тақырыптар <i>*</i> ${topics.length ? `<button type="button" class="t3-all" id="tfAllT">барлығы</button>` : ""}</div>
-        <div class="tf-checks">${
-          topics.length
-            ? topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")
-            : `<div class="ga-csub">Алдымен модуль таңдаңыз</div>`
-        }</div>
+        <div class="ef-label">Модульдер <i>*</i></div>
+        <button type="button" class="ef-select tf-dd ${f.mods.size ? "" : "ph"} ${f.openM ? "open" : ""}" id="tfDdM"><span>${f.mods.size ? [...f.mods].join(", ") : "Модульдерді таңдаңыз"}</span>${f.mods.size ? `<em>${f.mods.size}</em>` : ""}${icon(f.openM ? "expand_less" : "expand_more")}</button>
+        ${f.openM ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllM">барлығын таңдау</button><div class="tf-checks">${S.map((x) => `<button type="button" class="tf-check ${f.mods.has(x.t) ? "on" : ""}" data-tfm="${x.t.replace(/"/g, "&quot;")}">${check(f.mods.has(x.t))}<span>${x.t}</span></button>`).join("")}</div></div>` : ""}
+        <div class="ef-label">Тақырыптар <i>*</i></div>
+        <button type="button" class="ef-select tf-dd ${f.topics.size ? "" : "ph"} ${f.openT ? "open" : ""}" id="tfDdT" ${f.mods.size ? "" : "disabled"}><span>${f.topics.size ? [...f.topics].join(", ") : f.mods.size ? "Тақырыптарды таңдаңыз" : "Алдымен модуль таңдаңыз"}</span>${f.topics.size ? `<em>${f.topics.size}</em>` : ""}${icon(f.openT ? "expand_less" : "expand_more")}</button>
+        ${f.openT && topics.length ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllT">барлығын таңдау</button><div class="tf-checks">${topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")}</div></div>` : ""}
         <div class="tf-row">
           <div><div class="ef-label">Тіркелу аяқталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfReg" value="${f.regTo}" /></div>
           <div><div class="ef-label">Турнир басталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfStart" value="${f.start}" /></div>
@@ -2367,7 +2365,9 @@
         } else f.mods.add(m);
         draw();
       }));
-      $("#tfAllM").onclick = () => (keep(), secs().forEach((x) => f.mods.add(x.t)), draw());
+      $("#tfAllM")?.addEventListener("click", () => (keep(), secs().forEach((x) => f.mods.add(x.t)), draw()));
+      $("#tfDdM").onclick = () => (keep(), (f.openM = !f.openM), (f.openT = false), draw());
+      $("#tfDdT").onclick = () => (keep(), (f.openT = !f.openT), (f.openM = false), draw());
       $("#tfAllT")?.addEventListener("click", () => (keep(), topics.forEach((x) => f.topics.add(x.t)), draw()));
       $$("[data-tft]").forEach((b) => (b.onclick = () => (keep(), f.topics.has(b.dataset.tft) ? f.topics.delete(b.dataset.tft) : f.topics.add(b.dataset.tft), draw())));
       $("#tfStart").onchange = () => (keep(), (f.dates = {}), draw());
