@@ -868,25 +868,26 @@
         .join("")}</div>`;
       const attempts = MOCK.entAttempts || [];
       if (tab === "history") {
-        if (!window.PROBNIK) {
-          loadProbnik().then(() => paintStack());
-          return `${head}<div class="empty">Жүктелуде…</div>`;
-        }
-        const list = mockAttempts();
-        list.forEach((x) => attemptSubjects(x));
-        const profNames = (x) => x.keys.filter((k) => !(k in ENT_MIN)).map((k) => window.PROBNIK.subjects[k].title).join(", ");
-        return `${head}<div class="list-pad" style="padding-top:16px">${
-          list
-            .map(
-              (x, i) => `
-          <button type="button" class="mt-card hist-card" data-hatt="${i}">
-            <div class="mt-card-top"><b>Пробный ЕНТ: ${profNames(x)}</b><span class="mt-badge">Тапсырды</span></div>
-            <div class="mt-date">${x.date} · ${x.variant}-нұсқа</div>
-            <div class="mt-nums"><div><small>Балл</small><b>${x.total}/140</b></div><div><small>Пайыз</small><b>${Math.round((x.total / 140) * 100)}%</b></div></div>
-          </button>`
-            )
-            .join("") || `<div class="empty">Әзірге пробный ЕНТ тапсырылмаған</div>`
-        }</div>`;
+        const ents = MOCK.entAttempts.length + (MOCK.entSeeded ? 0 : 2);
+        return `${head}<div class="list-pad cl-list hist-list" style="padding-top:16px">
+          <button type="button" class="hist-row ent" data-hist="ent">
+            <span class="hist-ico">${icon("workspace_premium", "material-icons-outlined")}</span>
+            <span style="flex:1;min-width:0"><b>Пробный ЕНТ</b><small>${ents} ${plural(ents, "тапсыру", "тапсыру", "тапсыру")} · разбор және сертификат</small></span>
+            ${icon("chevron_right")}
+          </button>
+          <div class="t3-sec" style="margin:16px 2px 10px">Пәндер</div>
+          ${MOCK.myCourses
+            .map((c) => {
+              const done = courseTests(c).filter((x) => x.done);
+              const avg = done.length ? Math.round(done.reduce((t, x) => t + x.score, 0) / done.length) : null;
+              return `<button type="button" class="hist-row" data-hist="${c.id}">
+                <div class="cl-poster">${posterHtml(c.poster, "sq")}</div>
+                <span style="flex:1;min-width:0"><b>${c.title}</b><small>${done.length} ${plural(done.length, "тест", "теста", "тестов")} сдано${avg != null ? ` · средний ${avg}%` : ""}</small></span>
+                ${icon("chevron_right")}
+              </button>`;
+            })
+            .join("")}
+        </div>`;
       }
       if (tab === "stats") {
         const best = attempts.reduce((m, a) => Math.max(m, a.total), 0);
@@ -1916,7 +1917,7 @@
     { name: "HARD", n: 3, pts: 3, cls: "hard" },
   ];
   const DUEL_MAX = DUEL_ROUNDS.reduce((t, r) => t + r.n * r.pts, 0);
-  const stageName = (n) => ({ 8: "1/8 финал", 4: "1/4 финал", 2: "Жартылай финал", 1: "Финал" })[n] || `${n * 2} қатысушы`;
+  const stageName = (n) => ({ 16: "1/16 финал", 8: "1/8 финал", 4: "1/4 финал", 2: "Жартылай финал", 1: "Финал" })[n] || `${n * 2} қатысушы`;
   const firstName = (p) => (!p ? "—" : p.me ? "Сен" : p.name.split(" ")[0]);
 
   function simMatch(m) {
@@ -2045,6 +2046,10 @@
   const isReg = (T) => T.participants.some((p) => p.me);
   /** Кезеңдер кестесі: басталу күнінен әр кезең stageDays күн */
   function tourStages(T) {
+    if (T.stageDates && !T.size) {
+      const all = [16, 8, 4, 2, 1].filter((x) => x <= (T.firstStage || 8));
+      return all.map((m, k) => ({ name: stageName(m), date: new Date(T.stageDates[k]) }));
+    }
     let n = T.size || 2;
     if (!T.size) {
       n = 2;
@@ -2215,7 +2220,7 @@
                 })
                 .join("")}
             </div>
-            <div class="ga-csub" style="margin-top:8px">Әр кезең ${STAGE_DAYS[T.stageDays]}. Жұп осы уақыт ішінде ойнамаса — жоғары рейтингтегі оқушы өтеді.</div>
+            <div class="ga-csub" style="margin-top:8px">${T.stageDates ? "Әр кезеңнің уақытын куратор белгіледі." : `Әр кезең ${STAGE_DAYS[T.stageDays]}.`} Жұп осы уақыт ішінде ойнамаса — жоғары рейтингтегі оқушы өтеді.</div>
           </div>
           ${
             T.rounds
@@ -2284,7 +2289,6 @@
     pushScreen(
       "Турнирлер",
       () => `<div class="list-pad tour">
-        <button type="button" class="btn3d" id="tNew" style="margin:0 0 14px">${icon("add")}Турнир құру</button>
         ${tourSegHtml(tournaments(), true)}
       </div>`,
       () => {
@@ -2292,17 +2296,27 @@
         bindTourSeg(paintStack);
         $$("[data-tour]").forEach((b) => (b.onclick = () => openTournament(tournaments().find((t) => t.id === Number(b.dataset.tour)), { staff: true })));
       },
-      { right: "<span></span>" }
+      { right: `<button type="button" class="appbar-add" id="tNew" title="Турнир құру">${icon("add")}</button>` }
     );
   }
 
   function openTourForm() {
-    const g0 = MOCK.groups[0];
-    const f = { title: "", groups: new Set([g0.id]), courseId: g0.courseId, module: 0, topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", stageDays: 1 };
-    const sections = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
+    const g0 = visibleGroups()[0] || MOCK.groups[0];
+    const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const STAGES = [16, 8, 4, 2, 1]; // жұп саны: 1/16, 1/8, 1/4, жартылай, финал
+    const f = { title: "", groups: new Set([g0.id]), courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", first: 8, dates: {} };
+    const secs = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
+    const stageList = () => STAGES.filter((n) => n <= f.first);
+    const stageDate = (n, k) => {
+      if (f.dates[n]) return f.dates[n];
+      const d = new Date(f.start);
+      d.setDate(d.getDate() + k);
+      return iso2(d);
+    };
+    const check = (on) => icon(on ? "check_box" : "check_box_outline_blank");
     const draw = () => {
-      const secs = sections();
-      const sec = secs[f.module] || secs[0];
+      const S = secs();
+      const topics = S.filter((x) => f.mods.has(x.t)).flatMap((x) => x.topics.map((t) => ({ t, m: x.t })));
       openSheet(
         `
         <div class="sheet-handle"></div>
@@ -2311,19 +2325,27 @@
         <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
         <div class="ef-label">Қатысатын топтар <i>*</i></div>
         <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
-        <div class="ef-label">Пән</div>
-        <div class="ef-input t3-ro">${COURSE_TITLE[f.courseId]} <small>(топтың курсы)</small></div>
-        <div class="ef-label">Модуль <i>*</i></div>
-        <label class="ef-select"><span id="tfModL">${sec?.t || "—"}</span><select id="tfMod">${secs.map((s, i) => `<option value="${i}" ${i === f.module ? "selected" : ""}>${s.t}</option>`).join("")}</select>${icon("expand_more")}</label>
-        <div class="ef-label">Тақырыптар <i>*</i> <button type="button" class="t3-all" id="tfAll">барлығы</button></div>
-        <div class="ent-chips">${(sec?.topics || []).map((t) => `<button type="button" class="ent-chip ${f.topics.has(t) ? "on" : ""}" style="--c:var(--primary)" data-tft="${t.replace(/"/g, "&quot;")}">${t}</button>`).join("")}</div>
-        <div class="ef-label">Тіркелу аяқталады <i>*</i></div>
-        <input class="ef-input" type="datetime-local" id="tfReg" value="${f.regTo}" />
-        <div class="ef-label">Турнир басталады (1/8) <i>*</i></div>
-        <input class="ef-input" type="datetime-local" id="tfStart" value="${f.start}" />
-        <div class="ef-label">Әр кезең ұзақтығы</div>
-        <div class="ent-chips">${[1, 2, 3].map((d) => `<button type="button" class="ent-chip ${f.stageDays === d ? "on" : ""}" style="--c:var(--primary)" data-tfd="${d}">${STAGE_DAYS[d]}</button>`).join("")}</div>
-        <div class="t3-note">${icon("info", "material-icons-outlined")}Формат: олимпиялық жүйе — жұптар, жеңген келесі кезеңге өтеді. Жекпе-жек: 5×1 + 5×2 + 3×3 ұпай.</div>
+        <div class="ef-label">Пән <i>*</i></div>
+        <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
+        <div class="ef-label">Модульдер <i>*</i> <button type="button" class="t3-all" id="tfAllM">барлығы</button></div>
+        <div class="tf-checks">${S.map((x) => `<button type="button" class="tf-check ${f.mods.has(x.t) ? "on" : ""}" data-tfm="${x.t.replace(/"/g, "&quot;")}">${check(f.mods.has(x.t))}<span>${x.t}</span></button>`).join("")}</div>
+        <div class="ef-label">Тақырыптар <i>*</i> ${topics.length ? `<button type="button" class="t3-all" id="tfAllT">барлығы</button>` : ""}</div>
+        <div class="tf-checks">${
+          topics.length
+            ? topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")
+            : `<div class="ga-csub">Алдымен модуль таңдаңыз</div>`
+        }</div>
+        <div class="tf-row">
+          <div><div class="ef-label">Тіркелу аяқталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfReg" value="${f.regTo}" /></div>
+          <div><div class="ef-label">Турнир басталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfStart" value="${f.start}" /></div>
+        </div>
+        <div class="ef-label">Бастапқы кезең</div>
+        <div class="ent-chips">${[16, 8, 4, 2].map((n) => `<button type="button" class="ent-chip ${f.first === n ? "on" : ""}" style="--c:var(--primary)" data-tff="${n}">${stageName(n)} <small>· ${n * 2} адам</small></button>`).join("")}</div>
+        <div class="ef-label">Кезеңдердің басталу уақыты</div>
+        <div class="tf-stages">${stageList()
+          .map((n, k) => `<div class="tf-stage"><span><b>${stageName(n)}</b><small>${n} жұп</small></span><input class="ef-input" type="datetime-local" data-tfd="${n}" value="${stageDate(n, k)}" ${k === 0 ? "disabled" : ""} /></div>`)
+          .join("")}</div>
+        <div class="t3-note">${icon("info", "material-icons-outlined")}Бірінші кезең «Турнир басталады» уақытында. Тіркелгендер көп болса — артығы кезекке, аз болса — BYE (автоматты өту).</div>
         <button type="button" class="ef-submit" id="tfCreate">Турнирді жариялау</button>`,
         { tall: true }
       );
@@ -2331,28 +2353,44 @@
         f.title = $("#tfTitle").value;
         f.regTo = $("#tfReg").value;
         f.start = $("#tfStart").value;
+        $$("[data-tfd]").forEach((i) => !i.disabled && (f.dates[i.dataset.tfd] = i.value));
       };
       $("#tfClose").onclick = closeSheet;
       $$("[data-tfg]").forEach((b) => (b.onclick = () => (keep(), f.groups.has(+b.dataset.tfg) ? f.groups.delete(+b.dataset.tfg) : f.groups.add(+b.dataset.tfg), draw())));
-      $("#tfMod").onchange = (e) => (keep(), (f.module = +e.target.value), f.topics.clear(), draw());
-      $("#tfAll").onclick = () => (keep(), (sec?.topics || []).forEach((t) => f.topics.add(t)), draw());
+      $("#tfCourse").onchange = (e) => (keep(), (f.courseId = +e.target.value), f.mods.clear(), f.topics.clear(), draw());
+      $$("[data-tfm]").forEach((b) => (b.onclick = () => {
+        keep();
+        const m = b.dataset.tfm;
+        if (f.mods.has(m)) {
+          f.mods.delete(m);
+          (secs().find((x) => x.t === m)?.topics || []).forEach((t) => f.topics.delete(t));
+        } else f.mods.add(m);
+        draw();
+      }));
+      $("#tfAllM").onclick = () => (keep(), secs().forEach((x) => f.mods.add(x.t)), draw());
+      $("#tfAllT")?.addEventListener("click", () => (keep(), topics.forEach((x) => f.topics.add(x.t)), draw()));
       $$("[data-tft]").forEach((b) => (b.onclick = () => (keep(), f.topics.has(b.dataset.tft) ? f.topics.delete(b.dataset.tft) : f.topics.add(b.dataset.tft), draw())));
-      $$("[data-tfd]").forEach((b) => (b.onclick = () => (keep(), (f.stageDays = +b.dataset.tfd), draw())));
+      $("#tfStart").onchange = () => (keep(), (f.dates = {}), draw());
+      $$("[data-tff]").forEach((b) => (b.onclick = () => (keep(), (f.first = +b.dataset.tff), draw())));
       $("#tfCreate").onclick = () => {
         keep();
-        if (!f.title.trim() || !f.groups.size || !f.topics.size || !f.regTo || !f.start) return toast("Барлық міндетті өрістерді толтырыңыз", "err");
+        if (!f.title.trim() || !f.groups.size || !f.mods.size || !f.topics.size || !f.regTo || !f.start) return toast("Барлық міндетті өрістерді толтырыңыз", "err");
         if (new Date(f.start) <= new Date(f.regTo)) return toast("Турнир тіркелу аяқталғаннан кейін басталуы керек", "err");
+        const dates = stageList().map((n, k) => stageDate(n, k));
+        if (dates.some((d, k) => k && new Date(d) <= new Date(dates[k - 1]))) return toast("Әр кезең алдыңғысынан кейін басталуы керек", "err");
         tournaments().unshift({
           id: nextId(),
           title: f.title.trim(),
-          organizer: "Диана · куратор",
+          organizer: `${myName()} · ${state.staffRole === "head" ? "бас куратор" : "куратор"}`,
           groups: [...f.groups],
           courseId: f.courseId,
-          module: sec.t,
+          module: [...f.mods].join(" · "),
           topics: [...f.topics],
           regTo: f.regTo,
           start: f.start,
-          stageDays: f.stageDays,
+          stageDays: 1,
+          firstStage: f.first,
+          stageDates: dates,
           participants: [],
           status: "registration",
         });
@@ -2362,169 +2400,6 @@
       };
     };
     draw();
-  }
-
-  async function duelQuestions(subject, seed) {
-    const pick = (arr, n, k) => {
-      const a = [...arr].sort((x, y) => rnd(seed, k, x.id.length + x.stem.length) - rnd(seed, k, y.id.length + y.stem.length));
-      return a.slice(0, n);
-    };
-    try {
-      await loadProbnik();
-      const P = window.PROBNIK.subjects[subject];
-      const all = Object.values(P.variants).flat().filter((q) => q.type === "single_choice" && !q.ctx && q.options.filter((o) => o.correct).length === 1);
-      const easy = all.filter((q) => (q.n || 0) <= 12), mid = all.filter((q) => (q.n || 0) > 12 && q.n <= 25), hard = all.filter((q) => (q.n || 0) > 25);
-      const e = pick(easy.length >= 5 ? easy : all, 5, 1), m = pick(mid.length >= 5 ? mid : all, 5, 2), h = pick(hard.length >= 3 ? hard : all, 3, 3);
-      return [...e, ...m, ...h].map((q) => ({ stem: q.stem, options: q.options.map((o) => o.content), answer: q.options.findIndex((o) => o.correct) }));
-    } catch {
-      const bank = Object.values(MOCK.practice).flatMap((p) => p.questions);
-      return Array.from({ length: 13 }, (_, i) => {
-        const q = bank[i % bank.length];
-        return { stem: q.q, options: q.options, answer: q.answer };
-      });
-    }
-  }
-
-  async function startDuel({ opp, subject, subjectTitle, match, T }) {
-    toast("Сұрақтар дайындалуда…");
-    const seed = Date.now() % 100000;
-    const qs = await duelQuestions(subject, seed);
-    const plan = DUEL_ROUNDS.flatMap((r, ri) => Array.from({ length: r.n }, () => ({ ri, pts: r.pts })));
-    const D = { i: 0, my: 0, op: 0, myT: 0, opT: 0, pick: null, reveal: false, splash: 0, done: false, left: 20, res: [] };
-    const me = { name: "Сен", initials: MOCK.me.initials, color: "#5B6EC2" };
-    let timer = null;
-    const oppCorrect = (i) => rnd(opp.id, seed, i) < [0.78, 0.6, 0.42][plan[i].ri] * (0.65 + (opp.score || 0) / 220);
-    const answer = (k) => {
-      if (D.reveal) return;
-      clearInterval(timer);
-      const q = qs[D.i], p = plan[D.i];
-      D.pick = k;
-      D.reveal = true;
-      const ok = k === q.answer;
-      const opOk = oppCorrect(D.i);
-      const opTime = 4 + rnd(opp.id, seed, D.i + 50) * 13;
-      D.myT += 20 - D.left;
-      D.opT += opTime;
-      if (ok) D.my += p.pts;
-      if (opOk) D.op += p.pts;
-      D.res.push({ ok, opOk, ri: p.ri });
-      paintStack();
-      setTimeout(() => {
-        D.reveal = false;
-        D.pick = null;
-        D.i += 1;
-        if (D.i >= plan.length) finish();
-        else if (plan[D.i].ri !== plan[D.i - 1].ri) D.splash = plan[D.i].ri;
-        else startTimer();
-        paintStack();
-      }, 1100);
-    };
-    const startTimer = () => {
-      D.left = 20;
-      clearInterval(timer);
-      timer = setInterval(() => {
-        const el = $("#duTime");
-        if (!el) return clearInterval(timer);
-        D.left -= 1;
-        el.textContent = D.left;
-        $("#duTimeBar").style.width = `${(D.left / 20) * 100}%`;
-        if (D.left <= 0) answer(-1);
-      }, 1000);
-    };
-    const finish = () => {
-      clearInterval(timer);
-      D.done = true;
-      const win = D.my > D.op || (D.my === D.op && D.myT <= D.opT);
-      D.win = win;
-      (MOCK.duels = MOCK.duels || []).unshift({ opp, my: D.my, op: D.op, win, subjectTitle, date: dmy(new Date()) });
-      if (match) {
-        const meA = match.a.me;
-        match.sa = meA ? D.my : D.op;
-        match.sb = meA ? D.op : D.my;
-        if (match.sa === match.sb) meA === win ? (match.sb -= 0.5) : (match.sa -= 0.5);
-        match.w = win ? (meA ? match.a : match.b) : meA ? match.b : match.a;
-        match.sa = Math.ceil(match.sa);
-        match.sb = Math.ceil(match.sb);
-        tourAdvance(T);
-      }
-    };
-    const scoreBar = () => `
-      <div class="du-top">
-        <div class="du-side">${avatarHtml(me)}<div><b>Сен</b><span class="du-pts">${D.my}</span></div></div>
-        <div class="du-mid"><span class="du-round ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].cls}">${plan[Math.min(D.i, plan.length - 1)].ri + 1}-раунд · ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].name}</span><small>${subjectTitle}</small></div>
-        <div class="du-side r"><div><b>${opp.name.split(" ")[0]}</b><span class="du-pts">${D.op}</span></div>${avatarHtml(opp)}</div>
-      </div>
-      <div class="du-dots">${plan.map((p, i) => {
-        const r = D.res[i];
-        return `<i class="${DUEL_ROUNDS[p.ri].cls} ${r ? (r.ok ? "ok" : "bad") : i === D.i ? "cur" : ""}"></i>`;
-      }).join("")}</div>`;
-    const build = () => {
-      if (D.done) {
-        const per = DUEL_ROUNDS.map((r, ri) => ({ r, my: D.res.filter((x) => x.ri === ri && x.ok).length * r.pts, op: D.res.filter((x) => x.ri === ri && x.opOk).length * r.pts }));
-        return `
-          <div class="du-res ${D.win ? "win" : "lose"}">
-            <div class="du-res-ico">${D.win ? `<img src="assets/tournament/belt.png" alt="" class="du-belt" />` : icon("sentiment_dissatisfied", "material-icons-outlined")}</div>
-            <div class="du-res-t">${D.win ? "Жеңіс!" : "Бұл жолы жеңіліс"}</div>
-            <div class="du-res-s">${avatarHtml(me)}<b>${D.my}</b><span>:</span><b>${D.op}</b>${avatarHtml(opp)}</div>
-            ${D.my === D.op ? `<div class="du-res-n">Ұпай тең — ${D.win ? "сен" : opp.name.split(" ")[0]} жылдамырақ жауап берді</div>` : ""}
-            ${match ? `<div class="du-res-n">${D.win ? "Сен келесі кезеңге өттің!" : "Турнир сен үшін аяқталды"}</div>` : ""}
-          </div>
-          <div class="list-pad">${per
-            .map((x, i) => `<div class="du-rr ${x.r.cls}"><span>${i + 1}-раунд · ${x.r.name}</span><b>${x.my} : ${x.op}</b></div>`)
-            .join("")}</div>`;
-      }
-      if (D.splash) {
-        const r = DUEL_ROUNDS[D.splash];
-        return `${scoreBar()}<div class="du-splash ${r.cls}"><div class="du-sp-n">${D.splash + 1}-раунд</div><div class="du-sp-t">${r.name}</div><div class="du-sp-s">${r.n} сұрақ · әр сұрақ ${r.pts} ұпай</div><button type="button" class="tr-play" id="duGo">Бастау</button></div>`;
-      }
-      const q = qs[D.i];
-      return `${scoreBar()}
-        <div class="du-timer"><i id="duTimeBar" style="width:${(D.left / 20) * 100}%"></i><span id="duTime">${D.left}</span></div>
-        <div class="du-q">
-          <div class="du-qn">Сұрақ ${D.i + 1} / ${plan.length} · +${plan[D.i].pts} ұпай</div>
-          <div class="tq-q">${md(q.stem)}</div>
-          ${q.options
-            .map((o, k) => {
-              let cls = "";
-              if (D.reveal && k === q.answer) cls = "ok";
-              else if (D.reveal && k === D.pick) cls = "bad";
-              return `<button type="button" class="pr-opt ${cls}" data-du="${k}"><span class="pr-radio"></span><span>${md(o)}</span></button>`;
-            })
-            .join("")}
-          ${D.reveal ? `<div class="du-op">${opp.name.split(" ")[0]}: ${D.res[D.res.length - 1].opOk ? `<span class="up">дұрыс жауап берді</span>` : `<span class="down">қателесті</span>`}</div>` : ""}
-        </div>`;
-    };
-    pushScreen(
-      "Жекпе-жек",
-      build,
-      () => {
-        renderMath($("#screenOverlay"));
-        $$("[data-du]").forEach((b) => (b.onclick = () => answer(Number(b.dataset.du))));
-        $("#duGo")?.addEventListener("click", () => {
-          D.splash = 0;
-          startTimer();
-          paintStack();
-        });
-        $("#duBack")?.addEventListener("click", () => {
-          state.navStack.pop();
-          paintStack();
-        });
-        $("#duAgain")?.addEventListener("click", () => {
-          state.navStack.pop();
-          startDuel({ opp, subject, subjectTitle });
-        });
-      },
-      {
-        screenCls: "duel",
-        footer: () =>
-          D.done
-            ? `<div class="sticky-foot rp-foot">${match ? "" : `<button type="button" class="rp-pdf" id="duAgain">${icon("replay")}Реванш</button>`}<button type="button" class="ef-submit" id="duBack" style="margin:0">${match ? "Турнирге оралу" : "Дайын"}</button></div>`
-            : "",
-      }
-    );
-    D.splash = 0;
-    paintStack();
-    startTimer();
   }
 
   function openDuelInvite() {
@@ -2729,6 +2604,12 @@
       };
     });
     $$("[data-hatt]").forEach((b) => (b.onclick = () => openAttemptReview(mockAttempts()[Number(b.dataset.hatt)])));
+    $$("[data-hist]").forEach((b) => {
+      b.onclick = () => {
+        if (b.dataset.hist === "ent") return openMockAttempts();
+        openSubjectTests(MOCK.myCourses.find((c) => c.id === Number(b.dataset.hist)));
+      };
+    });
     $$("[data-trainer]").forEach((btn) => {
       btn.onclick = () => openTrainerSubject(trainerList().find((x) => x.id === Number(btn.dataset.trainer)));
     });
@@ -3634,6 +3515,54 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         };
       },
       { screenCls: "ent-light" }
+    );
+  }
+
+  /** История → пән → тапсырылған тесттер → разбор */
+  function openSubjectTests(c) {
+    const done = courseTests(c).filter((x) => x.done).reverse();
+    pushScreen(
+      c.title,
+      () => `<div class="list-pad" style="padding-top:14px">${
+        done
+          .map(
+            (x, i) => `
+        <button type="button" class="hist-row" data-st="${i}">
+          ${kindIcon(x.kind)}
+          <span style="flex:1;min-width:0"><b>${x.title}</b><small>${x.section || ""}</small></span>
+          <b class="hist-sc ${x.score >= 80 ? "up" : x.score >= 60 ? "mid" : "down"}">${x.score}%</b>
+          ${icon("chevron_right")}
+        </button>`
+          )
+          .join("") || `<div class="empty">Бұл пән бойынша тест тапсырылмаған</div>`
+      }</div>`,
+      () => $$("[data-st]").forEach((b) => (b.onclick = () => openLessonTestReview(c, done[Number(b.dataset.st)]))),
+      { right: "<span></span>" }
+    );
+  }
+  function openLessonTestReview(c, x) {
+    const bank = MOCK.lessonTests[c.id] || MOCK.practice[c.id]?.questions || MOCK.practice[10].questions;
+    const H = (t) => (/<span class=/.test(t) ? t : md(t));
+    const qs = bank.map((q) => ({ stem: q.q, options: q.options, answer: q.answer, explain: q.explain || "" }));
+    const okCount = Math.round((x.score / 100) * qs.length);
+    const picks = qs.map((q, i) => (i < okCount ? q.answer : (q.answer + 1) % q.options.length));
+    pushScreen(
+      x.title,
+      () => `
+        <div class="er-head" style="padding-top:16px"><div class="er-total"><b>${x.score}</b> из 100</div><div class="er-sub">${c.title} · дұрыс ${okCount} / ${qs.length}</div></div>
+        <div class="an-body" style="padding-top:8px">${qs
+          .map((q, i) => {
+            const ok = picks[i] === q.answer;
+            return `<div class="lt-card ${ok ? "ok" : "bad"}">
+              <div class="rv-top"><span class="rv-n">${i + 1}</span><span class="lt-st">${ok ? "Дұрыс" : "Қате"}</span></div>
+              <div class="an-q">${H(q.stem)}</div>
+              ${q.options.map((o, k) => `<div class="an-opt ${k === q.answer ? "ok" : k === picks[i] ? "bad" : ""}"><span>${H(o)}</span>${k === picks[i] ? icon(ok ? "check_circle" : "cancel") : ""}</div>`).join("")}
+              <div class="an-ex ${ok ? "ok" : "bad"}"><b>${ok ? "Дұрыс!" : `Дұрыс жауабы: ${H(q.options[q.answer])}`}</b>${q.explain ? `<div class="an-note">${md(q.explain)}</div>` : ""}</div>
+            </div>`;
+          })
+          .join("")}</div>`,
+      () => renderMath($("#screenOverlay")),
+      { right: "<span></span>", screenCls: "an-dark" }
     );
   }
 
