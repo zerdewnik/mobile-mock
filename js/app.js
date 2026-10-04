@@ -2304,13 +2304,13 @@
     const g0 = visibleGroups()[0] || MOCK.groups[0];
     const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     const STAGES = [16, 8, 4, 2, 1]; // жұп саны: 1/16, 1/8, 1/4, жартылай, финал
-    const f = { title: "", groups: new Set([g0.id]), courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", first: 8, dates: {} };
+    const f = { title: "", groups: new Set([g0.id]), courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", first: 8, dates: {}, gap: 1 };
     const secs = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
     const stageList = () => STAGES.filter((n) => n <= f.first);
+    const pool = () => MOCK.groups.filter((g) => f.groups.has(g.id)).reduce((t, g) => t + g.studentsCount, 0);
     const stageDate = (n, k) => {
-      if (f.dates[n]) return f.dates[n];
       const d = new Date(f.start);
-      d.setDate(d.getDate() + k);
+      d.setDate(d.getDate() + k * f.gap);
       return iso2(d);
     };
     const check = (on) => icon(on ? "check_box" : "check_box_outline_blank");
@@ -2323,8 +2323,15 @@
         <div class="ef-head"><span>Жаңа турнир</span><button type="button" id="tfClose">${icon("close")}</button></div>
         <div class="ef-label">Атауы <i>*</i></div>
         <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
+        <div class="tf-row3">
+          <div><div class="ef-label">Кезең саны <i>*</i></div>
+            <div class="tf-step"><button type="button" data-tfs="-1" ${f.first <= 2 ? "disabled" : ""}>${icon("remove")}</button><b>${Math.log2(f.first) + 1}</b><button type="button" data-tfs="1" ${f.first >= 16 ? "disabled" : ""}>${icon("add")}</button></div></div>
+          <div><div class="ef-label">Қатысушылар</div><div class="tf-cap"><b>${f.first * 2}</b> адам</div></div>
+        </div>
+        <div class="tf-sum">${stageList().map((n) => stageName(n)).join(" → ")}</div>
         <div class="ef-label">Қатысатын топтар <i>*</i></div>
         <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
+        <div class="tf-sum ${pool() < f.first * 2 ? "warn" : ""}">${icon("groups", "material-icons-outlined")}Таңдалған топтарда ${pool()} оқушы${pool() < f.first * 2 ? ` — ${f.first * 2} орынға жетпейді, бос орындар BYE болады` : pool() > f.first * 2 ? ` — алғашқы ${f.first * 2} тіркелген қатысады` : ""}</div>
         <div class="ef-label">Пән <i>*</i></div>
         <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
         <div class="ef-label">Модульдер <i>*</i></div>
@@ -2337,13 +2344,9 @@
           <div><div class="ef-label">Тіркелу аяқталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfReg" value="${f.regTo}" /></div>
           <div><div class="ef-label">Турнир басталады <i>*</i></div><input class="ef-input" type="datetime-local" id="tfStart" value="${f.start}" /></div>
         </div>
-        <div class="ef-label">Бастапқы кезең</div>
-        <div class="ent-chips">${[16, 8, 4, 2].map((n) => `<button type="button" class="ent-chip ${f.first === n ? "on" : ""}" style="--c:var(--primary)" data-tff="${n}">${stageName(n)} <small>· ${n * 2} адам</small></button>`).join("")}</div>
-        <div class="ef-label">Кезеңдердің басталу уақыты</div>
-        <div class="tf-stages">${stageList()
-          .map((n, k) => `<div class="tf-stage"><span><b>${stageName(n)}</b><small>${n} жұп</small></span><input class="ef-input" type="datetime-local" data-tfd="${n}" value="${stageDate(n, k)}" ${k === 0 ? "disabled" : ""} /></div>`)
-          .join("")}</div>
-        <div class="t3-note">${icon("info", "material-icons-outlined")}Бірінші кезең «Турнир басталады» уақытында. Тіркелгендер көп болса — артығы кезекке, аз болса — BYE (автоматты өту).</div>
+        <div class="ef-label">Кезеңдер аралығы</div>
+        <div class="ent-chips">${[1, 2, 3, 7].map((d) => `<button type="button" class="ent-chip ${f.gap === d ? "on" : ""}" style="--c:var(--primary)" data-tfgap="${d}">${d === 7 ? "1 апта" : `${d} күн`}</button>`).join("")}</div>
+        <div class="tf-sum">${icon("event", "material-icons-outlined")}${stageList().map((n, k) => { const d = new Date(stageDate(n, k)); return `${stageName(n)} — ${d.getDate()} ${KZ_MON_SHORT[d.getMonth()]}`; }).join(" · ")}</div>
         <button type="button" class="ef-submit" id="tfCreate">Турнирді жариялау</button>`,
         { tall: true }
       );
@@ -2351,7 +2354,6 @@
         f.title = $("#tfTitle").value;
         f.regTo = $("#tfReg").value;
         f.start = $("#tfStart").value;
-        $$("[data-tfd]").forEach((i) => !i.disabled && (f.dates[i.dataset.tfd] = i.value));
       };
       $("#tfClose").onclick = closeSheet;
       $$("[data-tfg]").forEach((b) => (b.onclick = () => (keep(), f.groups.has(+b.dataset.tfg) ? f.groups.delete(+b.dataset.tfg) : f.groups.add(+b.dataset.tfg), draw())));
@@ -2370,14 +2372,14 @@
       $("#tfDdT").onclick = () => (keep(), (f.openT = !f.openT), (f.openM = false), draw());
       $("#tfAllT")?.addEventListener("click", () => (keep(), topics.forEach((x) => f.topics.add(x.t)), draw()));
       $$("[data-tft]").forEach((b) => (b.onclick = () => (keep(), f.topics.has(b.dataset.tft) ? f.topics.delete(b.dataset.tft) : f.topics.add(b.dataset.tft), draw())));
-      $("#tfStart").onchange = () => (keep(), (f.dates = {}), draw());
-      $$("[data-tff]").forEach((b) => (b.onclick = () => (keep(), (f.first = +b.dataset.tff), draw())));
+      $("#tfStart").onchange = () => (keep(), draw());
+      $$("[data-tfs]").forEach((b) => (b.onclick = () => (keep(), (f.first = Math.max(2, Math.min(16, b.dataset.tfs === "1" ? f.first * 2 : f.first / 2))), draw())));
+      $$("[data-tfgap]").forEach((b) => (b.onclick = () => (keep(), (f.gap = +b.dataset.tfgap), draw())));
       $("#tfCreate").onclick = () => {
         keep();
         if (!f.title.trim() || !f.groups.size || !f.mods.size || !f.topics.size || !f.regTo || !f.start) return toast("Барлық міндетті өрістерді толтырыңыз", "err");
         if (new Date(f.start) <= new Date(f.regTo)) return toast("Турнир тіркелу аяқталғаннан кейін басталуы керек", "err");
         const dates = stageList().map((n, k) => stageDate(n, k));
-        if (dates.some((d, k) => k && new Date(d) <= new Date(dates[k - 1]))) return toast("Әр кезең алдыңғысынан кейін басталуы керек", "err");
         tournaments().unshift({
           id: nextId(),
           title: f.title.trim(),
