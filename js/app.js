@@ -955,30 +955,51 @@
       const win = duels.filter((d) => d.win).length;
       let streak = 0;
       for (const d of duels) { if (d.win) streak++; else break; }
+      const seg = state.btSeg || "play";
+      const myG = MOCK.groups[0];
+      const rival = B.rival;
+      const head = `
+        <div class="bt-stats">
+          <div><b>${B.rating}</b><small>Батл рейтингі</small></div>
+          <div><b>${win}<i>/</i>${duels.length - win}</b><small>Жеңіс / жеңіліс</small></div>
+          <div><b>${streak ? "🔥" + streak : "—"}</b><small>Серия</small></div>
+        </div>
+        <div class="seg-tabs bt-seg">
+          <button type="button" data-btseg="play" class="${seg === "play" ? "on" : ""}">Ойнау${B.incoming.length ? ` · ${B.incoming.length}` : ""}</button>
+          <button type="button" data-btseg="hist" class="${seg === "hist" ? "on" : ""}">Тарих · ${duels.length}</button>
+        </div>`;
+      if (seg === "hist")
+        return `<div class="list-pad tour" style="padding-top:12px">${head}
+          ${duels.length ? duels.map((d, i) => `
+            <div class="bt-h ${d.win ? "w" : "l"}">
+              <span class="bt-h-res">${d.win ? "Жеңіс" : "Жеңіліс"}</span>
+              ${avatarHtml(d.opp)}
+              <div style="flex:1;min-width:0"><b>${d.opp.name}</b><small>${d.opp.groupName ? `${d.opp.groupName} · ` : ""}${d.subjectTitle} · ${d.date}</small></div>
+              <span class="bt-h-sc">${d.my}<i>:</i>${d.op}</span>
+              <button type="button" class="bt-re" data-btre="${i}" title="Реванш">${icon("replay")}</button>
+            </div>`).join("") : `<div class="empty">Әзірге батл болмады</div>`}
+        </div>`;
       return `
-        <div class="list-pad tour" style="padding-top:12px">
-          <div class="bt-stats">
-            <div><b>${B.rating}</b><small>Батл рейтингі</small></div>
-            <div><b>${win}<i>/</i>${duels.length - win}</b><small>Жеңіс / жеңіліс</small></div>
-            <div><b>${streak ? "🔥" + streak : "—"}</b><small>Серия</small></div>
+        <div class="list-pad tour" style="padding-top:12px">${head}
+          <div class="bt-gvg">
+            <div class="bt-gvg-h">${icon("groups", "material-icons-outlined")}Топтар батлы · осы апта</div>
+            <div class="bt-gvg-row">
+              <div class="bt-gvg-t me"><b>${myG.name}</b><span>${rival.myPts}</span></div>
+              <div class="bt-gvg-vs">VS</div>
+              <div class="bt-gvg-t"><b>${rival.group.name}</b><span>${rival.theirPts}</span></div>
+            </div>
+            <div class="bt-gvg-bar"><i style="width:${(rival.myPts / Math.max(1, rival.myPts + rival.theirPts)) * 100}%"></i></div>
+            <div class="bt-gvg-s">Басқа топтан қарсыласты жеңсең — тобыңа +1 ұпай</div>
           </div>
-          <div class="bt-play">
-            <button type="button" class="bt-btn rand" id="btRandom">${icon("shuffle")}<b>Кездейсоқ қарсылас</b><small>Топтан деңгейі жақын оқушы</small></button>
-            <button type="button" class="bt-btn friend" id="duelInvite">${icon("person_add", "material-icons-outlined")}<b>Досты шақыру</b><small>Сыныптасты таңда</small></button>
+          <div class="bt-play3">
+            <button type="button" class="bt-btn rand" id="btRandom">${icon("shuffle")}<b>Өз тобымнан</b><small>Деңгейі жақын сыныптас</small></button>
+            <button type="button" class="bt-btn other" id="btOther">${icon("public")}<b>Басқа топтан</b><small>${rival.group.name} тобынан кездейсоқ</small></button>
+            <button type="button" class="bt-btn friend wide" id="duelInvite">${icon("person_add", "material-icons-outlined")}<b>Досты шақыру</b><small>Сыныптасты таңдап, батлға шақыр</small></button>
           </div>
           ${B.incoming.length ? `<div class="t3-sec">Саған шақыру · ${B.incoming.length}</div>${B.incoming.map((c, i) => `
             <div class="bt-inv">${avatarHtml(c.opp)}<div style="flex:1;min-width:0"><b>${c.opp.name}</b><small>${c.subjectTitle} · ${c.left} қалды</small></div>
               <button type="button" class="bt-no" data-btno="${i}">${icon("close")}</button><button type="button" class="bt-yes" data-btyes="${i}">Қабылдау</button></div>`).join("")}` : ""}
           ${B.outgoing.length ? `<div class="t3-sec">Жауап күтуде</div>${B.outgoing.map((c) => `<div class="bt-inv wait">${avatarHtml(c.opp)}<div style="flex:1;min-width:0"><b>${c.opp.name}</b><small>${c.subjectTitle} · сен ${c.my} ұпай жинадың · ${c.left} қалды</small></div>${icon("hourglass_top", "material-icons-outlined")}</div>`).join("")}` : ""}
-          <div class="t3-panel">
-            <div class="ga-ctitle">Ережелер</div>
-            <div class="tr-rules">${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} сұрақ × ${r.pts} ұпай</span></div>`).join("")}</div>
-            <div class="ga-csub" style="margin-top:10px">Кезекпен ойналады: шақыруға 24 сағат ішінде жауап беру керек. Жеңіс +15 рейтинг, жеңіліс −10.</div>
-          </div>
-          <div class="t3-panel">
-            <div class="ga-ctitle">Менің батлдарым</div>
-            ${duels.map((d, i) => `<div class="tr-hist">${avatarHtml(d.opp)}<div style="flex:1;min-width:0"><b>${d.opp.name}</b><small>${d.subjectTitle} · ${d.date}</small></div><span class="${d.win ? "up" : "down"}">${d.my} : ${d.op}</span><button type="button" class="bt-re" data-btre="${i}" title="Реванш">${icon("replay")}</button></div>`).join("") || `<div class="ga-csub" style="margin-top:8px">Әзірге батл болмады</div>`}
-          </div>
         </div>`;
     }
     if (id === "analytics") {
@@ -2094,6 +2115,49 @@
     if (!p) return `<span class="du-av ${cls}" style="background:#34343c">—</span>`;
     return `<span class="du-av ${cls}" style="background:${p.color}">${p.initials}</span>`;
   }
+  /** Турнир беті басы: баннерлер (1–3) болса — карусель, болмаса — жинақы тақырып */
+  function tourHeroHtml(T) {
+    const bs = T.banners || [];
+    if (bs.length)
+      return `<div class="th-banners">
+        <div class="th-track" id="thTrack">${bs.map((b) => `<div class="th-slide" style="background-image:linear-gradient(0deg,rgba(0,0,0,.75),rgba(0,0,0,.05) 60%),url(${b})"></div>`).join("")}</div>
+        <div class="th-copy"><b>${T.title}</b><small>${COURSE_TITLE[T.courseId]} · ${T_FORMATS[T.format || "knockout"].name}</small></div>
+        ${bs.length > 1 ? `<div class="th-dots" id="thDots">${bs.map((_, i) => `<i class="${i ? "" : "on"}"></i>`).join("")}</div>` : ""}
+      </div>`;
+    return `<div class="th-plain">
+      <img src="assets/tournament/belt_icon.png" alt="" />
+      <div><b>${T.title}</b><small>${COURSE_TITLE[T.courseId]} · ${T_FORMATS[T.format || "knockout"].name}</small></div>
+    </div>`;
+  }
+  function bindHeroSlides() {
+    const tr = $("#thTrack");
+    if (!tr) return;
+    bindSwipe(tr, $("#thDots"));
+  }
+  function tourRules(T, register) {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="ex-title">${register ? "Тіркелмес бұрын" : "Турнир ережесі"}</div>
+      <div class="ex-block"><div class="ex-l">${icon("sports_kabaddi")}Жекпе-жек</div>
+        <div class="tr-rules">${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} × ${r.pts} ұпай</span></div>`).join("")}</div>
+      </div>
+      <div class="ex-block"><ol>
+        <li>Сұрақтар тек турнир тақырыптарынан, әр сұраққа 20 секунд</li>
+        <li>${T.format === "arena" ? "Арена уақыты ішінде қанша көп ойнасаң — сонша ұпай; 3 жеңістен бастап серия 🔥" : T.format === "swiss" ? `${T.rounds_n || 5} раунд, ешкім шықпайды, ұпайы тең оқушылар кездеседі` : "Жеңілген турнирден шығады, жеңген келесі кезеңге өтеді"}</li>
+        <li>Кезең уақытында ойнамасаң — қарсылас өтеді (екеуі де ойнамаса — рейтингі жоғары)</li>
+        ${T.checkin ? "<li>Басталардан 30 мин бұрын «Қатысамын» деп растау керек</li>" : ""}
+        <li>Ұпай тең болса — жылдамырақ жауап берген жеңеді</li>
+      </ol></div>
+      <div class="sheet-actions ${register ? "btn-row" : ""}">${register ? `<button type="button" class="btn btn-ghost" id="trNo">Болдырмау</button><button type="button" class="btn btn-primary" id="trYes">Танысып шықтым, тіркелу</button>` : `<button type="button" class="btn btn-ghost" id="trNo" style="width:100%">Түсінікті</button>`}</div>`);
+    $("#trNo").onclick = closeSheet;
+    $("#trYes")?.addEventListener("click", () => {
+      T.participants.push(TOUR_ME());
+      closeSheet();
+      toast("Турнирге тіркелдің!");
+      paintStack();
+    });
+  }
+
   function bracketHtml(T) {
     const cols = [];
     for (let r = 0, n = T.size / 2; n >= 1; r++, n /= 2) {
@@ -2112,7 +2176,13 @@
         .map((p) => `<div class="br-pair ${p.length === 2 ? "two" : ""}">${p.map(box).join("")}</div>`)
         .join("")}</div></div>`);
     }
-    cols.push(`<div class="br-col champ-col"><div class="br-h">Чемпион</div><div class="br-body" style="height:${Math.max(160, (T.size / 2) * 92)}px"><div class="br-pair"><div class="br-m champ ${T.champion ? "" : "br-empty"}"><img src="assets/tournament/belt_icon.png" alt="" /><span>${T.champion ? firstName(T.champion) : "?"}</span></div></div></div></div>`);
+    cols.push(`<div class="br-col champ-col"><div class="br-h">Чемпион</div><div class="br-body" style="height:${Math.max(160, (T.size / 2) * 92)}px"><div class="br-pair"><div class="br-champ ${T.champion ? "" : "empty"}">
+      <span class="br-crown">${icon("workspace_premium")}</span>
+      ${T.champion ? `<span class="br-cav" style="background:${T.champion.color}">${T.champion.initials}</span>` : `<span class="br-cav q">?</span>`}
+      <b>${T.champion ? firstName(T.champion) : "Чемпион"}</b>
+      <small>${T.champion ? "ЧЕМПИОН" : "анықталмады"}</small>
+      <img src="assets/tournament/belt.png" alt="" />
+    </div></div></div></div>`);
     return `<div class="br">${cols.join("")}</div>`;
   }
 
@@ -2230,11 +2300,7 @@
       return `
         <div class="list-pad tour">
           ${cd ? `<div class="t3-cd">${icon("timer", "material-icons-outlined")}Басталуына: <b>${cd}</b></div>` : ""}
-          <div class="t3-hero">
-            <img class="t3-belt" src="assets/tournament/belt.png" alt="" />
-            <div class="t3-title lg">${T.title}</div>
-            <div class="t3-sub">${COURSE_TITLE[T.courseId]} · ${T_FORMATS[T.format || "knockout"].name}</div>
-          </div>
+          ${tourHeroHtml(T)}
           ${action}
           <div class="t3-panel">
             <div class="t3-info"><span>${icon("person", "material-icons-outlined")}Ұйымдастырушы</span><b>${T.organizer}</b></div>
@@ -2251,11 +2317,11 @@
                 .map((s, k) => {
                   const done = T.rounds && T.rounds[k] && T.rounds[k].every((m) => m.w);
                   const now = T.status === "running" && T.rounds && k === T.rounds.length - 1 && !done;
-                  return `<div class="t3-tl-i ${done ? "done" : now ? "cur" : ""}"><i></i><b>${s.name}</b><span>${s.date.getDate()} ${KZ_MON_SHORT[s.date.getMonth()]} · ${k === 0 ? new Date(T.start).toTimeString().slice(0, 5) : "күні бойы"}</span></div>`;
+                  return `<div class="t3-tl-i ${done ? "done" : now ? "cur" : ""}"><i></i><b>${s.name}</b><span>${s.date.getDate()} ${KZ_MON_SHORT[s.date.getMonth()]} · ${pad(s.date.getHours())}:${pad(s.date.getMinutes())}</span></div>`;
                 })
                 .join("")}
             </div>
-            <div class="ga-csub" style="margin-top:8px">${T.format === "arena" ? "Уақыт ішінде кез келген сыныптаспен ойнайсың. Ойын саны шектелмейді." : T.format === "swiss" ? "Әр раундта ұпайы жақын оқушымен кездесесің. Ешкім шықпайды." : `Әр кезең ${STAGE_DAYS[T.stageDays] || T.stageDays + " күн"}.`} ${T.format && T.format !== "knockout" ? "" : "Жұп осы уақыт ішінде ойнамаса — жоғары рейтингтегі оқушы өтеді."}</div>
+            <div class="ga-csub" style="margin-top:8px">${T.format === "arena" ? "Уақыт ішінде кез келген сыныптаспен ойнайсың. Ойын саны шектелмейді." : T.format === "swiss" ? "Әр раундта ұпайы жақын оқушымен кездесесің. Ешкім шықпайды." : `Әр кезеңнің уақытын ұйымдастырушы белгілеген.`} ${T.format && T.format !== "knockout" ? "" : "Жұп осы уақыт ішінде ойнамаса — жоғары рейтингтегі оқушы өтеді."}</div>
           </div>
           ${
             T.standings
@@ -2264,21 +2330,13 @@
               ? `<div class="t3-panel"><div class="ga-ctitle">Турнир кестесі</div><div class="ga-csub">Жеңімпаз келесі кезеңге өтеді · солға-оңға жылжыт</div><div class="br-scroll">${bracketHtml(T)}</div></div>`
               : `<div class="t3-panel"><div class="ga-ctitle">Тіркелгендер</div><div class="t3-ppl">${T.participants.map((p) => `<span title="${p.name}">${avatarHtml(p)}<small>${firstName(p)}</small></span>`).join("")}</div></div>`
           }
-          <div class="t3-panel">
-            <div class="ga-ctitle">Жекпе-жек ережесі</div>
-            <div class="tr-rules">
-              ${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} сұрақ × ${r.pts} ұпай</span></div>`).join("")}
-            </div>
-            <div class="ga-csub" style="margin-top:10px">Сұрақтар тек таңдалған тақырыптардан. Әр сұраққа 20 секунд. Ұпай тең болса — жылдам жауап берген жеңеді.</div>
-          </div>
         </div>`;
     };
     pushScreen(T.title, build, () => {
-      $("#tReg")?.addEventListener("click", () => {
-        T.participants.push(TOUR_ME());
-        toast("Турнирге тіркелдің!");
-        paintStack();
-      });
+      // (ⓘ ереже — app bar оң жағында)
+      $("#tReg")?.addEventListener("click", () => tourRules(T, true));
+      $("#tRules")?.addEventListener("click", () => tourRules(T, false));
+      bindHeroSlides();
       $("#tUnreg")?.addEventListener("click", () => {
         T.participants = T.participants.filter((p) => !p.me);
         toast("Тіркелуден бас тарттың");
@@ -2319,7 +2377,7 @@
       });
       const sc = $(".br-scroll"), live = $(".br-m.live");
       if (sc && live) sc.scrollLeft = Math.max(0, live.offsetLeft - 20);
-    }, { right: "<span></span>" });
+    }, { right: `<button type="button" class="appbar-icon-btn" id="tRules" title="Ереже">${icon("info", "material-icons-outlined")}</button>` });
   }
 
   /** Куратор: турнирлер тізімі және жаңа турнир құру */
@@ -2403,7 +2461,7 @@
     const g0 = visibleGroups()[0] || MOCK.groups[0];
     const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     const STAGES = [16, 8, 4, 2, 1];
-    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1, dates: {} };
+    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1, dates: {}, banners: [] };
     const secs = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
     const stageList = () => STAGES.filter((n) => n <= f.first);
     const pool = () => MOCK.groups.filter((g) => f.groups.has(g.id)).reduce((t, g) => t + g.studentsCount, 0);
@@ -2426,6 +2484,8 @@
         return `
           <div class="ef-label">Атауы <i>*</i></div>
           <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
+          <div class="ef-label">Баннерлер <small class="tf-hint">· 3-ке дейін, басты бетте және турнир бетінде шығады</small></div>
+          <div class="tf-bans">${f.banners.map((b, i) => `<div class="tf-ban" style="background-image:url(${b})"><button type="button" data-tfbx="${i}">${icon("close")}</button></div>`).join("")}${f.banners.length < 3 ? `<button type="button" class="tf-ban add" id="tfBanAdd">${icon("add_photo_alternate", "material-icons-outlined")}<span>Қосу</span></button>` : ""}</div>
           <div class="ef-label">Формат <i>*</i></div>
           ${Object.entries(T_FORMATS).map(([k, x]) => `<button type="button" class="wm-opt tf-fmt ${f.format === k ? "on" : ""}" data-tffmt="${k}">${icon(x.icon, "material-icons-outlined")}<span><b>${x.name}</b><small>${x.desc}</small></span>${icon(f.format === k ? "radio_button_checked" : "radio_button_unchecked")}</button>`).join("")}
           ${
@@ -2474,6 +2534,7 @@
               : `<div class="tf-sum">${icon("event", "material-icons-outlined")}${sched}</div>`
         }
         <div class="tf-preview">
+          ${f.banners.length ? `<div class="tf-pv-ban" style="background-image:url(${f.banners[0]})"></div>` : ""}
           <div class="tf-pv-h"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>${f.title || "Атауы"}</b><small>${T_FORMATS[f.format].name} · ${COURSE_TITLE[f.courseId]}</small></div></div>
           <div class="tf-pv-r"><span>Қатысушылар</span><b>${cap() ? `${cap()} орын` : "шектеусіз"} · ${[...f.groups].map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ")}</b></div>
           <div class="tf-pv-r"><span>Тақырыптар</span><b>${f.topics.size} тақырып · ${f.mods.size} модуль</b></div>
@@ -2503,6 +2564,30 @@
       $("#tfClose").onclick = closeSheet;
       $("#tfClose2")?.addEventListener("click", closeSheet);
       on("[data-tffmt]", (b) => (f.format = b.dataset.tffmt));
+      on("[data-tfbx]", (b) => f.banners.splice(+b.dataset.tfbx, 1));
+      $("#tfBanAdd")?.addEventListener("click", () => {
+        keep();
+        const inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "image/*";
+        inp.multiple = true;
+        inp.onchange = () => {
+          [...inp.files].slice(0, 3 - f.banners.length).forEach((file) => {
+            const img = new Image();
+            img.onload = () => {
+              const k = Math.min(1, 900 / img.width);
+              const cv = document.createElement("canvas");
+              cv.width = img.width * k;
+              cv.height = img.height * k;
+              cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+              f.banners.push(cv.toDataURL("image/jpeg", 0.85));
+              draw();
+            };
+            img.src = URL.createObjectURL(file);
+          });
+        };
+        inp.click();
+      });
       on("[data-tfs]", (b) => (f.first = Math.max(2, Math.min(16, b.dataset.tfs === "1" ? f.first * 2 : f.first / 2))));
       on("[data-tfr]", (b) => (f.swissRounds += +b.dataset.tfr));
       on("[data-tfa]", (b) => (f.arenaHours = +b.dataset.tfa));
@@ -2556,6 +2641,7 @@
           stageDays: f.gap,
           firstStage: f.first,
           stageDates: f.format === "knockout" ? stageList().map((n, k) => stageDate(k)) : null,
+          banners: [...f.banners],
           participants: [],
           status: "registration",
         });
@@ -2735,8 +2821,10 @@
   function battleState() {
     if (!MOCK.battle) {
       const st = MOCK.groups[0].students;
+      const rg = MOCK.groups.find((g) => g.id !== MOCK.groups[0].id) || MOCK.groups[0];
       MOCK.battle = {
         rating: 1000,
+        rival: { group: rg, myPts: 7, theirPts: 9 },
         incoming: [
           { opp: st[1], subjectTitle: "Дүниежүзі Тарихы", subject: "world_history", left: "18 сағ" },
           { opp: st[4], subjectTitle: "Математика", subject: "mathematics", left: "5 сағ" },
@@ -2750,8 +2838,44 @@
     const B = battleState();
     B.rating = Math.max(0, B.rating + (win ? 15 : -10));
   }
+  function battleRules() {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="ex-title">Батл ережесі</div>
+      <div class="tr-rules">${DUEL_ROUNDS.map((r, i) => `<div class="tr-rule ${r.cls}"><b>${i + 1}-раунд · ${r.name}</b><span>${r.n} сұрақ × ${r.pts} ұпай</span></div>`).join("")}</div>
+      <div class="ex-block" style="margin-top:12px"><ol>
+        <li>Әр сұраққа 20 секунд, ұпай тең болса — жылдамырақ жауап берген жеңеді</li>
+        <li>Кезекпен ойналады: шақыруға 24 сағат ішінде жауап беру керек, әйтпесе шақырушы жеңеді</li>
+        <li>Жеңіс +15 рейтинг, жеңіліс −10</li>
+        <li>Басқа топтан қарсыласты жеңсең — «Топтар батлында» тобыңа +1 ұпай</li>
+      </ol></div>
+      <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="brClose" style="width:100%">Түсінікті</button></div>`);
+    $("#brClose").onclick = closeSheet;
+  }
   function bindBattle() {
     const B = battleState();
+    $$("[data-btseg]").forEach((b) => (b.onclick = () => ((state.btSeg = b.dataset.btseg), paintStack())));
+    $("#btRules")?.addEventListener("click", battleRules);
+    $("#btOther")?.addEventListener("click", () => {
+      const g = B.rival.group;
+      const opp = { ...g.students[Math.floor(Math.random() * g.students.length)] };
+      opp.groupName = g.name;
+      const c = MOCK.myCourses.find((x) => T_SUBJ[x.id]);
+      toast(`${g.name} тобынан: ${opp.name}`);
+      setTimeout(
+        () =>
+          startDuel({
+            opp,
+            subject: T_SUBJ[c.id],
+            subjectTitle: c.title,
+            onDone: (win) => {
+              battleDone(win);
+              win ? B.rival.myPts++ : B.rival.theirPts++;
+            },
+          }),
+        500
+      );
+    });
     $("#btRandom")?.addEventListener("click", () => {
       const st = MOCK.groups[0].students;
       const near = [...st].sort((a, b) => Math.abs(a.score - 60) - Math.abs(b.score - 60)).slice(0, 5);
@@ -3033,6 +3157,7 @@
         build: pageHtml,
         after: bindService,
         screenCls: id === "analytics" ? "an-screen" : "",
+        right: id === "battle" ? `<button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button>` : id === "tournament" ? "<span></span>" : undefined,
         centered: id === "analytics",
         footer: () =>
           id === "tests" && state.svc.tab === "ent" && state.entOpen
@@ -6075,10 +6200,18 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <small>"АРМАНЫҢДАҒЫ БАЛЛҒА ЖЕТУ ҮШІН,<br><em>БАРЛЫҚ ПӘНДЕРГЕ СЕНІМЕН!"</em></small>
         </div>
       </div>`;
-    const slides = [
-      ...news.map((n) => newsBannerSlide(n, `data-news="${n.id}"`)),
-      base,
-    ];
+    const T = typeof tournaments === "function" ? tournaments() : [];
+    const champ = T.filter((t) => t.status === "finished" && t.champion).map(
+      (t) => `<button type="button" class="banner-slide cb-slide" data-btour="${t.id}">
+        <span class="cb-copy"><small>ЧЕМПИОН · ${t.title}</small><b>${t.champion.me ? "Сен!" : t.champion.name}</b><em>${COURSE_TITLE[t.courseId]}</em></span>
+        <span class="cb-av" style="background:${t.champion.color}">${t.champion.initials}</span>
+        <img src="assets/tournament/belt.png" alt="" />
+      </button>`
+    );
+    const tb = T.filter((t) => t.status !== "finished" && t.status !== "cancelled" && t.banners?.length).flatMap((t) =>
+      t.banners.map((b) => `<button type="button" class="banner-slide nb-slide" data-btour="${t.id}" style="background-image:linear-gradient(90deg,rgba(0,0,0,.65),rgba(0,0,0,.05)),url(${b})"><span class="banner-logo">!4U</span><span class="nb-copy"><b>${t.title}</b><small>${t.status === "registration" ? `Тіркелу ашық · ${countdown(t.start) ? "басталуына " + countdown(t.start) : ""}` : "Турнир өтіп жатыр"}</small></span></button>`)
+    );
+    const slides = [base, ...champ, ...tb, ...news.map((n) => newsBannerSlide(n, `data-news="${n.id}"`))];
     return `
       <div class="banner-wrap">
         <div class="banner-track banner-scroll" id="bannerTrack">${slides.join("")}</div>
@@ -6091,9 +6224,23 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <span class="nb-copy"><b>${n.title}</b><small>${n.body.slice(0, 70)}${n.body.length > 70 ? "…" : ""}</small></span>
     </button>`;
   }
+  let bannerTimer = null;
   function bindBanner() {
     const tr = $("#bannerTrack");
+    clearInterval(bannerTimer);
     if (!tr) return;
+    // Автоматты ауысу: 4 секунд сайын келесі баннер
+    bannerTimer = setInterval(() => {
+      if (!document.body.contains(tr)) return clearInterval(bannerTimer);
+      const n = tr.children.length;
+      if (n < 2) return;
+      const i = (Math.round(tr.scrollLeft / tr.clientWidth) + 1) % n;
+      tr.scrollTo({ left: i * tr.clientWidth, behavior: "smooth" });
+    }, 4000);
+    $$("[data-btour]", tr).forEach((b) => (b.onclick = () => {
+      state.navStack = [];
+      openTournament(tournaments().find((t) => t.id === Number(b.dataset.btour)), { staff: state.mode === "staff" });
+    }));
     tr.onscroll = () => {
       const i = Math.round(tr.scrollLeft / tr.clientWidth);
       $$(".banner-dots i").forEach((d, k) => d.classList.toggle("on", k === i));
