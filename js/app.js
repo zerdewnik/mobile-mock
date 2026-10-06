@@ -4151,32 +4151,20 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $("#aaClose").onclick = closeSheet;
     $$("[data-ach]").forEach((b) => (b.onclick = () => openAchievement(A.find((a) => a.id === b.dataset.ach))));
   }
-  /** Студент профилінің жоғарғы бөлігі: аватар (киілген жиекпен), атақ, топ, статистика, жетістіктер, заттар */
+  /** Студент профилінің жоғарғы бөлігі: аватар (киілген жиекпен), атақ; мәзір — жетістіктер, заттар, монета тарихы */
   function studentProfileTop() {
-    const w = wallet(), me = TOUR_ME(), A = achievements();
+    const w = wallet(), me = TOUR_ME();
     const title = SHOP.find((x) => x.id === w.equip.title);
-    const B = battleState();
-    const belts = tournaments().filter((t) => t.champion?.me).length || 1;
-    const show = [...A].sort((a, b) => b.tier - a.tier || b.pct - a.pct).slice(0, 4);
     return `
       <div class="pf-card">
         <button type="button" class="user-card-edit" id="profileEdit">${icon("edit", "material-icons-outlined")}</button>
         <span class="pf-av ${w.equip.frame ? `fr-${w.equip.frame}` : ""}">${avatarHtml(me, "xl")}</span>
         <div class="user-name">${me.name}</div>
         ${title ? `<span class="pf-title" style="--c:${title.color}">${title.name.replace(/[«»]/g, "")}</span>` : ""}
-        <div class="pf-sub">${MOCK.groups[0].name} · ${COURSE_TITLE[MOCK.groups[0].courseId] || ""} · ${MY_LEVEL}-деңгей</div>
-      </div>
-      <div class="pf-stats">
-        <div><span style="--c:#FF8A3D">${icon("local_fire_department")}</span><b>12</b><small>күн серия</small></div>
-        <button type="button" data-pf="shop"><span style="--c:#8A97F2"><img src="assets/coin/coin.png" alt="" /></span><b>${w.coins.toLocaleString("ru-RU")}</b><small>монета</small></button>
-        <button type="button" data-pf="battle"><span style="--c:#E2574C">${icon("sports_kabaddi")}</span><b>${B.rating}</b><small>батл рейтингі</small></button>
-        <button type="button" data-pf="tour"><span style="--c:#E9A825">${icon("emoji_events")}</span><b>${belts}</b><small>чемпион белбеуі</small></button>
-      </div>
-      <div class="pf-block">
-        <button type="button" class="pf-head" id="pfAch"><b>Менің жетістіктерім</b><span>${A.filter((a) => a.tier).length}/${A.length} ${icon("chevron_right")}</span></button>
-        <div class="pf-ach">${show.map((a) => `<button type="button" class="ach-cell sm" data-ach="${a.id}">${achMedal(a)}<b>${a.name}</b><small>${a.next ? `${a.cur}/${a.next}` : "MAX"}</small></button>`).join("")}</div>
       </div>
       <div class="menu-block">
+        ${menuRow({ iconName: "military_tech", title: "Менің жетістіктерім", action: "achievements" })}
+        <div class="menu-divider"></div>
         ${menuRow({ iconName: "inventory_2", title: "Менің заттарым", action: "inventory" })}
         <div class="menu-divider"></div>
         ${menuRow({ iconName: "history", title: "Монета тарихы", action: "coinlog" })}
@@ -4308,6 +4296,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           else setMode("staff", { toastMsg: "Админ-панель" });
           return;
         }
+        if (a === "achievements") return openAllAchievements();
         if (a === "inventory") return go(() => ((state.shopTab = "inv"), openService("shop", "Магазин")));
         if (a === "coinlog") return go(() => ((state.shopTab = "store"), openService("shop", "Магазин"), setTimeout(() => $("#shopLog")?.click(), 50)));
         if (a === "restore") {
