@@ -4262,3 +4262,67 @@ button.wr-base[data-watk] { cursor: pointer; border-color: #5a2a24; }
 .sp-lvl2 b { font-size: 13px; color: var(--lc); }
 .sp-lvl2 em { font-style: normal; font-size: 11px; color: #8a8d9c; }
 .sp-lvl2 i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--lc); }
+
+/* Турнир формасы: барлық қадамда бірдей биіктік, батырмалар төменде */
+.sheet:has(.tf-steps) { height: calc(100% - 64px); max-height: none; display: flex; flex-direction: column; }
+.sheet:has(.tf-steps) > .sheet-actions:last-child { margin-top: auto !important; padding-top: 14px; }
+
+/* I4U монета */
+img.coin { width: 1.05em; height: 1.05em; vertical-align: -0.15em; margin-right: 3px; filter: drop-shadow(0 1px 1px rgba(0,0,0,.4)); }
+.cn { display: inline-block; width: 18px; height: 18px; margin: 0 1px; }
+.cn img { width: 100%; height: 100%; filter: grayscale(1) brightness(.45); opacity: .55; }
+.cn.on img { filter: drop-shadow(0 2px 3px rgba(0,0,0,.45)); opacity: 1; }
+.wr-stars.sm .cn { width: 13px; height: 13px; }
+.wr-st { display: inline-flex; align-items: center; gap: 4px; }
+.wr-st img.coin { width: 26px; height: 26px; }
+.wr-vs.big .wr-st img.coin { width: 30px; height: 30px; }
+.wr-by { margin-top: 10px; display: flex; align-items: center; gap: 6px; padding: 8px 10px; border-radius: 10px; background: rgba(0,0,0,.25); font-size: 12px; color: #e0e0e6; }
+.wr-by .material-icons-outlined { font-size: 17px; color: #ff8a70; }
+
+/* Соғыс картасы (Clash секілді) */
+.wr-map { position: relative; display: grid; grid-template-columns: 1fr 1fr; row-gap: 8px; padding: 10px 6px 20px; border-radius: 18px; background: radial-gradient(circle at 30% 20%, #3a2a1c, #1b1612 70%); border: 1px solid #4a3420; }
+.wr-map::before { content: ""; position: absolute; left: 50%; top: 30px; bottom: 30px; width: 2px; margin-left: -1px; background: repeating-linear-gradient(#6a4a2a 0 8px, transparent 8px 16px); }
+.wr-node { position: relative; z-index: 1; border: 0; background: transparent; color: #fff; font-family: inherit; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0; cursor: default; }
+.wr-node.l { transform: translateX(-6px); }
+.wr-node.r { transform: translateX(6px) translateY(34px); }
+.wr-node[data-watk] { cursor: pointer; }
+.wr-ring { position: relative; width: 70px; height: 70px; border-radius: 50%; padding: 4px; background: linear-gradient(180deg, #8a6a3a, #4a3420); box-shadow: 0 5px 0 #2a1d10, 0 8px 16px rgba(0,0,0,.5); }
+.wr-node[data-watk] .wr-ring { background: linear-gradient(180deg, #f08a7e, #a8322a); box-shadow: 0 5px 0 #6e1f19, 0 0 18px rgba(226, 87, 76, .45); }
+.wr-node.down .wr-ring { filter: grayscale(.7) brightness(.7); }
+.wr-av { width: 100%; height: 100%; border-radius: 50%; display: grid; place-items: center; font-weight: 800; font-size: 18px; color: #fff; border: 2px solid rgba(255,255,255,.15); }
+.wr-node.locked .wr-av .material-icons-round { font-size: 26px; color: #8a8d9c; }
+.wr-num { position: absolute; left: -4px; top: -4px; width: 24px; height: 24px; border-radius: 50%; background: #1e1e22; border: 2px solid #8a6a3a; display: grid; place-items: center; font-size: 11px; font-weight: 800; }
+.wr-coins { display: flex; }
+.wr-nm { font-size: 11px; color: #e0d4b0; }
+
+/* Монета белгісі, дүкен */
+.ab-coin { border: 0; background: transparent; padding: 0; cursor: pointer; }
+.coin-chip { display: inline-flex; align-items: center; gap: 2px; height: 30px; padding: 0 10px 0 6px; border-radius: 15px; background: rgba(0,0,0,.28); color: #ffd54f; font-size: 13px; }
+.coin-chip img.coin { width: 20px; height: 20px; }
+.shop { padding-top: 12px; }
+.shop-bal { display: flex; align-items: center; gap: 12px; padding: 16px; border-radius: 18px; background: radial-gradient(ellipse at 20% 30%, #5a4818, #1e1e22 70%); border: 1px solid #6a5420; box-shadow: 0 4px 0 #0c0c10; }
+.shop-bal img { width: 56px; height: 56px; filter: drop-shadow(0 6px 8px rgba(0,0,0,.5)); }
+.shop-bal small { font-size: 12px; color: #e0d4b0; }
+.shop-bal b { display: block; font-size: 28px; font-weight: 900; color: #ffd54f; }
+.shop-how { margin-left: auto; border: 0; height: 34px; padding: 0 12px; border-radius: 10px; background: rgba(255,255,255,.12); color: #fff; font-family: inherit; font-size: 12px; cursor: pointer; }
+.shop-cats { padding: 12px 0 4px; }
+.shop-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+.shop-item { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 12px; border-radius: 16px; border: 1px solid #2f2f38; background: linear-gradient(180deg, #26262c, #1e1e22); box-shadow: 0 3px 0 #0c0c10; color: #fff; font-family: inherit; text-align: left; cursor: pointer; }
+.shop-item.own { border-color: #2f5a3a; }
+.shop-ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: color-mix(in srgb, var(--c) 22%, #1e1e22); color: var(--c); margin-bottom: 4px; }
+.shop-ic .material-icons-round { font-size: 26px; }
+.shop-item b { font-size: 13.5px; }
+.shop-item small { font-size: 11px; color: #9a9db0; line-height: 1.35; min-height: 30px; }
+.shop-price { margin-top: 6px; display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 800; color: #ffd54f; }
+.shop-price.no { color: #8a8d9c; }
+.shop-price.no img { filter: grayscale(1); }
+.shop-price.own { color: #5cb36d; font-size: 12px; }
+.shop-price.own .material-icons-round { font-size: 16px; }
+.coin-log { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid #26262c; font-size: 12.5px; }
+.coin-log span { flex: 1; }
+.coin-log small { color: #8a8d9c; }
+.coin-log b { width: 50px; text-align: right; }
+.coin-rule { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid #2c2c33; font-size: 13px; }
+.coin-rule .material-icons-outlined { color: var(--primary); }
+.coin-rule span { flex: 1; }
+.coin-rule b { color: #ffd54f; white-space: nowrap; }

@@ -1041,7 +1041,8 @@
           ${card({ emoji: "📋", tint: "#454a5c", label: "Пройдено пробных тестов", value: `${mockAttempts().length}`, meta: mockAttempts()[0]?.total != null ? `Последний: ${mockAttempts()[0].total} / 140` : "", open: "mock" })}
         </div>`;
     }
-    return `<div class="empty">Скоро наш магазин откроется — запасы знаний готовы, и скидки на гениальность уже подвозят!</div>`;
+    if (id === "shop") return shopHtml();
+    return `<div class="empty">Скоро</div>`;
   }
 
   /* —— Профессии —— */
@@ -2829,6 +2830,7 @@
     return MOCK.battle;
   }
   function battleDone(win) {
+    if (win) earnCoins(15, "Батлда жеңіс");
     const B = battleState();
     B.rating = Math.max(0, B.rating + (win ? 15 : -10));
   }
@@ -2903,7 +2905,8 @@
      ============================================================ */
   const WAR_SIZES = [5, 10, 15];
   const warStars = (pct) => (pct >= 100 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0);
-  const starsHtml = (n, max = 3) => Array.from({ length: max }, (_, i) => `<i class="${i < n ? "on" : ""}">★</i>`).join("");
+  const COIN = `<img class="coin" src="assets/coin/coin.png" alt="монета" />`;
+  const starsHtml = (n, max = 3) => Array.from({ length: max }, (_, i) => `<i class="cn ${i < n ? "on" : ""}"><img src="assets/coin/coin.png" alt="" /></i>`).join("");
   const groupPower = (g) => Math.round(g.students.reduce((t, x) => t + (x.score || 0), 0) / Math.max(1, g.students.length));
 
   function warCandidates(g, size) {
@@ -2985,9 +2988,9 @@
       <button type="button" class="wr-card" id="warOpen">
         <div class="wr-top"><span class="wr-badge ${W.status}">${icon(W.status === "battle" ? "local_fire_department" : W.status === "prep" ? "construction" : "emoji_events")}${st}</span><span class="wr-time">${W.status === "ended" ? "" : `${icon("timer", "material-icons-outlined")}${warLeft(W)}`}</span></div>
         <div class="wr-vs">
-          <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">★ ${U.stars}</span><small>${U.pct}%</small></div>
+          <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">${COIN}${U.stars}</span><small>${U.pct}%</small></div>
           <div class="wr-x"><img src="assets/tournament/battle_line.png" alt="" /><small>${W.size}×${W.size}</small></div>
-          <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">★ ${T.stars}</span><small>${T.pct}%</small></div>
+          <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">${COIN}${T.stars}</span><small>${T.pct}%</small></div>
         </div>
         ${me && W.status === "battle" ? `<div class="wr-me">Сенің шабуылдарың: <span>${Array.from({ length: 2 }, (_, i) => `<i class="${i < myUsed ? "used" : ""}">⚔️</i>`).join("")}</span> ${2 - myUsed ? `· ${2 - myUsed} қалды` : "· бәрі қолданылды"}</div>` : ""}
         <div class="wr-sub">${COURSE_TITLE[W.courseId]} · соғыс картасын ашу ›</div>
@@ -3008,18 +3011,21 @@
       const nameOf = (side, id) => (side === "us" ? W.us.lineup : W.them.lineup).find((x) => x.id === id);
       let body;
       if (tab === "them")
-        body = W.them.lineup
-          .map((d) => {
+        body = `<div class="wr-map">${W.them.lineup
+          .map((d, i) => {
             const b = best("us", d.id);
+            const hit = W.attacks.some((x) => x.side === "us" && x.target === d.id);
             const can = W.status === "battle" && me && myLeft > 0 && !myDone.has(d.id);
-            return `<button type="button" class="wr-base ${b.stars === 3 ? "down" : ""}" ${can ? `data-watk="${d.id}"` : ""}>
-              <span class="wr-pos">${d.pos}</span>${avatarHtml(d)}
-              <span class="wr-bn"><b>${d.name}</b><small>${b.pct ? `${b.pct}% · ` : ""}рейтинг ${d.score}</small></span>
-              <span class="wr-stars">${starsHtml(b.stars)}</span>
-              ${can ? `<span class="wr-atk">${icon("sports_kabaddi")}</span>` : myDone.has(d.id) ? `<span class="wr-done">${icon("check")}</span>` : ""}
+            return `<button type="button" class="wr-node ${i % 2 ? "r" : "l"} ${hit ? "hit" : "locked"} ${b.stars === 3 ? "down" : ""}" ${can ? `data-watk="${d.id}"` : ""}>
+              <span class="wr-ring">
+                <span class="wr-av" style="background:${hit ? d.color : "#2a2a30"}">${hit ? d.initials : icon("lock")}</span>
+                <span class="wr-num">${d.pos}</span>
+              </span>
+              <span class="wr-coins">${starsHtml(b.stars)}</span>
+              ${hit ? `<small class="wr-nm">${firstName(d)}</small>` : ""}
             </button>`;
           })
-          .join("");
+          .join("")}</div>`;
       else if (tab === "us")
         body = W.us.lineup
           .map((m) => {
@@ -3027,8 +3033,8 @@
             const got = best("them", m.id);
             return `<div class="wr-base ${m.me ? "me" : ""}">
               <span class="wr-pos">${m.pos}</span>${avatarHtml(m)}
-              <span class="wr-bn"><b>${m.me ? "Сен" : m.name}</b><small>Қорғаныс: ${starsHtml(got.stars)} берді</small></span>
-              <span class="wr-atks">${[0, 1].map((k) => (mine[k] ? `<em class="s${mine[k].stars}">${mine[k].stars}★</em>` : `<em class="no">—</em>`)).join("")}</span>
+              <span class="wr-bn"><b>${m.me ? "Сен" : m.name}</b><small>Қорғаныста берді: ${starsHtml(got.stars)}</small></span>
+              <span class="wr-atks">${[0, 1].map((k) => (mine[k] ? `<em class="s${mine[k].stars}">${mine[k].stars}${COIN}</em>` : `<em class="no">—</em>`)).join("")}</span>
             </div>`;
           })
           .join("");
@@ -3045,12 +3051,13 @@
         <div class="wr-hero">
           <div class="wr-top"><span class="wr-badge ${W.status}">${W.status === "battle" ? "Шайқас күні" : W.status === "prep" ? "Дайындық күні" : "Соғыс аяқталды"}</span><span class="wr-time">${W.status === "ended" ? "" : warLeft(W)}</span></div>
           <div class="wr-vs big">
-            <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">★ ${U.stars}</span><small>${U.pct}% · ${U.used}/${U.max} шабуыл</small></div>
+            <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">${COIN}${U.stars}</span><small>${U.pct}% · ${U.used}/${U.max} шабуыл</small></div>
             <div class="wr-x"><img src="assets/tournament/battle_line.png" alt="" /></div>
-            <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">★ ${T.stars}</span><small>${T.pct}% · ${T.used}/${T.max} шабуыл</small></div>
+            <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">${COIN}${T.stars}</span><small>${T.pct}% · ${T.used}/${T.max} шабуыл</small></div>
           </div>
           <div class="wr-bar"><i style="width:${(U.stars / Math.max(1, U.stars + T.stars)) * 100}%"></i></div>
-          <div class="wr-sub">${COURSE_TITLE[W.courseId]} · ${W.size}×${W.size} · бастаған: ${W.startedBy}</div>
+          <div class="wr-sub">${COURSE_TITLE[W.courseId]} · ${W.size}×${W.size}</div>
+          <div class="wr-by">${icon("campaign", "material-icons-outlined")}<span>Соғысты ашқан: <b>${W.startedBy}</b></span></div>
         </div>
         ${W.status === "prep" ? `<div class="t3-note">${icon("construction", "material-icons-outlined")}Дайындық күні: шабуыл әлі жоқ. Тренажёрда «${COURSE_TITLE[W.courseId]}» тақырыптарын қайталаңдар — шайқас ${countdown(W.prepEnd) || "жақында"} кейін басталады.</div>` : ""}
         ${!staff && me && W.status === "battle" ? `<div class="wr-hint">${icon("touch_app", "material-icons-outlined")}Қарсыластың базасын таңда — ${myLeft} шабуыл қалды. Бір базаға екі рет шабуылдауға болмайды.</div>` : ""}
@@ -3060,7 +3067,7 @@
         <div class="list-pad" style="padding-top:8px">${body}</div>
         ${staff && W.status !== "ended" ? `<div class="list-pad"><button type="button" class="btn3d ghost danger" id="warStop">${icon("flag", "material-icons-outlined")}Соғысты аяқтау</button></div>` : ""}
         ${staff && W.status === "ended" ? `<div class="list-pad"><button type="button" class="btn3d" id="warNew">${icon("add")}Жаңа соғыс бастау</button></div>` : ""}
-        ${W.history?.length ? `<div class="list-pad"><div class="t3-sec">Өткен соғыстар</div>${W.history.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">★ ${h.us} : ${h.them}</span></div>`).join("")}</div>` : ""}`;
+        ${W.history?.length ? `<div class="list-pad"><div class="t3-sec">Өткен соғыстар</div>${W.history.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">${h.us} : ${h.them}</span></div>`).join("")}</div>` : ""}`;
     };
     pushScreen(
       "Топ соғысы",
@@ -3082,9 +3089,9 @@
             const d = W.them.lineup.find((x) => String(x.id) === b.dataset.watk);
             openSheet(`
               <div class="sheet-handle"></div>
-              <div class="ex-title">Шабуыл: #${d.pos} ${d.name}</div>
-              <div class="wr-atk-p">${avatarHtml(d, "lg")}<div><b>${W.them.group.name}</b><small>Рейтинг ${d.score} · ${COURSE_TITLE[W.courseId]}</small></div></div>
-              <div class="ex-block"><ol><li>3 раунд, 13 сұрақ, макс 24 ұпай</li><li>40% = ★ · 70% = ★★ · 100% = ★★★</li><li>Тобыңа ең жақсы нәтижең есептеледі</li></ol></div>
+              <div class="ex-title">Шабуыл: #${d.pos} база</div>
+              <div class="wr-atk-p">${avatarHtml(d, "lg")}<div><b>${d.name}</b><small>${W.them.group.name} · рейтинг ${d.score}</small></div></div>
+              <div class="ex-block"><ol><li>3 раунд, 13 сұрақ, макс 24 ұпай</li><li>40% = 1 монета · 70% = 2 · 100% = 3 ${COIN}</li><li>Тобыңа ең жақсы нәтиже есептеледі; монеталар сенің әмияныңа да түседі</li></ol></div>
               <div class="sheet-actions btn-row"><button type="button" class="btn btn-ghost" id="waNo">Болдырмау</button><button type="button" class="btn btn-primary" id="waGo">Шабуылдау ⚔️</button></div>`);
             $("#waNo").onclick = closeSheet;
             $("#waGo").onclick = () => {
@@ -3097,7 +3104,7 @@
                   const pct = Math.round((my / DUEL_MAX) * 100);
                   W.attacks.push({ side: "us", by: me.id, target: d.id, pct, stars: warStars(pct) });
                   simAttacks(W, "them", 1);
-                  toast(`${warStars(pct)} ★ · ${pct}%`);
+                  earnCoins(warStars(pct) * 10, "Топ соғысы");
                 },
               });
             };
@@ -3116,8 +3123,8 @@
         <li><b>Қарсылас:</b> жүйе ортақ пәні бар, көлемі бірдей, рейтингі жақын топты табады</li>
         <li><b>Дайындық күні</b> (24 сағ): шабуыл жоқ, тақырыптарды қайталау</li>
         <li><b>Шайқас күні</b> (24 сағ): әр қатысушыға 2 шабуыл, кез келген қарсылас базасына, бір базаға бір рет</li>
-        <li><b>Шабуыл = жекпе-жек:</b> 40% → ★, 70% → ★★, 100% → ★★★</li>
-        <li><b>Жеңіс:</b> көп ★ жинаған топ; тең болса — орташа % жоғары топ</li>
+        <li><b>Шабуыл = жекпе-жек:</b> 40% → 1, 70% → 2, 100% → 3 I4U монета</li>
+        <li><b>Жеңіс:</b> көп монета жинаған топ; тең болса — орташа % жоғары топ</li><li>Қарсылас базалары шабуыл жасалғанша <b>құлыпта</b> — кім екені көрінбейді</li>
       </ol></div>
       <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="wrClose" style="width:100%">Түсінікті</button></div>`);
     $("#wrClose").onclick = closeSheet;
@@ -3193,6 +3200,109 @@
     draw();
   }
 
+  /* ============================================================
+     I4U МОНЕТАЛАРЫ ЖӘНЕ ДҮКЕН
+     Монета: сабақ қарау, тест, апталық сынақ, батл, турнир, топ соғысы
+     ============================================================ */
+  const COIN_RULES = [
+    ["smart_display", "Видеосабақты соңына дейін қарау", 5],
+    ["description", "Конспект тапсыру (қабылданса)", 5],
+    ["quiz", "Сабақ тестін тапсыру", 10],
+    ["calendar_month", "Апталық сынақ", 20],
+    ["sports_kabaddi", "Батлда жеңу", 15],
+    ["shield", "Топ соғысы: әр монета-жұлдыз", 10],
+    ["emoji_events", "Турнирде келесі кезеңге өту / чемпион", "20 / 200"],
+    ["local_fire_department", "7 күн қатарынан кіру", 50],
+  ];
+  const SHOP = [
+    { id: "frame_gold", cat: "avatar", name: "Алтын жиек", desc: "Аватарға алтын жиек", price: 300, icon: "account_circle", color: "#F2C230" },
+    { id: "frame_fire", cat: "avatar", name: "От жиегі", desc: "Аватарға жалынды жиек", price: 500, icon: "local_fire_department", color: "#FF6A3D" },
+    { id: "title_master", cat: "avatar", name: "«Тарих шебері» атағы", desc: "Рейтингте атыңның жанында", price: 400, icon: "military_tech", color: "#B07CFF" },
+    { id: "hint5", cat: "boost", name: "5 кеңес", desc: "Тестте бір қате нұсқаны алып тастайды", price: 150, icon: "lightbulb", color: "#FFD54F" },
+    { id: "freeze", cat: "boost", name: "Серияны сақтау", desc: "Бір күн кірмесең де серия үзілмейді", price: 200, icon: "ac_unit", color: "#7FD3E8" },
+    { id: "x2", cat: "boost", name: "×2 монета (24 сағ)", desc: "Бір тәулік бойы монета екі есе", price: 350, icon: "bolt", color: "#5CB36D" },
+    { id: "theme_neon", cat: "theme", name: "«Неон» тақырыбы", desc: "Қосымшаның түс тақырыбы", price: 600, icon: "palette", color: "#4F9BFF" },
+    { id: "sticker", cat: "merch", name: "I4U стикерпак", desc: "Офистен алып кетесің", price: 800, icon: "sell", color: "#E2574C" },
+    { id: "hoodie", cat: "merch", name: "I4U худи", desc: "Шектеулі коллекция", price: 5000, icon: "checkroom", color: "#8A94F5" },
+  ];
+  function wallet() {
+    if (!MOCK.wallet)
+      MOCK.wallet = {
+        coins: 1240,
+        owned: ["hint5"],
+        log: [
+          { t: "Апталық сынақ (11 - апта)", c: 20, d: "03.10" },
+          { t: "Сабақ тесті: Жаңа Заман ұғымы", c: 10, d: "02.10" },
+          { t: "Видеосабақ: ЖАПОНИЯНЫҢ АШЫЛУЫ", c: 5, d: "02.10" },
+          { t: "Дүкен: 5 кеңес", c: -150, d: "01.10" },
+        ],
+      };
+    return MOCK.wallet;
+  }
+  function earnCoins(n, why) {
+    if (!n) return;
+    const w = wallet();
+    w.coins += n;
+    w.log.unshift({ t: why, c: n, d: dmy(new Date()).slice(0, 5) });
+    toast(`+${n} I4U монета · ${why}`);
+  }
+  function coinChip() {
+    return `<span class="coin-chip">${COIN}<b>${wallet().coins.toLocaleString("ru-RU")}</b></span>`;
+  }
+  function shopHtml() {
+    const w = wallet();
+    const cat = state.shopCat || "all";
+    const cats = [["all", "Барлығы"], ["avatar", "Аватар"], ["boost", "Күшейткіш"], ["theme", "Тақырып"], ["merch", "Мерч"]];
+    const items = SHOP.filter((x) => cat === "all" || x.cat === cat);
+    return `
+      <div class="list-pad shop">
+        <div class="shop-bal">
+          <img src="assets/coin/coin.png" alt="" />
+          <div><small>Менің монеталарым</small><b>${w.coins.toLocaleString("ru-RU")}</b></div>
+          <button type="button" class="shop-how" id="shopHow">Қалай жинаймын?</button>
+        </div>
+        <div class="acc-chips shop-cats">${cats.map(([k, l]) => `<button type="button" class="ent-chip ${cat === k ? "on" : ""}" style="--c:var(--primary)" data-shopcat="${k}">${l}</button>`).join("")}</div>
+        <div class="shop-grid">${items
+          .map((x) => {
+            const own = w.owned.includes(x.id);
+            return `<button type="button" class="shop-item ${own ? "own" : ""}" data-shopbuy="${x.id}">
+              <span class="shop-ic" style="--c:${x.color}">${icon(x.icon)}</span>
+              <b>${x.name}</b><small>${x.desc}</small>
+              <span class="shop-price ${own ? "own" : w.coins < x.price ? "no" : ""}">${own ? `${icon("check")}Сенде бар` : `${COIN}${x.price.toLocaleString("ru-RU")}`}</span>
+            </button>`;
+          })
+          .join("")}</div>
+        <div class="t3-sec">Монета тарихы</div>
+        ${w.log.slice(0, 8).map((l) => `<div class="coin-log"><span>${l.t}</span><small>${l.d}</small><b class="${l.c > 0 ? "up" : "down"}">${l.c > 0 ? "+" : ""}${l.c}</b></div>`).join("")}
+      </div>`;
+  }
+  function bindShop() {
+    $$("[data-shopcat]").forEach((b) => (b.onclick = () => ((state.shopCat = b.dataset.shopcat), paintStack())));
+    $("#shopHow")?.addEventListener("click", () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ex-title">I4U монета қалай жиналады</div>
+        ${COIN_RULES.map(([ic, t, c]) => `<div class="coin-rule">${icon(ic, "material-icons-outlined")}<span>${t}</span><b>+${c} ${COIN}</b></div>`).join("")}
+        <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="chClose" style="width:100%">Түсінікті</button></div>`);
+      $("#chClose").onclick = closeSheet;
+    });
+    $$("[data-shopbuy]").forEach((b) => {
+      b.onclick = async () => {
+        const w = wallet();
+        const x = SHOP.find((i) => i.id === b.dataset.shopbuy);
+        if (w.owned.includes(x.id) && x.cat !== "boost") return toast("Бұл зат сенде бар");
+        if (w.coins < x.price) return toast(`Монета жетпейді: тағы ${x.price - w.coins} керек`, "err");
+        const ok = await confirmDialog({ title: `${x.name} сатып алу?`, message: `${x.price} I4U монета жұмсалады. Қалады: ${w.coins - x.price}.`, confirmLabel: "Сатып алу" });
+        if (!ok) return;
+        w.coins -= x.price;
+        if (!w.owned.includes(x.id)) w.owned.push(x.id);
+        w.log.unshift({ t: `Дүкен: ${x.name}`, c: -x.price, d: dmy(new Date()).slice(0, 5) });
+        toast(x.cat === "merch" ? "Сатып алынды! Офистен алып кет 🎁" : "Сатып алынды!");
+        paintStack();
+      };
+    });
+  }
+
   function openDuelInvite() {
     const g = MOCK.groups[0];
     const subs = MOCK.myCourses.filter((c) => T_SUBJ[c.id]);
@@ -3226,6 +3336,7 @@
   }
 
   function bindTournament() {
+    bindShop();
     bindBattle();
     bindTourSeg(paintStack);
     $("#duelInvite")?.addEventListener("click", openDuelInvite);
@@ -3450,7 +3561,7 @@
         build: pageHtml,
         after: bindService,
         screenCls: id === "analytics" ? "an-screen" : "",
-        right: id === "battle" ? `<span class="ab-icons"><button type="button" class="appbar-icon-btn" id="duelInvite" title="Досты шақыру">${icon("person_add", "material-icons-outlined")}</button><button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button></span>` : id === "tournament" ? "<span></span>" : undefined,
+        right: id === "shop" ? coinChip() : id === "battle" ? `<span class="ab-icons"><button type="button" class="appbar-icon-btn" id="duelInvite" title="Досты шақыру">${icon("person_add", "material-icons-outlined")}</button><button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button></span>` : id === "tournament" ? "<span></span>" : undefined,
         centered: id === "analytics",
         footer: () =>
           id === "tests" && state.svc.tab === "ent" && state.entOpen
@@ -6424,7 +6535,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { id: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { id: "tournament", label: "Турнир", img: "assets/tournament/tournament_line.png" },
       { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png" },
-      { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png", soon: true },
+      { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
     ];
     return `
       ${bannerHtml()}
@@ -6985,6 +7096,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           });
         $("#vNext").onclick = () => {
           clearInterval(v.timer);
+          if (i === cc.cur) earnCoins(5, "Видеосабақ");
           finishLesson(c, cc, i);
         };
         sync();
@@ -7097,6 +7209,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
               if (!ok) return;
             }
             T.done = true;
+            if (x.state !== "done") earnCoins(10, "Сабақ тесті");
             paintStack();
           });
         $("#tqBack") &&
@@ -7221,6 +7334,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       const unread = MOCK.studentNotifs.filter((n) => !n.read).length;
       return `
         <div class="appbar-title" style="flex:1">${titles[state.tab] || "Главная"}</div>
+        ${state.tab === 0 ? `<button type="button" class="ab-coin" id="abCoin">${coinChip()}</button>` : ""}
         <button type="button" class="appbar-bell" id="studentBell" title="Уведомления">${icon("notifications_none")}${unread ? `<i>${unread}</i>` : ""}</button>
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
@@ -7305,6 +7419,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       };
     });
     bindBanner();
+    $("#abCoin")?.addEventListener("click", () => openService("shop", "Магазин"));
     $("#sgToggle")?.addEventListener("click", () => {
       state.sgClosed = !state.sgClosed;
       render();
