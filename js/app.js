@@ -979,7 +979,7 @@
         </div>`;
       return `
         <div class="list-pad tour" style="padding-top:12px">${head}
-          <div class="t3-sec">Топ соғысы</div>
+          <div class="t3-sec">Топтар шайқасы</div>
           ${warCardHtml()}
           <div class="t3-sec">Жекпе-жек</div>
           <button type="button" class="bt-btn rand wide" id="btRandom">${icon("sports_kabaddi")}<b>Өз тобымнан қарсылас</b><small>Деңгейі жақын сыныптас</small>${icon("chevron_right")}</button>
@@ -2371,7 +2371,7 @@
   /** Куратор: турнирлер тізімі және жаңа турнир құру */
   function openStaffTournaments() {
     pushScreen(
-      "Турнирлер",
+      "Кубоктар",
       () => `<div class="list-pad tour">
         ${tourSegHtml(tournaments(), true)}
       </div>`,
@@ -2449,7 +2449,7 @@
     const g0 = visibleGroups()[0] || MOCK.groups[0];
     const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     const STAGES = [16, 8, 4, 2, 1];
-    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1, dates: {}, banners: [], aud: "groups" };
+    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1, dates: {}, banners: [], aud: "groups", prize: 200 };
     const secs = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
     const stageList = () => STAGES.filter((n) => n <= f.first);
     const pool = () => MOCK.groups.filter((g) => f.groups.has(g.id)).reduce((t, g) => t + g.studentsCount, 0);
@@ -2463,7 +2463,7 @@
       return iso2(d);
     };
     const check = (on) => icon(on ? "check_box" : "check_box_outline_blank");
-    const STEPS = ["Формат", "Қатысушылар", "Мазмұн", "Уақыт"];
+    const STEPS = ["Негізгі", "Қатысушылар", "Мазмұн", "Уақыт"];
     const valid = (k) =>
       k === 0 ? !!f.title.trim() : k === 1 ? f.groups.size > 0 : k === 2 ? f.mods.size > 0 && f.topics.size > 0 : !!(f.regTo && f.start && new Date(f.start) > new Date(f.regTo));
     const err = ["Атауын жазыңыз", "Кемінде бір топ таңдаңыз", "Модуль мен тақырып таңдаңыз", "Турнир тіркелу аяқталғаннан кейін басталуы керек"];
@@ -2472,10 +2472,11 @@
         return `
           <div class="ef-label">Атауы <i>*</i></div>
           <input class="ef-input" id="tfTitle" placeholder="Мысалы: Викингтер кубогы" value="${f.title.replace(/"/g, "&quot;")}" />
-          <div class="ef-label">Баннерлер <small class="tf-hint">· 3-ке дейін, басты бетте және турнир бетінде шығады</small></div>
-          <div class="tf-bans">${f.banners.map((b, i) => `<div class="tf-ban" style="background-image:url(${b})"><button type="button" data-tfbx="${i}">${icon("close")}</button></div>`).join("")}${f.banners.length < 3 ? `<button type="button" class="tf-ban add" id="tfBanAdd">${icon("add_photo_alternate", "material-icons-outlined")}<span>Қосу</span></button>` : ""}</div>
+          <div class="ef-label">Пән <i>*</i></div>
+          <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
           <div class="ef-label">Формат <i>*</i></div>
-          ${Object.entries(T_FORMATS).map(([k, x]) => `<button type="button" class="wm-opt tf-fmt ${f.format === k ? "on" : ""}" data-tffmt="${k}">${icon(x.icon, "material-icons-outlined")}<span><b>${x.name}</b><small>${x.desc}</small></span>${icon(f.format === k ? "radio_button_checked" : "radio_button_unchecked")}</button>`).join("")}
+          <div class="tf-fmts">${Object.entries(T_FORMATS).map(([k, x]) => `<button type="button" class="tf-fmt3 ${f.format === k ? "on" : ""}" data-tffmt="${k}">${icon(x.icon, "material-icons-outlined")}<b>${x.name.replace(" жүйесі", "")}</b></button>`).join("")}</div>
+          <div class="tf-sum">${icon("info", "material-icons-outlined")}${T_FORMATS[f.format].desc}</div>
           ${
             f.format === "knockout"
               ? `<div class="tf-row3"><div><div class="ef-label">Кезең саны</div><div class="tf-step"><button type="button" data-tfs="-1" ${f.first <= 2 ? "disabled" : ""}>${icon("remove")}</button><b>${Math.log2(f.first) + 1}</b><button type="button" data-tfs="1" ${f.first >= 16 ? "disabled" : ""}>${icon("add")}</button></div></div><div><div class="ef-label">Қатысушылар</div><div class="tf-cap"><b>${f.first * 2}</b> адам</div></div></div>
@@ -2494,19 +2495,23 @@
           <div class="ef-label">Жұптастыру</div>
           <div class="ent-chips">${[["rating", "Рейтинг бойынша"], ["random", "Кездейсоқ"]].map(([k, l]) => `<button type="button" class="ent-chip ${f.seeding === k ? "on" : ""}" style="--c:var(--primary)" data-tfseed="${k}">${l}</button>`).join("")}</div>
           <div class="tf-sum">${f.seeding === "rating" ? "Күштілер бірінші кезеңде кездеспейді (1-орын 16-орынмен ойнайды)" : "Жұптар жеребе арқылы"}</div>
-          <div class="nf-toggle-row"><div><b>Check-in</b><small>Басталардан 30 мин бұрын оқушы «Қатысамын» деп растайды; растамағандар кестеге кірмейді</small></div><button type="button" class="toggle ${f.checkin ? "on" : ""}" id="tfCheck"></button></div>`;
+          <div class="nf-toggle-row"><div><b>Check-in</b><small>Басталардан 30 мин бұрын оқушы «Қатысамын» деп растайды; растамағандар кестеге кірмейді</small></div><button type="button" class="toggle ${f.checkin ? "on" : ""}" id="tfCheck"></button></div>
+          <div class="ef-label">Жүлде · I4U монета</div>
+          <div class="tf-prize">${[100, 200, 500].map((v) => `<button type="button" class="tf-pz ${f.prize === v ? "on" : ""}" data-tfpz="${v}">${COIN}<b>${v}</b></button>`).join("")}</div>
+          <div class="tf-podium">${[["🥇 1-орын · чемпион", f.prize, "+ белбеу"], ["🥈 2-орын", f.prize / 2, ""], ["🥉 3-орын", f.prize / 4, ""]].map(([l, c, x]) => `<div><span>${l}</span><b>${c} ${COIN}</b>${x ? `<small>${x}</small>` : ""}</div>`).join("")}</div>`;
       if (f.step === 2) {
         const S = secs();
         const topics = S.filter((x) => f.mods.has(x.t)).flatMap((x) => x.topics.map((t) => ({ t, m: x.t })));
         return `
-          <div class="ef-label">Пән <i>*</i></div>
-          <label class="ef-select"><span>${COURSE_TITLE[f.courseId]}</span><select id="tfCourse">${COURSE_IDS.map((id) => `<option value="${id}" ${id === f.courseId ? "selected" : ""}>${COURSE_TITLE[id]}</option>`).join("")}</select>${icon("expand_more")}</label>
+          <div class="tf-from">${icon("menu_book", "material-icons-outlined")}<b>${COURSE_TITLE[f.courseId]}</b><span>сұрақтар осы пәннің банкінен</span></div>
           <div class="ef-label">Модульдер <i>*</i></div>
           <button type="button" class="ef-select tf-dd ${f.mods.size ? "" : "ph"} ${f.openM ? "open" : ""}" id="tfDdM"><span>${f.mods.size ? [...f.mods].join(", ") : "Модульдерді таңдаңыз"}</span>${f.mods.size ? `<em>${f.mods.size}</em>` : ""}${icon(f.openM ? "expand_less" : "expand_more")}</button>
           ${f.openM ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllM">барлығын таңдау</button><div class="tf-checks">${S.map((x) => `<button type="button" class="tf-check ${f.mods.has(x.t) ? "on" : ""}" data-tfm="${x.t.replace(/"/g, "&quot;")}">${check(f.mods.has(x.t))}<span>${x.t}</span></button>`).join("")}</div></div>` : ""}
           <div class="ef-label">Тақырыптар <i>*</i></div>
           <button type="button" class="ef-select tf-dd ${f.topics.size ? "" : "ph"} ${f.openT ? "open" : ""}" id="tfDdT" ${f.mods.size ? "" : "disabled"}><span>${f.topics.size ? [...f.topics].join(", ") : f.mods.size ? "Тақырыптарды таңдаңыз" : "Алдымен модуль таңдаңыз"}</span>${f.topics.size ? `<em>${f.topics.size}</em>` : ""}${icon(f.openT ? "expand_less" : "expand_more")}</button>
-          ${f.openT && topics.length ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllT">барлығын таңдау</button><div class="tf-checks">${topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")}</div></div>` : ""}`;
+          ${f.openT && topics.length ? `<div class="tf-drop"><button type="button" class="t3-all" id="tfAllT">барлығын таңдау</button><div class="tf-checks">${topics.map((x) => `<button type="button" class="tf-check ${f.topics.has(x.t) ? "on" : ""}" data-tft="${x.t.replace(/"/g, "&quot;")}">${check(f.topics.has(x.t))}<span>${x.t}<small>${x.m}</small></span></button>`).join("")}</div></div>` : ""}
+          <div class="ef-label">Баннерлер <small class="tf-hint">· 3-ке дейін, басты бетте және турнир бетінде</small></div>
+          <div class="tf-bans">${f.banners.map((b, i) => `<div class="tf-ban" style="background-image:url(${b})"><button type="button" data-tfbx="${i}">${icon("close")}</button></div>`).join("")}${f.banners.length < 3 ? `<button type="button" class="tf-ban add" id="tfBanAdd">${icon("add_photo_alternate", "material-icons-outlined")}<span>Қосу</span></button>` : ""}</div>`;
       }
       const sched = f.format === "knockout" ? stageList().map((n, k) => { const d = new Date(stageDate(k)); return `${stageName(n)} — ${d.getDate()} ${KZ_MON_SHORT[d.getMonth()]}`; }).join(" · ") : f.format === "swiss" ? `${f.swissRounds} раунд, әр раунд ${f.gap === 7 ? "аптасына" : `${f.gap} күн сайын`}` : `Басталғаннан ${f.arenaHours === 24 ? "1 күн" : `${f.arenaHours} сағат`} бойы`;
       return `
@@ -2537,8 +2542,8 @@
         <div class="sheet-handle"></div>
         <div class="ef-head"><span>Жаңа турнир</span><button type="button" id="tfClose">${icon("close")}</button></div>
         <div class="tf-steps">${STEPS.map((x, k) => `<button type="button" class="tf-sp ${k === f.step ? "on" : k < f.step ? "done" : ""}" data-tfstep="${k}"><i>${k < f.step ? icon("check") : k + 1}</i><span>${x}</span></button>`).join("")}</div>
-        ${stepHtml()}
-        <div class="sheet-actions btn-row" style="margin-top:18px">
+        <div class="tf-body">${stepHtml()}</div>
+        <div class="sheet-actions btn-row">
           ${f.step ? `<button type="button" class="btn btn-ghost" id="tfPrev">Артқа</button>` : `<button type="button" class="btn btn-ghost" id="tfClose2">Болдырмау</button>`}
           <button type="button" class="btn btn-primary" id="tfNext">${f.step === 3 ? "Жариялау" : "Әрі қарай"}</button>
         </div>`,
@@ -2583,6 +2588,7 @@
       on("[data-tfa]", (b) => (f.arenaHours = +b.dataset.tfa));
       on("[data-tfg]", (b) => (f.groups.has(+b.dataset.tfg) ? f.groups.delete(+b.dataset.tfg) : f.groups.add(+b.dataset.tfg)));
       on("[data-tfseed]", (b) => (f.seeding = b.dataset.tfseed));
+      on("[data-tfpz]", (b) => (f.prize = +b.dataset.tfpz));
       on("[data-tfaud]", (b) => {
         f.aud = b.dataset.tfaud;
         f.groups = f.aud === "all" ? new Set(MOCK.groups.map((g) => g.id)) : new Set([g0.id]);
@@ -2637,6 +2643,7 @@
           firstStage: f.first,
           stageDates: f.format === "knockout" ? stageList().map((n, k) => stageDate(k)) : null,
           banners: [...f.banners],
+          prize: f.prize,
           participants: [],
           status: "registration",
         });
@@ -2978,7 +2985,7 @@
 
   /** Батл бетіндегі соғыс карточкасы */
   function warCardHtml(W = war(), attr = 'id="warOpen"') {
-    if (!W) return `<div class="wr-card none">${icon("shield", "material-icons-outlined")}<div><b>Топ соғысы жоқ</b><small>Соғысты куратор бастайды</small></div></div>`;
+    if (!W) return `<div class="wr-card none">${icon("shield", "material-icons-outlined")}<div><b>Топтар шайқасы жоқ</b><small>Шайқасты куратор бастайды</small></div></div>`;
     const me = attr.startsWith("data-wopen") ? null : W.us.lineup.find((x) => x.me);
     const myUsed = me ? W.attacks.filter((x) => x.side === "us" && x.by === me.id).length : 0;
     const U = warTotals(W, "us"), T = warTotals(W, "them");
@@ -2992,13 +2999,13 @@
           <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">${COIN}${T.stars}</span><small>${T.pct}%</small></div>
         </div>
         ${me && W.status === "battle" ? `<div class="wr-me">Сенің шабуылдарың: <span>${Array.from({ length: 2 }, (_, i) => `<i class="${i < myUsed ? "used" : ""}">⚔️</i>`).join("")}</span> ${2 - myUsed ? `· ${2 - myUsed} қалды` : "· бәрі қолданылды"}</div>` : ""}
-        <div class="wr-sub">${COURSE_TITLE[W.courseId]} · соғыс картасын ашу ›</div>
+        <div class="wr-sub">${COURSE_TITLE[W.courseId]} · шайқас картасын ашу ›</div>
       </button>`;
   }
 
-  /** Соғыс картасы: қарсылас базалары / біздің топ / шабуылдар */
+  /** Шайқас картасы: қарсылас базалары / біздің топ / шабуылдар */
   function openWar({ staff = false, W = war() } = {}) {
-    if (!W) return staff ? openStaffWars() : toast("Топ соғысы жоқ");
+    if (!W) return staff ? openStaffWars() : toast("Топтар шайқасы жоқ");
     let tab = staff ? "us" : "them";
     const me = W.us.lineup.find((x) => x.me);
     const build = () => {
@@ -3047,7 +3054,7 @@
             .join("") || `<div class="empty">Әзірге шабуыл жоқ</div>`;
       return `
         <div class="wr-hero">
-          <div class="wr-top"><span class="wr-badge ${W.status}">${W.status === "battle" ? "Шайқас күні" : W.status === "prep" ? "Дайындық күні" : "Соғыс аяқталды"}</span><span class="wr-time">${W.status === "ended" ? "" : warLeft(W)}</span></div>
+          <div class="wr-top"><span class="wr-badge ${W.status}">${W.status === "battle" ? "Шайқас күні" : W.status === "prep" ? "Дайындық күні" : "Шайқас аяқталды"}</span><span class="wr-time">${W.status === "ended" ? "" : warLeft(W)}</span></div>
           <div class="wr-vs big">
             <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">${COIN}${U.stars}</span><small>${U.pct}% · ${U.used}/${U.max} шабуыл</small></div>
             <div class="wr-x"><img src="assets/tournament/battle_line.png" alt="" /></div>
@@ -3055,7 +3062,7 @@
           </div>
           <div class="wr-bar"><i style="width:${(U.stars / Math.max(1, U.stars + T.stars)) * 100}%"></i></div>
           <div class="wr-sub">${COURSE_TITLE[W.courseId]} · ${W.size}×${W.size}</div>
-          <div class="wr-by">${icon("campaign", "material-icons-outlined")}<span>Соғысты ашқан: <b>${W.startedBy}</b></span></div>
+          <div class="wr-by">${icon("campaign", "material-icons-outlined")}<span>Шайқасты ашқан: <b>${W.startedBy}</b></span></div>
         </div>
         ${W.status === "prep" ? `<div class="t3-note">${icon("construction", "material-icons-outlined")}Дайындық күні: шабуыл әлі жоқ. Тренажёрда «${COURSE_TITLE[W.courseId]}» тақырыптарын қайталаңдар — шайқас ${countdown(W.prepEnd) || "жақында"} кейін басталады.</div>` : ""}
         ${!staff && me && W.status === "battle" ? `<div class="wr-hint">${icon("touch_app", "material-icons-outlined")}Қарсыластың базасын таңда — ${myLeft} шабуыл қалды. Бір базаға екі рет шабуылдауға болмайды.</div>` : ""}
@@ -3063,19 +3070,19 @@
           ${[["them", "Қарсылас"], ["us", "Біздің топ"], ["log", "Шабуылдар"]].map(([k, l]) => `<button type="button" data-wtab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`).join("")}
         </div>
         <div class="list-pad" style="padding-top:8px">${body}</div>
-        ${staff && W.status !== "ended" ? `<div class="list-pad"><button type="button" class="btn3d ghost danger" id="warStop">${icon("flag", "material-icons-outlined")}Соғысты аяқтау</button></div>` : ""}
-        ${staff && W.status === "ended" ? `<div class="list-pad"><button type="button" class="btn3d" id="warNew">${icon("add")}Жаңа соғыс бастау</button></div>` : ""}
-        ${W.history?.length ? `<div class="list-pad"><div class="t3-sec">Өткен соғыстар</div>${W.history.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">${h.us} : ${h.them}</span></div>`).join("")}</div>` : ""}`;
+        ${staff && W.status !== "ended" ? `<div class="list-pad"><button type="button" class="btn3d ghost danger" id="warStop">${icon("flag", "material-icons-outlined")}Шайқасты аяқтау</button></div>` : ""}
+        ${staff && W.status === "ended" ? `<div class="list-pad"><button type="button" class="btn3d" id="warNew">${icon("add")}Жаңа шайқас бастау</button></div>` : ""}
+        ${W.history?.length ? `<div class="list-pad"><div class="t3-sec">Өткен шайқастар</div>${W.history.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">${h.us} : ${h.them}</span></div>`).join("")}</div>` : ""}`;
     };
     pushScreen(
-      "Топ соғысы",
+      "Топтар шайқасы",
       build,
       () => {
         $$("[data-wtab]").forEach((b) => (b.onclick = () => ((tab = b.dataset.wtab), paintStack())));
         $("#warRules")?.addEventListener("click", warRules);
         $("#warNew")?.addEventListener("click", () => (state.navStack.pop(), openWarStart(W.us.group)));
         $("#warStop")?.addEventListener("click", async () => {
-          const ok = await confirmDialog({ title: "Соғысты аяқтау?", message: "Қалған шабуылдар жабылады, нәтиже қазіргі ★ бойынша.", confirmLabel: "Аяқтау", danger: true });
+          const ok = await confirmDialog({ title: "Шайқасты аяқтау?", message: "Қалған шабуылдар жабылады, нәтиже қазіргі ★ бойынша.", confirmLabel: "Аяқтау", danger: true });
           if (!ok) return;
           W.status = "ended";
           const U = warTotals(W, "us"), T = warTotals(W, "them");
@@ -3102,7 +3109,7 @@
                   const pct = Math.round((my / DUEL_MAX) * 100);
                   W.attacks.push({ side: "us", by: me.id, target: d.id, pct, stars: warStars(pct) });
                   simAttacks(W, "them", 1);
-                  earnCoins(warStars(pct) * 10, "Топ соғысы");
+                  earnCoins(warStars(pct) * 10, "Топтар шайқасы");
                 },
               });
             };
@@ -3115,7 +3122,7 @@
   function warRules() {
     openSheet(`
       <div class="sheet-handle"></div>
-      <div class="ex-title">Топ соғысы қалай өтеді</div>
+      <div class="ex-title">Топтар шайқасы қалай өтеді</div>
       <div class="ex-block"><ol>
         <li><b>Кім бастайды:</b> топтың кураторы (немесе бас куратор). Қатысушыларды таңдайды — 5, 10 не 15 адам</li>
         <li><b>Қарсылас:</b> жүйе ортақ пәні бар, көлемі бірдей, рейтингі жақын топты табады</li>
@@ -3129,19 +3136,19 @@
   }
 
   const allWars = () => [war(), ...(MOCK.extraWars || [])].filter(Boolean);
-  /** Топтың белсенді соғысы (біз жақта да, қарсылас жақта да) */
+  /** Топтың белсенді шайқасы (біз жақта да, қарсылас жақта да) */
   const warOf = (g) => allWars().find((w) => w.status !== "ended" && (w.us.group.id === g.id || w.them.group.id === g.id));
 
-  /** Staff: Топ соғысы — өз топтары (бас куратор — барлық топ), әр топқа соғыс бастау / ашу */
+  /** Staff: Топтар шайқасы — өз топтары (бас куратор — барлық топ), әр топқа шайқас бастау / ашу */
   function openStaffWars() {
     pushScreen(
-      "Топ соғысы",
+      "Топтар шайқасы",
       () => {
         const groups = visibleGroups();
         const wars = allWars();
         const hist = wars.flatMap((w) => (w.history || []).map((h) => ({ ...h, g: w.us.group.name })));
         return `<div class="list-pad tour">
-          <div class="t3-note">${icon("campaign", "material-icons-outlined")}<span>Соғысты <b>топтың кураторы</b> ашады${isHead() ? ", бас куратор — <b>кез келген топқа</b>" : ""}. Топты таңдап «Бастау» → көлем мен қатысушыларды белгілеу → жүйе ортақ пәні бар қарсылас топты табады.</span></div>
+          <div class="t3-note">${icon("campaign", "material-icons-outlined")}<span>Шайқасты <b>топтың кураторы</b> ашады${isHead() ? ", бас куратор — <b>кез келген топқа</b>" : ""}. Топты таңдап «Бастау» → көлем мен қатысушыларды белгілеу → жүйе ортақ пәні бар қарсылас топты табады.</span></div>
           <div class="t3-sec">${isHead() ? "Барлық топтар" : "Менің топтарым"} · ${groups.length}</div>
           ${groups
             .map((g) => {
@@ -3155,7 +3162,7 @@
               </div>`;
             })
             .join("")}
-          ${hist.length ? `<div class="t3-sec">Өткен соғыстар</div>${hist.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>${h.g} vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">${h.us} : ${h.them}</span></div>`).join("")}` : ""}
+          ${hist.length ? `<div class="t3-sec">Өткен шайқастар</div>${hist.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>${h.g} vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">${h.us} : ${h.them}</span></div>`).join("")}` : ""}
         </div>`;
       },
       () => {
@@ -3169,7 +3176,7 @@
 
   /** Куратор: соғыс бастау — көлем, қатысушылар, қарсылас іздеу */
   function openWarStart(g = visibleGroups()[0] || MOCK.groups[0]) {
-    if (warOf(g)) return toast(`${g.name}: соғыс әлі жүріп жатыр`, "err");
+    if (warOf(g)) return toast(`${g.name}: шайқас әлі жүріп жатыр`, "err");
     const size0 = [...WAR_SIZES].reverse().find((n) => n <= 10 && n <= g.students.length && warCandidates(g, n).length) || WAR_SIZES[0];
     const f = { size: size0, picked: new Set([...g.students].sort((a, b) => b.score - a.score).slice(0, size0).map((x) => x.id)), found: null, prep: 24 };
     const draw = () => {
@@ -3177,9 +3184,9 @@
       openSheet(
         `
         <div class="sheet-handle"></div>
-        <div class="ef-head"><span>Топ соғысын бастау</span><button type="button" id="wsClose">${icon("close")}</button></div>
+        <div class="ef-head"><span>Топтар шайқасын бастау</span><button type="button" id="wsClose">${icon("close")}</button></div>
         <div class="wr-from">${icon("groups", "material-icons-outlined")}<b>${g.name}</b><span>${COURSE_TITLE[g.courseId]} · күші ${groupPower(g)}</span></div>
-        <div class="ef-label">Соғыс көлемі</div>
+        <div class="ef-label">Шайқас көлемі</div>
         <div class="ent-chips">${WAR_SIZES.map((n) => `<button type="button" class="ent-chip ${f.size === n ? "on" : ""}" style="--c:var(--primary)" data-wsz="${n}" ${g.students.length < n ? "disabled" : ""}>${n} × ${n}</button>`).join("")}</div>
         <div class="ef-label">Қатысушылар · ${f.picked.size}/${f.size} <button type="button" class="t3-all" id="wsTop">рейтинг бойынша үздіктер</button></div>
         <div class="tf-checks">${[...g.students].sort((a, b) => b.score - a.score).map((x) => `<button type="button" class="tf-check ${f.picked.has(x.id) ? "on" : ""}" data-wsp="${x.id}">${icon(f.picked.has(x.id) ? "check_box" : "check_box_outline_blank")}<span>${x.name}<small>рейтинг ${x.score}</small></span></button>`).join("")}</div>
@@ -3190,7 +3197,7 @@
             ? `<div class="wr-found">${icon("radar", "material-icons-outlined")}<div><b>Қарсылас табылды: ${f.found.name}</b><small>${COURSE_TITLE[f.found.courseId]} · ${f.found.studentsCount} оқушы · күші ${groupPower(f.found)}</small></div></div>`
             : `<div class="tf-sum ${cands.length ? "" : "warn"}">${icon("search", "material-icons-outlined")}${cands.length ? `Ортақ пәні бар ${cands.length} топ: ${cands.map((c) => c.g.name).join(", ")}` : "Ортақ пәні бар, көлемі жететін топ жоқ"}</div>`
         }
-        <button type="button" class="ef-submit" id="wsGo" ${cands.length ? "" : "disabled"}>${f.found ? "Соғысты бастау ⚔️" : "Қарсылас іздеу"}</button>`,
+        <button type="button" class="ef-submit" id="wsGo" ${cands.length ? "" : "disabled"}>${f.found ? "Шайқасты бастау ⚔️" : "Қарсылас іздеу"}</button>`,
         { tall: true }
       );
       $("#wsClose").onclick = closeSheet;
@@ -3234,7 +3241,7 @@
         if (g.id === MOCK.groups[0].id) MOCK.war = W;
         else MOCK.extraWars = [...(MOCK.extraWars || []).filter((w) => w.us.group.id !== g.id), W];
         closeSheet();
-        toast("Соғыс жарияланды — екі топқа хабарлама кетті");
+        toast("Шайқас жарияланды — екі топқа хабарлама кетті");
         if (state.navStack.length) paintStack();
         openWar({ staff: true, W });
       };
@@ -3244,7 +3251,7 @@
 
   /* ============================================================
      I4U МОНЕТАЛАРЫ ЖӘНЕ ДҮКЕН
-     Монета: сабақ қарау, тест, апталық сынақ, батл, турнир, топ соғысы
+     Монета: сабақ қарау, тест, апталық сынақ, батл, турнир, топтар шайқасы
      ============================================================ */
   const COIN_RULES = [
     ["smart_display", "Видеосабақты соңына дейін қарау", 5],
@@ -3252,7 +3259,7 @@
     ["quiz", "Сабақ тестін тапсыру", 10],
     ["calendar_month", "Апталық сынақ", 20],
     ["sports_kabaddi", "Батлда жеңу", 15],
-    ["shield", "Топ соғысы: әр монета-жұлдыз", 10],
+    ["shield", "Топтар шайқасы: әр монета-жұлдыз", 10],
     ["emoji_events", "Турнирде келесі кезеңге өту / чемпион", "20 / 200"],
     ["local_fire_department", "7 күн қатарынан кіру", 50],
   ];
@@ -6219,14 +6226,27 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     );
   }
 
+  /** Кубоктар / шайқас плиткаларындағы тірі белгі: белсенді кубок саны, шайқас күні — LIVE */
+  function hotBadge(kind) {
+    if (kind === "cup") {
+      const n = tournaments().filter((t) => t.status === "registration" || t.status === "running").length;
+      return n ? `<em class="sv-badge">${n}</em>` : "";
+    }
+    if (kind === "war") {
+      const live = state.mode === "staff" ? visibleGroups().some((g) => warOf(g)?.status === "battle") : war()?.status === "battle";
+      return live ? `<em class="sv-badge live">LIVE</em>` : "";
+    }
+    return "";
+  }
+
   /** Staff басты беті: баннер + сервистер (Аналитика, Эфир, Турнирлер) + бүгінгі эфирлер */
   function renderStaffHome() {
     const today = MOCK.efirs.filter((e) => e.date === iso(AN_TODAY)).sort((a, b) => a.time.localeCompare(b.time));
     const services = [
       { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { sub: "efir", label: "Эфир", icon: "live_tv" },
-      { sub: "tours", label: "Турнирлер", img: "assets/tournament/tournament_line.png" },
-      { sub: "war", label: "Топ соғысы", img: "assets/tournament/battle_line.png" },
+      { sub: "tours", label: "Кубоктар", img: "assets/tournament/cup_line.png", hot: "cup" },
+      { sub: "war", label: "Топтар шайқасы", img: "assets/tournament/clash_line.png", hot: "war" },
       { sub: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
     ];
     return `
@@ -6236,7 +6256,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         ${services
           .map(
             (s) => `
-          <button type="button" class="service-tile" data-staff-sub="${s.sub}">
+          <button type="button" class="service-tile ${s.hot ? `hot hot-${s.hot}` : ""}" data-staff-sub="${s.sub}">
+            ${hotBadge(s.hot)}
             ${s.img ? `<img src="${s.img}" alt="" />` : s.svg ? `<img src="${s.svg}" alt="" style="width:30px;height:30px" />` : `<span class="material-icons-outlined" style="color:var(--primary)">${s.icon}</span>`}
             <span>${s.label}</span>
           </button>`
@@ -6711,8 +6732,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { id: "trainer", label: "Тренажёр", icon: "track_changes", color: "#E07A3D" },
       { id: "professions", label: "Профессии", img: "assets/v2/profv2.png" },
       { id: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
-      { id: "tournament", label: "Турнир", img: "assets/tournament/tournament_line.png" },
-      { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png" },
+      { id: "tournament", label: "Кубоктар", img: "assets/tournament/cup_line.png", hot: "cup" },
+      { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
       { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
     ];
     return `
@@ -6722,8 +6743,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         ${services
           .map(
             (s) => `
-          <button type="button" class="service-tile ${s.soon ? "locked" : ""}" data-service="${s.id}" data-title="${s.label}">
+          <button type="button" class="service-tile ${s.soon ? "locked" : ""} ${s.hot ? `hot hot-${s.hot}` : ""}" data-service="${s.id}" data-title="${s.label}">
             ${s.soon ? `<span class="soon-badge">скоро</span>` : ""}
+            ${hotBadge(s.hot)}
             ${
               s.img
                 ? `<img src="${s.img}" alt="" />`

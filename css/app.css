@@ -4351,3 +4351,43 @@ button.so-row { cursor: pointer; }
 .so-row em { display: inline-block; margin-top: 4px; font-style: normal; font-size: 10.5px; font-weight: 700; color: var(--c); background: color-mix(in srgb, var(--c) 16%, transparent); padding: 2px 8px; border-radius: 99px; }
 .so-row .shop-ic { flex-shrink: 0; }
 .so-row .shop-price { margin: 0; flex-shrink: 0; }
+/* Турнир формасы: тұрақты биіктік, ішкі айналдыру, бірдей өлшемдер */
+.sheet:has(.tf-steps) { padding-bottom: 14px; }
+.sheet:has(.tf-steps) > * { flex-shrink: 0; }
+.sheet:has(.tf-steps) > .tf-body { flex: 1 1 auto; min-height: 0; overflow-y: auto; margin: 0 -4px; padding: 0 4px 6px; }
+.sheet:has(.tf-steps) > .sheet-actions:last-child { margin-top: 0 !important; padding-top: 12px; border-top: 1px solid #2a2a30; }
+.tf-body .ef-label:first-child { margin-top: 6px; }
+.tf-fmts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tf-fmt3 { height: 76px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-radius: 14px; border: 1px solid #2e2e36; background: linear-gradient(180deg, #202024, #181818); box-shadow: 0 3px 0 #0c0c10; color: #c8cad4; font-family: inherit; cursor: pointer; }
+.tf-fmt3 .material-icons-outlined { font-size: 26px; color: #8a8d9c; }
+.tf-fmt3 b { font-size: 12.5px; font-weight: 600; }
+.tf-fmt3.on { color: #fff; border-color: var(--primary); background: linear-gradient(180deg, color-mix(in srgb, var(--primary) 26%, #202024), color-mix(in srgb, var(--primary) 10%, #181818)); box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 3px 0 #2c1d55; }
+.tf-fmt3.on .material-icons-outlined { color: var(--primary); }
+.tf-row3 { margin-top: 2px; }
+.tf-step, .tf-cap { height: 44px; }
+.tf-prize { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tf-pz { height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; border-radius: 12px; border: 1px solid #2e2e36; background: #181818; color: #c8cad4; font-family: inherit; font-size: 15px; cursor: pointer; }
+.tf-pz img.coin { width: 18px; height: 18px; }
+.tf-pz.on { border-color: var(--primary); color: #fff; background: color-mix(in srgb, var(--primary) 16%, #181818); }
+.tf-podium { margin-top: 8px; border-radius: 12px; background: #181818; padding: 4px 12px; }
+.tf-podium > div { display: flex; align-items: center; gap: 6px; padding: 8px 0; font-size: 12.5px; border-bottom: 1px solid #26262c; }
+.tf-podium > div:last-child { border-bottom: 0; }
+.tf-podium span { flex: 1; color: #c8cad4; }
+.tf-podium b { display: inline-flex; align-items: center; gap: 4px; color: #a9b4ff; }
+.tf-podium b img.coin { width: 15px; height: 15px; }
+.tf-podium small { font-size: 11px; color: #e9a825; }
+.tf-from { display: flex; align-items: center; gap: 8px; margin-top: 6px; padding: 10px 12px; border-radius: 12px; background: #181818; font-size: 13px; }
+.tf-from .material-icons-outlined { color: var(--primary); font-size: 20px; }
+.tf-from span { margin-left: auto; font-size: 11px; color: #8a8d9c; }
+.tf-bans .tf-ban { width: 96px; height: 60px; }
+/* Ерекше плиткалар: Кубоктар (алтын) / Топтар шайқасы (қызғылт сары) — 3D жарқыл + тірі белгі */
+.service-tile.hot { box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 3px 0 #0c0c10; }
+.service-tile.hot::before { content: ""; position: absolute; inset: 0; border-radius: inherit; padding: 1px; background: linear-gradient(160deg, var(--hc), transparent 55%); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; pointer-events: none; }
+.service-tile.hot-cup { --hc: #E9A825; background: radial-gradient(circle at 50% 30%, rgba(233,168,37,.20), var(--card) 62%); }
+.service-tile.hot-war { --hc: #F07B3F; background: radial-gradient(circle at 50% 30%, rgba(240,123,63,.20), var(--card) 62%); }
+.service-tile.hot img { width: 30px; height: 30px; filter: drop-shadow(0 3px 6px color-mix(in srgb, var(--hc) 45%, transparent)); }
+.sv-badge { position: absolute; top: 8px; right: 8px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; font-style: normal; font-size: 10px; font-weight: 800; line-height: 18px; text-align: center; color: #2a1d02; background: var(--hc); }
+.sv-badge.live { color: #fff; background: #E2574C; letter-spacing: .4px; animation: svPulse 1.6s ease-in-out infinite; }
+@keyframes svPulse { 50% { box-shadow: 0 0 0 4px rgba(226,87,76,.25); } }
+.tf-from b { white-space: nowrap; }
+.tf-from span { flex: 1; text-align: right; }

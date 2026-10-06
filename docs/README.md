@@ -12,7 +12,7 @@
 | [features/NEWS.md](features/NEWS.md) | Жаңалық жазу, тексеру (бас куратор / академ. бөлім), баннер, API |
 | [features/WEEKLY_TEST.md](features/WEEKLY_TEST.md) | Апталық сынақты куратор өткізеді: ашық/жабық сұрақ, балл, рейтинг |
 | [features/COINS_SHOP.md](features/COINS_SHOP.md) | I4U монеталары: қалай жиналады, дүкен, API |
-| [features/GROUP_WAR.md](features/GROUP_WAR.md) | Топ соғысы: куратор бастайды, ортақ пән бойынша қарсылас, дайындық/шайқас, ★ |
+| [features/GROUP_WAR.md](features/GROUP_WAR.md) | Топтар шайқасы: куратор бастайды, ортақ пән бойынша қарсылас, дайындық/шайқас, ★ |
 | [features/BATTLE.md](features/BATTLE.md) | Батл: кездейсоқ/дос, шақырулар, асинхронды, рейтинг |
 | [features/TOURNAMENT.md](features/TOURNAMENT.md) | Турнир/жекпе-жек: рөлдер, тіркелу, кесте, ереже, деректер моделі, API |
 
