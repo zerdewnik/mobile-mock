@@ -2543,7 +2543,7 @@
         }
         <div class="tf-preview">
           ${f.banners.length ? `<div class="tf-pv-ban" style="background-image:url(${f.banners[0]})"></div>` : ""}
-          <div class="tf-pv-h"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>${f.title || "Атауы"}</b><small>${T_FORMATS[f.format].name} · ${COURSE_TITLE[f.courseId]}</small></div></div>
+          <div class="tf-pv-h">${f.banners.length ? "" : `<img src="assets/tournament/belt_icon.png" alt="" />`}<div><b>${f.title || "Атауы"}</b><small>${T_FORMATS[f.format].name} · ${COURSE_TITLE[f.courseId]}</small></div></div>
           <div class="tf-pv-r"><span>Қатысушылар</span><b>${cap() ? `${cap()} орын` : "шектеусіз"} · ${f.aud === "all" ? "барлық оқушылар" : [...f.groups].map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ")}</b></div>
           <div class="tf-pv-r"><span>Тақырыптар</span><b>${f.topics.size} тақырып · ${f.mods.size} модуль</b></div>
           <div class="tf-pv-r"><span>Жұптастыру</span><b>${f.seeding === "rating" ? "рейтинг" : "кездейсоқ"}${f.checkin ? " · check-in" : ""}</b></div>
