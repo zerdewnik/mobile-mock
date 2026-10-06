@@ -4695,3 +4695,64 @@ button.pf-stats > *, .pf-stats > button { cursor: pointer; }
 .ff-main > .ff-h:first-child, .ff-main > .ff-spin:first-child .ff-h { margin-top: 0; }
 .ff-grid { gap: 10px; }
 .ff-art { height: 96px; }
+/* Дүкен: баланс app bar-дың оң жағында */
+.ab-shop { display: inline-flex; align-items: center; gap: 6px; }
+.ab-shop .ff-bal { height: 30px; background: rgba(0,0,0,.28); border-color: rgba(169,180,255,.35); }
+.ab-shop .ff-bal button { width: 24px; height: 24px; }
+.ab-shop .ff-ic { width: 30px; height: 30px; background: rgba(255,255,255,.12); color: #fff; }
+.ff-rail { top: 0; }
+/* ====== Тауар беті: 3D айналу ====== */
+.x3d { position: relative; overflow: hidden; height: 250px; display: grid; place-items: center; perspective: 700px; touch-action: pan-y; cursor: grab; background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--r) 50%, transparent), transparent 62%), linear-gradient(180deg, color-mix(in srgb, var(--r) 26%, #141418), #1a1a1e); }
+.x3d.drag { cursor: grabbing; }
+.x3d.drag .x3d-obj { animation-play-state: paused; }
+.x3d .ff-rays { opacity: .8; }
+.x3d-rot { position: relative; z-index: 1; transform-style: preserve-3d; transition: transform .05s linear; }
+.x3d-obj { position: relative; width: 124px; height: 124px; transform-style: preserve-3d; animation: x3dSpin 7s linear infinite; }
+.x3d-obj > i { position: absolute; inset: 0; border-radius: 36px; background: color-mix(in srgb, var(--c) 50%, #000); }
+.x3d-face { position: absolute; inset: 0; border-radius: 36px; display: grid; place-items: center; color: #fff; transform: translateZ(9px); backface-visibility: hidden; background: radial-gradient(circle at 35% 26%, color-mix(in srgb, var(--c) 45%, #fff), var(--c) 55%, color-mix(in srgb, var(--c) 60%, #000)); box-shadow: inset 0 3px 0 rgba(255,255,255,.4), inset 0 -4px 0 rgba(0,0,0,.25); }
+.x3d-face.back { transform: rotateY(180deg) translateZ(9px); }
+.x3d-face .material-icons-round { font-size: 66px; filter: drop-shadow(0 3px 3px rgba(0,0,0,.35)); }
+@keyframes x3dSpin { from { transform: rotateX(-8deg) rotateY(0); } to { transform: rotateX(-8deg) rotateY(360deg); } }
+.x3d-shadow { position: absolute; bottom: 34px; left: 50%; width: 120px; height: 18px; margin-left: -60px; border-radius: 50%; background: radial-gradient(ellipse, rgba(0,0,0,.55), transparent 70%); animation: x3dShadow 3.5s ease-in-out infinite; }
+@keyframes x3dShadow { 50% { transform: scaleX(.55); opacity: .6; } }
+.x3d-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 4px; font-size: 10.5px; color: rgba(255,255,255,.55); }
+.x3d-hint .material-icons-outlined { font-size: 14px; }
+.x3d.try { cursor: default; }
+.x3d.try > *:not(.ff-rays) { position: relative; z-index: 1; }
+.it-body { padding-top: 14px; padding-bottom: 96px; }
+.it-head { display: flex; align-items: center; gap: 6px; }
+.it-rar { font-size: 10.5px; font-weight: 900; letter-spacing: .6px; text-transform: uppercase; color: #fff; background: var(--r); padding: 3px 10px; border-radius: 99px; }
+.ff-tag.static { position: static; border-radius: 99px; padding: 3px 9px; }
+.it-name { margin-top: 8px; font-size: 22px; font-weight: 800; }
+.it-desc { margin-top: 2px; font-size: 13px; color: #9a9db0; }
+.it-body .ff-tryb { margin-top: 12px; }
+.it-sec { display: flex; align-items: center; gap: 6px; margin: 20px 0 8px; font-size: 14px; font-weight: 700; }
+.it-sec .material-icons-outlined { font-size: 18px; color: #a9b4ff; }
+.it-why { font-size: 13px; line-height: 1.55; color: #d4d6e0; padding: 12px 14px; border-radius: 14px; background: #1e1e22; }
+.it-steps { margin: 0; padding: 4px 0 0; list-style: none; counter-reset: st; }
+.it-steps li { counter-increment: st; position: relative; padding: 8px 0 8px 36px; font-size: 13px; color: #d4d6e0; }
+.it-steps li::before { content: counter(st); position: absolute; left: 0; top: 5px; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; background: linear-gradient(180deg, #7d8cf0, #5B6EC2); box-shadow: 0 2px 0 #2e3576; }
+.it-spec { border-radius: 14px; background: #1e1e22; padding: 2px 14px; }
+.it-spec > div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a30; font-size: 12.5px; }
+.it-spec > div:last-child { border-bottom: 0; }
+.it-spec span { color: #8a8d9c; flex-shrink: 0; }
+.it-spec em { font-style: normal; text-align: right; color: #fff; }
+.it-foot { display: flex; align-items: center; gap: 12px; }
+.it-price { display: inline-flex; align-items: center; gap: 5px; flex-shrink: 0; }
+.it-price img.coin { width: 24px; height: 24px; }
+.it-price b { font-size: 20px; font-weight: 900; }
+.it-price s { font-size: 12px; color: #8a8d9c; }
+.it-foot .ef-submit { flex: 1; }
+.it-foot .ef-submit:disabled { opacity: .5; }
+/* Бас куратор: тауар формасы */
+.si-pv { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px; margin-top: 4px; border-radius: 14px; background: #161619; }
+.si-pv small { font-size: 11px; color: #8a8d9c; }
+.si-pv .ff-card { cursor: default; }
+.si-icons { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.si-icons button { aspect-ratio: 1; border: 1px solid #2e2e36; border-radius: 9px; background: #181818; color: #9a9db0; display: grid; place-items: center; cursor: pointer; padding: 0; }
+.si-icons button .material-icons-round { font-size: 19px; }
+.si-icons button.on { border-color: var(--primary); color: #fff; background: color-mix(in srgb, var(--primary) 25%, #181818); }
+.si-colors { display: flex; gap: 8px; margin-top: 10px; }
+.si-colors button { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; box-shadow: inset 0 -2px 0 rgba(0,0,0,.25); }
+.si-colors button.on { border-color: #fff; box-shadow: 0 0 0 2px var(--primary); }
+.si-ta { height: 70px; padding: 10px 14px; resize: none; line-height: 1.45; }

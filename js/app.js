@@ -832,7 +832,7 @@
           : `<div class="appbar ${student ? "appbar-inner" : ""} ${page.centered ? "appbar-centered" : ""}">
         <button type="button" class="appbar-back" id="innerBack">${icon("arrow_back")}</button>
         <div class="appbar-title" style="flex:1">${page.title}</div>
-        ${page.right || (student ? "" : `<button type="button" class="appbar-profile" id="innerProfile">${icon("person")}</button>`)}
+        ${(typeof page.right === "function" ? page.right() : page.right) || (student ? "" : `<button type="button" class="appbar-profile" id="innerProfile">${icon("person")}</button>`)}
       </div>`
       }
       <div class="content ${page.cls || ""}">${page.build()}</div>
@@ -995,7 +995,7 @@
           <div class="t3-sec">Топтар шайқасы</div>
           ${warCardHtml()}
           <div class="t3-sec">Жекпе-жек</div>
-          <button type="button" class="bt-btn rand wide" id="btRandom">${icon("sports_kabaddi")}<b>Өз тобымнан қарсылас</b><small>Деңгейі жақын сыныптас</small>${icon("chevron_right")}</button>
+          <button type="button" class="bt-btn rand wide" id="duelInvite">${icon("sports_kabaddi")}<b>Досыңды батлға шақыр</b><small>Онлайн не кезекпен</small>${icon("chevron_right")}</button>
           ${B.incoming.length ? `<div class="t3-sec">Саған шақыру · ${B.incoming.length}</div>${B.incoming.map((c, i) => `
             <div class="bt-inv">${avatarHtml(c.opp)}<div style="flex:1;min-width:0"><b>${c.opp.name}</b><small>${c.subjectTitle} · ${c.left} қалды</small></div>
               <button type="button" class="bt-no" data-btno="${i}">${icon("close")}</button><button type="button" class="bt-yes" data-btyes="${i}">Қабылдау</button></div>`).join("")}` : ""}
@@ -3430,7 +3430,6 @@
     const rail = `<nav class="ff-rail">${Object.entries(SHOP_CATS)
       .map(([k, c]) => `<button type="button" class="${cat === k ? "on" : ""} ${k === "inv" ? "vault" : ""}" data-shopcat="${k}">${icon(c.icon)}<span>${c.name}</span>${k === "spin" && spinState().freeLeft ? `<i></i>` : ""}</button>`)
       .join("")}</nav>`;
-    const top = `<div class="ff-top"><span class="ff-bal">${COIN}<b>${w.coins.toLocaleString("ru-RU")}</b><button type="button" id="shopHow">${icon("add")}</button></span><button type="button" class="ff-ic" id="shopLog" title="Тарих">${icon("history")}</button></div>`;
     let main;
     if (cat === "hot") {
       const D = dailyDeal();
@@ -3480,7 +3479,7 @@
       main = `${cat === "real" ? `<div class="sp-note" style="margin:0 0 10px">${icon("storefront", "material-icons-outlined")}<span>Сатып алған соң куратор дайындайды → хабарлама → офистен аласың</span></div>` : ""}
         <div class="ff-grid">${list.map(ffCard).join("")}</div>`;
     }
-    return `<div class="ff">${top}${rail}<div class="ff-main">${main}</div></div>`;
+    return `<div class="ff">${rail}<div class="ff-main">${main}</div></div>`;
   }
 
   /* —— Staff: Магазин ——
@@ -3559,36 +3558,81 @@
       { right: isHead() ? `<button type="button" class="appbar-add" id="siNew" title="Тауар қосу">${icon("add")}</button>` : "<span></span>" }
     );
   }
+  /** Бас куратор: тауар қосу / өзгерту — карточканың алдын ала көрінісімен */
+  const ITEM_ICONS = ["redeem", "card_giftcard", "menu_book", "edit_note", "backpack", "water_drop", "checkroom", "headphones", "sell", "star", "bolt", "lightbulb", "ac_unit", "more_time", "palette", "military_tech", "workspace_premium", "local_fire_department", "emoji_events", "school"];
+  const ITEM_COLORS = ["#E2574C", "#FF9F1A", "#F2C230", "#5CB36D", "#4FD1FF", "#4F9BFF", "#8A94F5", "#B07CFF"];
   function openShopItemForm(x) {
-    const f = x ? { ...x } : { id: `it${nextId()}`, cat: "real", rar: "rare", name: "", desc: "", price: 500, icon: "redeem", color: "#8A94F5", stock: 20 };
+    const I0 = x ? itemInfo(x) : { why: "", use: [], spec: {} };
+    const f = x
+      ? { ...x, why: I0.why, useTxt: I0.use.join("\n"), spec: { ...I0.spec } }
+      : { id: `it${nextId()}`, cat: "real", rar: "rare", name: "", desc: "", price: 500, icon: "redeem", color: "#8A94F5", stock: 20, lvl: 0, tag: "", until: "", why: "", useTxt: "", spec: {} };
     const cats = [["boost", "Күшейткіш"], ["frame", "Жиек"], ["title", "Атақ"], ["theme", "Тақырып"], ["real", "Сыйлық"]];
-    openSheet(`
-      <div class="sheet-handle"></div>
-      <div class="ef-head"><span>${x ? "Тауарды өзгерту" : "Жаңа тауар"}</span><button type="button" id="siClose">${icon("close")}</button></div>
-      <div class="ef-label">Атауы</div><input class="ef-input" id="siName" value="${f.name}" placeholder="Мысалы: I4U дәптер" />
-      <div class="ef-label">Сипаттама</div><input class="ef-input" id="siDesc" value="${f.desc}" />
-      <div class="ef-label">Санат</div>
-      <div class="ent-chips">${cats.map(([k, l]) => `<button type="button" class="ent-chip ${f.cat === k ? "on" : ""}" style="--c:var(--primary)" data-sicat="${k}">${l}</button>`).join("")}</div>
-      <div class="ef-label">Бағасы (I4U монета)</div><input class="ef-input" id="siPrice" type="number" min="1" value="${f.price}" />
-      <div class="ef-label">Қалдық (мерч үшін)</div><input class="ef-input" id="siStock" type="number" min="0" value="${f.stock ?? 20}" />
-      <button type="button" class="tf-check ${f.hidden ? "on" : ""}" id="siHide">${icon(f.hidden ? "check_box" : "check_box_outline_blank")}<span>Оқушылардан жасыру</span></button>
-      <button type="button" class="ef-submit" id="siSave">${x ? "Сақтау" : "Қосу"}</button>`, { tall: true });
-    $("#siClose").onclick = closeSheet;
-    $$("[data-sicat]").forEach((b) => (b.onclick = () => { f.cat = b.dataset.sicat; $$("[data-sicat]").forEach((c) => c.classList.toggle("on", c === b)); }));
-    $("#siHide").onclick = (e) => { f.hidden = !f.hidden; e.currentTarget.classList.toggle("on", f.hidden); e.currentTarget.querySelector(".material-icons-round").textContent = f.hidden ? "check_box" : "check_box_outline_blank"; };
-    $("#siSave").onclick = () => {
-      f.name = $("#siName").value.trim();
-      f.desc = $("#siDesc").value.trim();
-      f.price = +$("#siPrice").value;
-      f.stock = +$("#siStock").value;
-      if (!f.name || !(f.price > 0)) return toast("Атауы мен бағасын толтырыңыз", "err");
-      f.slot = ["frame", "title", "theme"].includes(f.cat) ? f.cat : undefined;
-      if (x) Object.assign(x, f);
-      else SHOP.push(f);
-      closeSheet();
-      toast(x ? "Сақталды" : "Тауар қосылды — оқушылар дүкенінде көрінеді");
-      paintStack();
+    const keep = () => {
+      const v = (id) => $(id)?.value;
+      if (!$("#siName")) return;
+      f.name = v("#siName").trim();
+      f.desc = v("#siDesc").trim();
+      f.price = +v("#siPrice");
+      f.stock = +v("#siStock");
+      f.lvl = +v("#siLvl");
+      f.until = v("#siUntil")?.trim() || "";
+      f.why = v("#siWhy").trim();
+      f.useTxt = v("#siUse");
+      f.spec = { act: v("#siAct").trim(), where: v("#siWhere").trim(), limit: v("#siLimit").trim() };
     };
+    const draw = () => {
+      const pv = { ...f, name: f.name || "Атауы", stock: f.stock, lvl: 0 };
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>${x ? "Тауарды өзгерту" : "Жаңа тауар"}</span><button type="button" id="siClose">${icon("close")}</button></div>
+        <div class="si-pv"><div class="ff-grid" style="grid-template-columns:150px">${ffCard(pv).replace(/data-shopitem="[^"]*"/, "")}</div><small>Оқушы дүкенінде осылай көрінеді</small></div>
+        <div class="ef-label">Атауы <i>*</i></div><input class="ef-input" id="siName" value="${f.name}" placeholder="Мысалы: I4U дәптер" />
+        <div class="ef-label">Қысқа сипаттама</div><input class="ef-input" id="siDesc" value="${f.desc}" placeholder="Бір жол, карточкада шығады" />
+        <div class="ef-label">Санат</div>
+        <div class="ent-chips">${cats.map(([k, l]) => `<button type="button" class="ent-chip ${f.cat === k ? "on" : ""}" style="--c:var(--primary)" data-sicat="${k}">${l}</button>`).join("")}</div>
+        <div class="ef-label">Сиректік</div>
+        <div class="ent-chips">${Object.entries(RARITY).map(([k, r]) => `<button type="button" class="ent-chip ${f.rar === k ? "on" : ""}" style="--c:${r.c}" data-sirar="${k}">${r.name}</button>`).join("")}</div>
+        <div class="ef-label">Иконка және түс</div>
+        <div class="si-icons">${ITEM_ICONS.map((ic) => `<button type="button" class="${f.icon === ic ? "on" : ""}" data-siic="${ic}">${icon(ic)}</button>`).join("")}</div>
+        <div class="si-colors">${ITEM_COLORS.map((c) => `<button type="button" class="${f.color === c ? "on" : ""}" style="background:${c}" data-sicol="${c}"></button>`).join("")}</div>
+        <div class="tf-row">
+          <div><div class="ef-label">Бағасы 🪙 <i>*</i></div><input class="ef-input" id="siPrice" type="number" min="1" value="${f.price}" /></div>
+          <div><div class="ef-label">Деңгей талабы</div><input class="ef-input" id="siLvl" type="number" min="0" value="${f.lvl || 0}" placeholder="0 — жоқ" /></div>
+        </div>
+        ${f.cat === "real" ? `<div class="ef-label">Қалдық (дана)</div><input class="ef-input" id="siStock" type="number" min="0" value="${f.stock ?? 20}" />` : `<input type="hidden" id="siStock" value="${f.stock ?? 0}" />`}
+        <div class="ef-label">Белгі</div>
+        <div class="ent-chips">${[["", "Жоқ"], ["new", "ЖАҢА"], ["limited", "Шектеулі уақыт"]].map(([k, l]) => `<button type="button" class="ent-chip ${(f.tag || "") === k ? "on" : ""}" style="--c:var(--primary)" data-sitag="${k}">${l}</button>`).join("")}</div>
+        ${f.tag === "limited" ? `<input class="ef-input" id="siUntil" value="${f.until || ""}" placeholder="Қанша уақыт сатылады, мысалы: 5 күн" style="margin-top:8px" />` : ""}
+        <div class="ef-label">Не үшін керек</div><textarea class="ef-input si-ta" id="siWhy" placeholder="Оқушыға пайдасы неде">${f.why || ""}</textarea>
+        <div class="ef-label">Қалай қолданады <small class="tf-hint">· әр қадам жаңа жолдан</small></div><textarea class="ef-input si-ta" id="siUse" placeholder="Сатып ал&#10;Қоймадан «Қосу» бас">${f.useTxt || ""}</textarea>
+        <div class="ef-label">Сипаттамалары</div>
+        <input class="ef-input" id="siAct" value="${f.spec.act || ""}" placeholder="Әрекеті: 24 сағат / тұрақты / бір реттік" />
+        <input class="ef-input" id="siWhere" value="${f.spec.where || ""}" placeholder="Қайда жұмыс істейді: батл, тест…" style="margin-top:8px" />
+        <input class="ef-input" id="siLimit" value="${f.spec.limit || ""}" placeholder="Шектеу: айына 1 дана, турнирде жоқ…" style="margin-top:8px" />
+        <button type="button" class="tf-check ${f.hidden ? "on" : ""}" id="siHide" style="margin-top:14px">${icon(f.hidden ? "check_box" : "check_box_outline_blank")}<span>Оқушылардан жасыру (сатылымнан алу)</span></button>
+        <button type="button" class="ef-submit" id="siSave">${x ? "Сақтау" : "Дүкенге қосу"}</button>`, { tall: true });
+      $("#siClose").onclick = closeSheet;
+      const on = (sel, fn) => $$(sel).forEach((b) => (b.onclick = () => (keep(), fn(b), draw())));
+      on("[data-sicat]", (b) => (f.cat = b.dataset.sicat));
+      on("[data-sirar]", (b) => (f.rar = b.dataset.sirar));
+      on("[data-siic]", (b) => (f.icon = b.dataset.siic));
+      on("[data-sicol]", (b) => (f.color = b.dataset.sicol));
+      on("[data-sitag]", (b) => (f.tag = b.dataset.sitag));
+      on("#siHide", () => (f.hidden = !f.hidden));
+      $("#siName").oninput = () => (keep(), ($(".si-pv .ff-card > b").textContent = f.name || "Атауы"));
+      $("#siSave").onclick = () => {
+        keep();
+        if (!f.name || !(f.price > 0)) return toast("Атауы мен бағасын толтырыңыз", "err");
+        const out = { ...f, use: f.useTxt.split("\n").map((t) => t.trim()).filter(Boolean), slot: ["frame", "title", "theme"].includes(f.cat) ? f.cat : undefined, lvl: f.lvl || undefined, tag: f.tag || undefined };
+        delete out.useTxt;
+        if (x) Object.assign(x, out);
+        else SHOP.push(out);
+        closeSheet();
+        toast(x ? "Сақталды" : "Тауар қосылды — оқушылар дүкенінде көрінеді");
+        paintStack();
+      };
+    };
+    draw();
   }
   function openCoinAward(st) {
     const max = isHead() ? 500 : 50;
@@ -3618,69 +3662,130 @@
     };
     draw();
   }
+  /** Тауардың сипаттамасы: не үшін керек, қалай қолданады, сипаттамалар (бас куратор формада өзгерте алады) */
+  const ITEM_INFO = {
+    hint5: { why: "Қиын сұрақта көмектеседі: 4 нұсқаның біреуін — қатесін — алып тастайды, таңдау жеңілдейді.", use: ["Сабақ тестін не тренажёрды аш", "Сұрақ астындағы 💡 белгісін бас", "Бір қате нұсқа сөнеді, 1 кеңес жұмсалады"], spec: { act: "1 сұраққа 1 кеңес · барлығы 5", where: "Сабақ тесті, тренажёр", limit: "ҰБТ сынағы, апталық сынақ, турнирде жұмыс істемейді" } },
+    time: { why: "Батлда ұзақ есептейтін сұраққа уақыт жетпей қалмас үшін.", use: ["Батлда сұрақ ашылғанда ⏱ белгісін бас", "Сағатқа +10 секунд қосылады"], spec: { act: "1 сұраққа +10 с · барлығы 3", where: "Достық батл", limit: "Турнир мен топтар шайқасында жоқ" } },
+    freeze: { why: "Ауырып не жолда жүріп кіре алмасаң, күндік серияң үзілмейді.", use: ["Сатып алып Қоймада сақта", "Кірмеген күні өздігінен жұмсалады"], spec: { act: "1 күн", where: "Күндік серия", limit: "Ең көбі 2 дана сақталады" } },
+    retry: { why: "Батлда қателескен сұрақты қайта таңдауға бір мүмкіндік береді.", use: ["Қате жауап бергенде «Қайта таңдау» шығады", "Бассаң ұпай жоғалмайды"], spec: { act: "1 батлда 1 рет", where: "Достық батл", limit: "Турнир мен шайқаста жоқ" } },
+    x2: { why: "Белсенді күні монетаны тезірек жинау үшін: 24 сағат бойы барлық монета екі есе.", use: ["Қоймадан «Қосу» бас", "24 сағаттық таймер басталады", "Сабақ, тест, батл, турнир монеталары ×2"], spec: { act: "24 сағат", where: "Барлық монета көздері", limit: "Бір уақытта біреуі ғана" } },
+  };
+  const CAT_INFO = {
+    frame: { type: "Аватар жиегі", why: "Профиліңді ерекшелейді: жиекті сыныптастарың рейтингте, батлда және турнирде көреді.", use: ["Сатып ал — бірден киіледі", "Қоймадан «Кию / Шешу»", "Басқа жиек кисең, бұрынғысы Қоймада қалады"], spec: { act: "Тұрақты — мәңгі сенікі", where: "Профиль, рейтинг, батл, турнир", limit: "Бір уақытта 1 жиек" } },
+    title: { type: "Атақ", why: "Атыңның астында көрінеді — басқалар сенің жетістігіңді бірден біледі.", use: ["Сатып ал — бірден киіледі", "Қоймадан «Кию / Шешу»"], spec: { act: "Тұрақты", where: "Профиль, рейтинг, батл", limit: "Бір уақытта 1 атақ" } },
+    theme: { type: "Тақырып", why: "Қосымшаның түстерін өзгертеді — оқу көзге жағымды болады.", use: ["Сатып ал", "Қоймадан «Кию» — түстер бірден ауысады"], spec: { act: "Тұрақты", where: "Бүкіл қосымша (тек өзіңде)", limit: "Бір уақытта 1 тақырып" } },
+    bundle: { type: "Жиынтық", why: "Бірнеше затты бөлек алғаннан арзан.", use: ["Сатып ал — барлық заттар Қоймаға түседі", "Әр затты өз ережесімен қолдан"], spec: { act: "Ішіндегі заттарға байланысты", where: "—", limit: "Бір оқушыға 1 рет" } },
+    real: { type: "Шынайы сыйлық", why: "Монетаңды нақты I4U сыйлығына айырбастайсың.", use: ["Сатып ал — тапсырыс жасалады", "Куратор дайындайды, саған хабарлама келеді", "Офистен (Абай 52, 2-қабат) алып кет"], spec: { act: "Бір реттік", where: "I4U офисі", limit: "Айына 1 дана" } },
+    boost: { type: "Күшейткіш" },
+  };
+  function itemInfo(x) {
+    const c = CAT_INFO[x.cat] || {}, i = ITEM_INFO[x.id] || {};
+    return { type: c.type || "", why: x.why || i.why || c.why || x.desc, use: x.use || i.use || c.use || [], spec: { ...(c.spec || {}), ...(i.spec || {}), ...(x.spec || {}) } };
+  }
+  /** 3D айналатын тауар: алдыңғы/артқы бет + қалыңдық қабаттары, саусақпен бұруға болады */
+  const item3d = (x) => `
+    <div class="x3d" style="--c:${x.color};--r:${RARITY[x.rar].c}" id="x3d">
+      <span class="ff-rays"></span>
+      <div class="x3d-rot" id="x3dRot">
+        <div class="x3d-obj">
+          ${Array.from({ length: 9 }, (_, k) => `<i style="transform:translateZ(${k * 2 - 8}px)"></i>`).join("")}
+          <span class="x3d-face">${icon(x.icon)}</span>
+          <span class="x3d-face back">${icon(x.icon)}</span>
+        </div>
+      </div>
+      <span class="x3d-shadow"></span>
+      <small class="x3d-hint">${icon("swipe", "material-icons-outlined")}бұру үшін сырғыт</small>
+    </div>`;
   function openShopItem(x) {
-    const w = wallet(), S = buyState(x), p = priceOf(x), R = RARITY[x.rar], off = discountOf(x);
-    const me = TOUR_ME();
+    const w = wallet(), R = RARITY[x.rar], me = TOUR_ME();
     let tryOn = false;
-    const how = x.cat === "real"
-      ? ["Сатып алған соң тапсырыс жасалады", "Куратор дайындағанда хабарлама келеді", "Офистен (Абай 52, 2-қабат) алып кетесің", `Қалдығы: ${x.stock} дана`]
-      : x.how || (x.slot ? ["«Қойма» ішінен киесің / шешесің", "Басқалар профиліңде және рейтингте көреді"] : []);
-    const draw = () => {
-      const stage = tryOn && x.slot === "frame"
-        ? `<span class="pf-av fr-${x.id}">${avatarHtml(me, "xl")}</span>`
-        : tryOn && x.slot === "title"
-          ? `<span class="ff-try-t"><b>${me.name}</b><span class="pf-title" style="--c:${x.color}">${x.name.replace(/[«»]/g, "")}</span></span>`
-          : medal(x, "xl");
-      openSheet(`
-        <div class="sheet-handle"></div>
-        <div class="ff-stage" style="--r:${R.c}">
-          <span class="ff-rays"></span>
-          <span class="ff-rar big">${R.name}</span>
-          ${off ? `<em class="ff-tag off">−${off}%</em>` : ""}
-          ${stage}
-        </div>
-        <div class="sh-detail" style="padding-top:10px"><b style="margin-top:0">${x.name}</b><small>${x.desc}</small>
-          ${x.cat === "boost" && ownedOf(x) ? `<span class="sh-have">Сенде: ×${ownedOf(x)}</span>` : ""}
-          ${x.slot === "frame" || x.slot === "title" ? `<button type="button" class="ff-tryb ${tryOn ? "on" : ""}" id="ffTry">${icon(tryOn ? "visibility_off" : "visibility", "material-icons-outlined")}${tryOn ? "Қайтару" : "Киіп көру"}</button>` : ""}
-        </div>
-        ${x.items ? `<div class="ff-bun">${x.items.map((id) => { const it = SHOP.find((i) => i.id === id); return `<span style="--r:${RARITY[it.rar].c}">${medal(it, "sm")}<small>${it.name}</small></span>`; }).join("")}</div><div class="ff-bun-p">Бөлек алсаң: <s>${bundleFull(x)}</s> · үнем <b>${bundleFull(x) - x.price}</b> ${COIN}</div>` : ""}
-        ${how.length ? `<div class="sh-how">${how.map((h) => `<div>${icon("check_circle", "material-icons-outlined")}<span>${h}</span></div>`).join("")}</div>` : ""}
-        ${S.why === "poor" ? `<div class="sh-need"><span>Монета жетпейді: ${S.txt}</span><i><b style="width:${S.pct}%"></b></i><button type="button" class="t3-all" id="shNeedHow">Қалай жинаймын?</button></div>` : ""}
-        <div class="sheet-actions btn-row">
-          <button type="button" class="btn btn-ghost" id="shClose">Жабу</button>
-          ${
-            S.why === "own" ? `<button type="button" class="btn btn-primary" id="shEquip">${w.equip[x.slot] === x.id ? "Шешу" : "Кию"}</button>`
-            : `<button type="button" class="btn btn-primary sh-buy" id="shBuy" ${S.ok ? "" : "disabled"}>${S.ok ? `Сатып алу · ${COIN}${p.toLocaleString("ru-RU")}` : S.txt}</button>`
-          }
-        </div>`);
-      $("#shClose").onclick = closeSheet;
-      $("#ffTry")?.addEventListener("click", () => ((tryOn = !tryOn), draw()));
-      $("#shNeedHow")?.addEventListener("click", coinRulesSheet);
-      $("#shEquip")?.addEventListener("click", () => {
-        w.equip[x.slot] = w.equip[x.slot] === x.id ? null : x.id;
-        closeSheet();
-        toast(w.equip[x.slot] ? `${x.name} киілді` : "Шешілді");
-        paintStack();
-      });
-      $("#shBuy")?.addEventListener("click", () => {
-        if (!buyState(x).ok) return;
-        w.coins -= p;
-        const give = (it) => {
-          if (it.cat === "boost") w.counts[it.id] = (w.counts[it.id] || 0) + 1;
-          else if (isStyle(it) && !w.owned.includes(it.id)) (w.owned.push(it.id), (w.equip[it.slot] = it.id));
-        };
-        if (x.items) x.items.forEach((id) => give(SHOP.find((i) => i.id === id)));
-        else if (x.cat === "real") {
-          x.stock -= 1;
-          shopOrders().unshift({ id: nextId(), st: TOUR_ME(), g: MOCK.groups[0], item: x.id, date: dmy(AN_TODAY), status: "new" });
-        } else give(x);
-        w.log.unshift({ t: `Дүкен: ${x.name}`, c: -p, d: dmy(new Date()).slice(0, 5) });
-        closeSheet();
-        toast(x.cat === "real" ? "Тапсырыс жасалды! Дайын болғанда хабарлама келеді 🎁" : x.items ? `${x.name} — барлығы «Қоймаға» түсті` : isStyle(x) ? `${x.name} — сенікі, киілді!` : `${x.name} қосылды`);
-        paintStack();
-      });
-    };
-    draw();
+    pushScreen(
+      x.name,
+      () => {
+        const S = buyState(x), off = discountOf(x), I = itemInfo(x);
+        const rows = [
+          ["Сиректік", `<b style="color:${R.c}">${R.name}</b>`],
+          ["Түрі", I.type],
+          ["Әрекеті", I.spec.act],
+          ["Қайда жұмыс істейді", I.spec.where],
+          ["Шектеу", I.spec.limit],
+          x.lvl ? ["Талап", `${x.lvl}-деңгейден${MY_LEVEL < x.lvl ? ` (сенде ${MY_LEVEL})` : ""}`] : null,
+          x.cat === "real" ? ["Қалдық", `${x.stock} дана`] : null,
+          x.cat === "boost" ? ["Сенде", `×${ownedOf(x)}`] : null,
+          x.until ? ["Сатылым", `тағы ${x.until}`] : null,
+        ].filter((r) => r && r[1]);
+        return `
+          ${tryOn ? `<div class="x3d try" style="--r:${R.c}"><span class="ff-rays"></span>${x.slot === "frame" ? `<span class="pf-av fr-${x.id}">${avatarHtml(me, "xl")}</span>` : `<span class="ff-try-t"><b>${me.name}</b><span class="pf-title" style="--c:${x.color}">${x.name.replace(/[«»]/g, "")}</span></span>`}</div>` : item3d(x)}
+          <div class="list-pad it-body">
+            <div class="it-head">
+              <span class="it-rar" style="--r:${R.c}">${R.name}</span>
+              ${off ? `<span class="ff-tag off static">−${off}%</span>` : x.tag === "new" ? `<span class="ff-tag new static">ЖАҢА</span>` : x.tag === "limited" ? `<span class="ff-tag lim static">${icon("schedule", "material-icons-outlined")}${x.until}</span>` : ""}
+            </div>
+            <div class="it-name">${x.name}</div>
+            <div class="it-desc">${x.desc}</div>
+            ${x.slot === "frame" || x.slot === "title" ? `<button type="button" class="ff-tryb ${tryOn ? "on" : ""}" id="ffTry">${icon(tryOn ? "view_in_ar" : "visibility", "material-icons-outlined")}${tryOn ? "3D көрініс" : "Киіп көру"}</button>` : ""}
+            ${x.items ? `<div class="it-sec">Ішінде</div><div class="ff-bun" style="justify-content:flex-start">${x.items.map((id) => { const it = SHOP.find((i) => i.id === id); return `<span style="--r:${RARITY[it.rar].c}">${medal(it, "sm")}<small>${it.name}</small></span>`; }).join("")}</div><div class="ff-bun-p" style="justify-content:flex-start">Бөлек алсаң: <s>${bundleFull(x)}</s> · үнем <b>${bundleFull(x) - x.price}</b> ${COIN}</div>` : ""}
+            <div class="it-sec">${icon("help_outline", "material-icons-outlined")}Не үшін керек</div>
+            <div class="it-why">${I.why}</div>
+            ${I.use.length ? `<div class="it-sec">${icon("touch_app", "material-icons-outlined")}Қалай қолданады</div><ol class="it-steps">${I.use.map((u) => `<li>${u}</li>`).join("")}</ol>` : ""}
+            <div class="it-sec">${icon("tune", "material-icons-outlined")}Сипаттамалары</div>
+            <div class="it-spec">${rows.map(([k, v]) => `<div><span>${k}</span><em>${v}</em></div>`).join("")}</div>
+            ${S.why === "poor" ? `<div class="sh-need"><span>Монета жетпейді: ${S.txt}</span><i><b style="width:${S.pct}%"></b></i><button type="button" class="t3-all" id="shNeedHow">Қалай жинаймын?</button></div>` : ""}
+          </div>`;
+      },
+      () => {
+        $("#ffTry")?.addEventListener("click", () => ((tryOn = !tryOn), paintStack()));
+        $("#shopHow")?.addEventListener("click", coinRulesSheet);
+        $("#shopLog")?.addEventListener("click", openCoinLog);
+        $("#shNeedHow")?.addEventListener("click", coinRulesSheet);
+        // саусақпен / тышқанмен бұру
+        const st = $("#x3d"), rot = $("#x3dRot");
+        if (st && rot) {
+          let x0 = null, base = 0, cur = 0;
+          st.onpointerdown = (e) => ((x0 = e.clientX), (base = cur), st.setPointerCapture(e.pointerId), st.classList.add("drag"));
+          st.onpointermove = (e) => { if (x0 == null) return; cur = base + (e.clientX - x0) * 0.8; rot.style.transform = `rotateY(${cur}deg)`; };
+          st.onpointerup = st.onpointercancel = () => ((x0 = null), st.classList.remove("drag"));
+        }
+        $("#shEquip")?.addEventListener("click", () => {
+          w.equip[x.slot] = w.equip[x.slot] === x.id ? null : x.id;
+          toast(w.equip[x.slot] ? `${x.name} киілді` : "Шешілді");
+          paintStack();
+        });
+        $("#shBuy")?.addEventListener("click", async () => {
+          const p = priceOf(x);
+          if (!buyState(x).ok) return;
+          const ok = await confirmDialog({ title: `${x.name} сатып алу?`, message: `${p} I4U монета жұмсалады. Қалады: ${w.coins - p}.`, confirmLabel: "Сатып алу" });
+          if (!ok) return;
+          w.coins -= p;
+          const give = (it) => {
+            if (it.cat === "boost") w.counts[it.id] = (w.counts[it.id] || 0) + 1;
+            else if (isStyle(it) && !w.owned.includes(it.id)) (w.owned.push(it.id), (w.equip[it.slot] = it.id));
+          };
+          if (x.items) x.items.forEach((id) => give(SHOP.find((i) => i.id === id)));
+          else if (x.cat === "real") {
+            x.stock -= 1;
+            shopOrders().unshift({ id: nextId(), st: TOUR_ME(), g: MOCK.groups[0], item: x.id, date: dmy(AN_TODAY), status: "new" });
+          } else give(x);
+          w.log.unshift({ t: `Дүкен: ${x.name}`, c: -p, d: dmy(new Date()).slice(0, 5) });
+          toast(x.cat === "real" ? "Тапсырыс жасалды! Дайын болғанда хабарлама келеді 🎁" : x.items ? `${x.name} — барлығы «Қоймаға» түсті` : isStyle(x) ? `${x.name} — сенікі, киілді!` : `${x.name} қосылды`);
+          paintStack();
+        });
+      },
+      {
+        right: shopBar,
+        footer: () => {
+          const S = buyState(x), p = priceOf(x), off = discountOf(x);
+          return `<div class="sticky-foot it-foot">
+            <span class="it-price">${COIN}<b>${p.toLocaleString("ru-RU")}</b>${off && x.cat !== "bundle" ? `<s>${x.price}</s>` : ""}</span>
+            ${S.why === "own" ? `<button type="button" class="ef-submit" id="shEquip" style="margin:0">${w.equip[x.slot] === x.id ? "Шешу" : "Кию"}</button>` : `<button type="button" class="ef-submit" id="shBuy" style="margin:0" ${S.ok ? "" : "disabled"}>${S.ok ? "Сатып алу" : S.txt}</button>`}
+          </div>`;
+        },
+      }
+    );
+  }
+  /** App bar оң жағы: баланс + тарих */
+  function shopBar() {
+    return `<span class="ab-shop"><span class="ff-bal">${COIN}<b>${wallet().coins.toLocaleString("ru-RU")}</b><button type="button" id="shopHow" title="Қалай жинаймын">${icon("add")}</button></span><button type="button" class="ff-ic" id="shopLog" title="Монета тарихы">${icon("history")}</button></span>`;
   }
   function coinRulesSheet() {
     openSheet(`
@@ -3690,6 +3795,16 @@
       <div class="coin-rule">${icon("military_tech", "material-icons-outlined")}<span>Жетістік деңгейі (қола / күміс / алтын)</span><b>+20/50/150 ${COIN}</b></div>
       <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="chClose" style="width:100%">Түсінікті</button></div>`);
     $("#chClose").onclick = closeSheet;
+  }
+  function openCoinLog() {
+    const w = wallet();
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ex-title">Монета тарихы</div>
+        <div class="sh-logsum"><span>Барлығы жиналды<b class="up">+${w.earned.toLocaleString("ru-RU")}</b></span><span>Жұмсалды<b class="down">−${w.log.filter((l) => l.c < 0).reduce((t, l) => t - l.c, 0).toLocaleString("ru-RU")}</b></span></div>
+        ${w.log.slice(0, 20).map((l) => `<div class="coin-log"><span>${l.t}</span><small>${l.d}</small><b class="${l.c > 0 ? "up" : "down"}">${l.c > 0 ? "+" : ""}${l.c}</b></div>`).join("")}
+        <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="lgClose" style="width:100%">Жабу</button></div>`, { tall: true });
+      $("#lgClose").onclick = closeSheet;
   }
   function bindShop() {
     const w = wallet();
@@ -3714,15 +3829,7 @@
       }, 3300);
     });
     $("#shopHow")?.addEventListener("click", coinRulesSheet);
-    $("#shopLog")?.addEventListener("click", () => {
-      openSheet(`
-        <div class="sheet-handle"></div>
-        <div class="ex-title">Монета тарихы</div>
-        <div class="sh-logsum"><span>Барлығы жиналды<b class="up">+${w.earned.toLocaleString("ru-RU")}</b></span><span>Жұмсалды<b class="down">−${w.log.filter((l) => l.c < 0).reduce((t, l) => t - l.c, 0).toLocaleString("ru-RU")}</b></span></div>
-        ${w.log.slice(0, 20).map((l) => `<div class="coin-log"><span>${l.t}</span><small>${l.d}</small><b class="${l.c > 0 ? "up" : "down"}">${l.c > 0 ? "+" : ""}${l.c}</b></div>`).join("")}
-        <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="lgClose" style="width:100%">Жабу</button></div>`, { tall: true });
-      $("#lgClose").onclick = closeSheet;
-    });
+    $("#shopLog")?.addEventListener("click", openCoinLog);
     $$("[data-shopitem]").forEach((b) => (b.onclick = () => openShopItem(SHOP.find((x) => x.id === b.dataset.shopitem))));
     $$("[data-shopequip]").forEach((b) => (b.onclick = () => {
       const x = SHOP.find((i) => i.id === b.dataset.shopequip);
@@ -4075,7 +4182,7 @@
         build: pageHtml,
         after: bindService,
         screenCls: id === "analytics" ? "an-screen" : "",
-        right: id === "shop" ? "<span></span>" : id === "battle" ? `<span class="ab-icons"><button type="button" class="appbar-icon-btn" id="duelInvite" title="Досты шақыру">${icon("person_add", "material-icons-outlined")}</button><button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button></span>` : id === "tournament" ? "<span></span>" : undefined,
+        right: id === "shop" ? shopBar : id === "battle" ? `<button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button>` : id === "tournament" ? "<span></span>" : undefined,
         centered: id === "analytics",
         footer: () =>
           id === "tests" && state.svc.tab === "ent" && state.entOpen
