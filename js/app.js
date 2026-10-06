@@ -2371,7 +2371,7 @@
   /** Куратор: турнирлер тізімі және жаңа турнир құру */
   function openStaffTournaments() {
     pushScreen(
-      "Кубоктар",
+      "Турниры",
       () => `<div class="list-pad tour">
         ${tourSegHtml(tournaments(), true)}
       </div>`,
@@ -6226,7 +6226,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     );
   }
 
-  /** Кубоктар / шайқас плиткаларындағы тірі белгі: белсенді кубок саны, шайқас күні — LIVE */
+  /** Турниры / шайқас плиткаларындағы тірі белгі: белсенді кубок саны, шайқас күні — LIVE */
   function hotBadge(kind) {
     if (kind === "cup") {
       const n = tournaments().filter((t) => t.status === "registration" || t.status === "running").length;
@@ -6245,7 +6245,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const services = [
       { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { sub: "efir", label: "Эфир", icon: "live_tv" },
-      { sub: "tours", label: "Кубоктар", img: "assets/tournament/cup_line.png", hot: "cup" },
+      { sub: "tours", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
       { sub: "war", label: "Топтар шайқасы", img: "assets/tournament/clash_line.png", hot: "war" },
       { sub: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
     ];
@@ -6732,9 +6732,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { id: "trainer", label: "Тренажёр", icon: "track_changes", color: "#E07A3D" },
       { id: "professions", label: "Профессии", img: "assets/v2/profv2.png" },
       { id: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
-      { id: "tournament", label: "Кубоктар", img: "assets/tournament/cup_line.png", hot: "cup" },
-      { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
       { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
+      { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
+      { id: "tournament", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
     ];
     return `
       ${bannerHtml()}
