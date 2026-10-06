@@ -37,6 +37,12 @@ class I4UColors {
   static const danger = Color(0xFFE06B5B);
   static const dangerBg = Color(0xFF3A2020);
   static const info = Color(0xFF6C7FD8);
+  // Дүкен сиректігі (Free Fire үлгісі)
+  static const rarityCommon = Color(0xFF8A93A6);
+  static const rarityRare = Color(0xFF3D8BFF);
+  static const rarityEpic = Color(0xFFA64DFF);
+  static const rarityLegend = Color(0xFFFF9F1A);
+
   // I4U монета (көк)
   static const coinLight = Color(0xFFDDE3FF);
   static const coin = Color(0xFF8A97F2);

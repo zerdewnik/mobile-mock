@@ -4585,3 +4585,100 @@ button.pf-stats > *, .pf-stats > button { cursor: pointer; }
 .ach-step em img.coin { width: 15px; height: 15px; }
 .pf-card, .pf-stats, .pf-block { margin-left: 16px; margin-right: 16px; }
 .user-profile > .pf-card { margin-top: 16px; }
+/* ====== Дүкен v3 — Free Fire үлгісі ====== */
+.ff { display: grid; grid-template-columns: 66px 1fr; min-height: 100%; }
+.ff-rail { position: sticky; top: 0; align-self: start; display: flex; flex-direction: column; gap: 4px; padding: 10px 6px; background: linear-gradient(180deg, #1a1a1f, #141417); border-right: 1px solid #26262c; }
+.ff-rail button { position: relative; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border: 0; border-radius: 12px; background: transparent; color: #8a8d9c; font-family: inherit; font-size: 9.5px; font-weight: 600; line-height: 1.1; cursor: pointer; }
+.ff-rail button .material-icons-round { font-size: 22px; }
+.ff-rail button.on { color: #fff; background: linear-gradient(180deg, #5B6EC2, #3B4089); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 3px 0 #22275e; }
+.ff-rail button.vault { margin-top: 8px; box-shadow: 0 -9px 0 -8px #33333b; }
+.ff-rail button.vault.on { box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 3px 0 #22275e; }
+.ff-rail button i { position: absolute; top: 6px; right: 12px; width: 8px; height: 8px; border-radius: 50%; background: #E2574C; box-shadow: 0 0 0 2px #17171b; }
+.ff-main { min-width: 0; padding: 10px 12px 24px; }
+.ff-top { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-bottom: 10px; }
+.ff-bal { display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 3px 0 8px; border-radius: 99px; background: #101014; border: 1px solid #2f3570; }
+.ff-bal img.coin { width: 20px; height: 20px; }
+.ff-bal b { font-size: 14px; color: #c3cbff; }
+.ff-bal button, .ff-ic { width: 26px; height: 26px; border: 0; border-radius: 50%; display: grid; place-items: center; color: #fff; background: linear-gradient(180deg, #7dd36a, #3e9b4f); box-shadow: 0 2px 0 #1f5a2a; cursor: pointer; }
+.ff-bal button .material-icons-round { font-size: 18px; }
+.ff-ic { width: 32px; height: 32px; background: #24242a; box-shadow: none; color: #c8cad4; }
+.ff-ic .material-icons-round { font-size: 19px; }
+.ff-h { display: flex; align-items: center; gap: 6px; margin: 16px 0 8px; font-size: 13.5px; font-weight: 800; letter-spacing: .2px; text-transform: uppercase; }
+.ff-h .material-icons-round { font-size: 18px; color: #FF9F1A; }
+.ff-h small { margin-left: auto; display: inline-flex; align-items: center; gap: 3px; font-size: 11px; font-weight: 600; text-transform: none; color: #8a8d9c; }
+.ff-h small .material-icons-outlined { font-size: 14px; }
+.ff-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* карточка: сиректік түсі */
+.ff-card { position: relative; overflow: hidden; display: flex; flex-direction: column; align-items: center; padding: 0 0 8px; border-radius: 12px; border: 1px solid color-mix(in srgb, var(--r) 55%, #000); background: linear-gradient(180deg, color-mix(in srgb, var(--r) 38%, #15151a) 0%, #1b1b20 72%); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 3px 0 #0a0a0d; color: #fff; font-family: inherit; text-align: center; cursor: pointer; }
+.ff-card:active { transform: translateY(2px); box-shadow: 0 1px 0 #0a0a0d; }
+.ff-card::after { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--r); }
+.ff-art { width: 100%; height: 86px; display: grid; place-items: center; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--r) 45%, transparent), transparent 62%); }
+.ff-art .sh-med { width: 56px; height: 56px; border-radius: 17px; }
+.ff-art .sh-med .material-icons-round { font-size: 30px; }
+.ff-rar { align-self: stretch; margin: 0 0 4px; padding: 2px 0; font-size: 9.5px; font-weight: 800; letter-spacing: .6px; text-transform: uppercase; color: #fff; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--r) 70%, transparent), transparent); }
+.ff-card > b { padding: 0 6px; font-size: 12px; font-weight: 700; line-height: 1.2; min-height: 29px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ff-price { margin-top: 6px; display: inline-flex; align-items: center; gap: 3px; height: 26px; padding: 0 10px; border-radius: 8px; font-size: 13px; font-weight: 800; color: #fff; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.08); }
+.ff-price img.coin { width: 16px; height: 16px; }
+.ff-price s { margin-left: 3px; font-size: 10.5px; font-weight: 500; color: #8a8d9c; }
+.ff-price.poor { color: #ff8a80; }
+.ff-price.own { color: #5cb36d; font-size: 11.5px; }
+.ff-price.lock { color: #8a8d9c; font-size: 11px; font-weight: 600; }
+.ff-price .material-icons-round { font-size: 14px; }
+.ff-card.lock .ff-art { filter: grayscale(.9) brightness(.6); }
+.ff-card.own { opacity: .85; }
+.ff-tag { position: absolute; z-index: 1; top: 6px; left: 0; display: inline-flex; align-items: center; gap: 2px; font-style: normal; font-size: 9.5px; font-weight: 900; padding: 2px 7px 2px 6px; border-radius: 0 6px 6px 0; color: #fff; }
+.ff-tag.off { background: #E2373C; }
+.ff-tag.new { background: #2fb34f; }
+.ff-tag.lim { background: #FF9F1A; color: #2a1d02; }
+.ff-tag .material-icons-outlined { font-size: 11px; }
+.ff-n { position: absolute; z-index: 1; top: 6px; right: 6px; font-style: normal; font-size: 10px; font-weight: 800; padding: 1px 6px; border-radius: 99px; background: #5B6EC2; color: #fff; }
+.ff-n.st { background: rgba(0,0,0,.5); color: #c8cad4; }
+.ff-n.st::before { content: "қалды "; font-weight: 600; }
+.ff-n.st.low { color: #ffb4a8; }
+/* жоғарғы ұсыныс баннері */
+.ff-hero { position: relative; overflow: hidden; width: 100%; height: 150px; display: flex; align-items: center; padding: 0 12px 0 14px; border-radius: 14px; border: 1px solid color-mix(in srgb, var(--r) 60%, #000); background: radial-gradient(circle at 78% 50%, color-mix(in srgb, var(--r) 60%, transparent), transparent 55%), linear-gradient(120deg, #2a1608, #15151a 70%); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 4px 0 #0a0a0d; color: #fff; font-family: inherit; text-align: left; cursor: pointer; }
+.ff-rays { position: absolute; inset: -60%; background: repeating-conic-gradient(from 0deg at 50% 50%, color-mix(in srgb, var(--r) 22%, transparent) 0 8deg, transparent 8deg 20deg); animation: ffSpin 18s linear infinite; pointer-events: none; }
+.ff-hero .ff-rays { left: 30%; }
+@keyframes ffSpin { to { transform: rotate(360deg); } }
+.ff-hero-t { position: relative; z-index: 1; flex: 1; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+.ff-hero-t em { display: inline-flex; align-items: center; gap: 3px; font-style: normal; font-size: 9.5px; font-weight: 900; letter-spacing: .6px; color: #2a1d02; background: var(--r); padding: 2px 7px; border-radius: 4px; }
+.ff-hero-t em .material-icons-round { font-size: 12px; }
+.ff-hero-t b { font-size: 20px; font-weight: 900; text-transform: uppercase; text-shadow: 0 2px 0 rgba(0,0,0,.5); }
+.ff-hero-t small { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; color: #e0c89a; }
+.ff-hero-t small .material-icons-outlined { font-size: 13px; }
+.ff-hero-t .ff-price { margin-top: 4px; background: linear-gradient(180deg, #ffc56a, #F2A93B); color: #2a1d02; border: 0; box-shadow: 0 2px 0 #8a5a10; }
+.ff-hero-av { position: relative; z-index: 1; }
+/* тауар парағы: сахна */
+.ff-stage { position: relative; overflow: hidden; height: 170px; margin: 0 -16px; display: grid; place-items: center; background: radial-gradient(circle at 50% 55%, color-mix(in srgb, var(--r) 55%, transparent), transparent 60%), linear-gradient(180deg, color-mix(in srgb, var(--r) 22%, #15151a), #1e1e1e); }
+.ff-stage > .sh-med, .ff-stage > .pf-av, .ff-stage > .ff-try-t { position: relative; z-index: 1; }
+.ff-stage > .ff-rar, .ff-stage > .ff-tag { z-index: 2; }
+.ff-stage .ff-rar.big { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); margin: 0; padding: 3px 14px; border-radius: 99px; background: var(--r); font-size: 10.5px; }
+.ff-stage .ff-tag { top: 12px; }
+.ff-try-t { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 18px; border-radius: 14px; background: rgba(0,0,0,.4); }
+.ff-tryb { margin-top: 8px; display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 14px; border-radius: 99px; border: 1px solid #3a3a44; background: #24242a; color: #fff; font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.ff-tryb.on { border-color: #5B6EC2; background: rgba(91,110,194,.2); }
+.ff-tryb .material-icons-outlined { font-size: 17px; }
+.ff-bun { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 4px; }
+.ff-bun > span { width: 72px; display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 4px; border-radius: 10px; border: 1px solid color-mix(in srgb, var(--r) 50%, #000); background: linear-gradient(180deg, color-mix(in srgb, var(--r) 28%, #15151a), #1b1b20); }
+.ff-bun small { font-size: 10px; line-height: 1.2; text-align: center; color: #c8cad4; }
+.ff-bun-p { margin-top: 8px; text-align: center; font-size: 12px; color: #8a8d9c; display: flex; align-items: center; justify-content: center; gap: 4px; }
+.ff-bun-p b { color: #5cb36d; }
+.ff-bun-p img.coin { width: 15px; height: 15px; }
+/* сәттілік дөңгелегі */
+.ff-spin { display: flex; flex-direction: column; align-items: center; }
+.sp-wrap { position: relative; width: 232px; height: 232px; margin: 8px 0 14px; }
+.sp-wheel { position: absolute; inset: 0; border-radius: 50%; border: 6px solid #2a2a33; box-shadow: 0 0 0 3px #FF9F1A, 0 10px 24px rgba(0,0,0,.5), inset 0 0 0 2px rgba(255,255,255,.15); }
+.sp-lbl { position: absolute; left: 50%; top: 50%; width: 60px; margin: -9px 0 0 -30px; display: flex; align-items: center; justify-content: center; gap: 2px; font-size: 11px; font-weight: 800; color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,.6); transform-origin: 50% 50%; }
+.sp-lbl img { width: 13px; height: 13px; }
+.sp-hub { position: absolute; left: 50%; top: 50%; width: 54px; height: 54px; margin: -27px 0 0 -27px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; font-weight: 900; color: #2a1d02; background: radial-gradient(circle at 35% 30%, #FFF1B8, #F2C230 55%, #B57A0A); box-shadow: 0 4px 0 #7a5005, 0 6px 12px rgba(0,0,0,.4); z-index: 2; }
+.sp-pin { position: absolute; z-index: 3; top: -10px; left: 50%; margin-left: -11px; width: 0; height: 0; border-left: 11px solid transparent; border-right: 11px solid transparent; border-top: 22px solid #E2373C; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5)); }
+.ff-go { max-width: 240px; height: 42px; font-size: 15px; background: linear-gradient(180deg, #ffc56a, #F2A93B); color: #2a1d02; box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 4px 0 #8a5a10; border: 0; font-family: inherit; cursor: pointer; }
+.ff-go:disabled { filter: grayscale(1); opacity: .6; cursor: default; }
+.sp-note { display: flex; gap: 8px; margin-top: 14px; padding: 10px 12px; border-radius: 12px; background: #181818; font-size: 11.5px; line-height: 1.5; color: #9a9db0; }
+.sp-note .material-icons-outlined { font-size: 17px; color: #5B6EC2; }
+.sp-note b { color: #fff; }
+.sp-last { margin-top: 10px; display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #c8cad4; }
+.sp-last .material-icons-outlined { color: #FF9F1A; }
+.sh-buy { white-space: nowrap; font-size: 14px; }
+.ff { min-height: calc(100% + 0px); }
+.ff-rail { min-height: 100%; }

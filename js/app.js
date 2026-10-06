@@ -3296,32 +3296,60 @@
     ["emoji_events", "Турнирде келесі кезеңге өту / чемпион", "20 / 200"],
     ["local_fire_department", "7 күн қатарынан кіру", 50],
   ];
-  /* Дүкен құрылымы (Duolingo / Brawl Stars / Uchi.ru үлгісімен):
-     boost — күшейткіш (жұмсалады, саны жиналады) · style — профиль безендіру (бір рет сатып алынады, киіледі)
-     real — шынайы сыйлық (қалдығы шектеулі, тапсырыс → куратор → офистен алу) */
+  /* Дүкен v3 — Free Fire «Store» үлгісімен:
+     сол жақта тік бөлімдер · жоғарыда ұсыныс баннері · сиректік түсі (қарапайым/сирек/эпик/аңыз) ·
+     −30% / ЖАҢА / ШЕКТЕУЛІ белгілері · жиынтықтар · «киіп көру» · күнделікті тегін дөңгелек (ақылы gacha жоқ) */
+  const RARITY = {
+    common: { name: "Қарапайым", c: "#8A93A6" },
+    rare: { name: "Сирек", c: "#3D8BFF" },
+    epic: { name: "Эпик", c: "#A64DFF" },
+    legend: { name: "Аңыз", c: "#FF9F1A" },
+  };
   const SHOP_CATS = {
-    boost: { name: "Күшейткіштер", desc: "Оқуға көмектеседі · бірнешеуін жинауға болады" },
-    style: { name: "Профиль безендіру", desc: "Бір рет сатып аласың, кейін «киесің»" },
-    real: { name: "Шынайы сыйлықтар", desc: "Офистен алып кетесің · саны шектеулі" },
+    hot: { name: "Хит", icon: "whatshot" },
+    boost: { name: "Күшейт­кіш", icon: "bolt" },
+    frame: { name: "Жиектер", icon: "account_circle" },
+    title: { name: "Атақтар", icon: "military_tech" },
+    theme: { name: "Тақырып", icon: "palette" },
+    bundle: { name: "Жиынтық", icon: "redeem" },
+    real: { name: "Сыйлық", icon: "card_giftcard" },
+    spin: { name: "Сәттілік", icon: "casino" },
+    inv: { name: "Қойма", icon: "inventory_2" },
   };
   const SHOP = [
-    { id: "freeze", cat: "boost", name: "Серияны қатыру", desc: "Бір күн кірмесең де серия үзілмейді", price: 200, icon: "ac_unit", color: "#7FD3E8", how: ["Кірмеген күні өздігінен қолданылады", "Ең көбі 2 дана сақталады"], max: 2 },
-    { id: "x2", cat: "boost", name: "×2 монета", desc: "24 сағат бойы барлық монета екі есе", price: 350, icon: "bolt", color: "#5CB36D", how: ["«Менің заттарым» ішінен іске қосасың", "Сабақ, тест, батл, турнир монеталары ×2"] },
-    { id: "hint5", cat: "boost", name: "Кеңес ×5", desc: "Тестте бір қате нұсқаны алып тастайды", price: 150, icon: "lightbulb", color: "#FFD54F", how: ["Сабақ тесті мен тренажёрда", "ҰБТ сынағы мен апталық сынақта қолданылмайды"] },
-    { id: "time", cat: "boost", name: "+10 секунд ×3", desc: "Батлдағы сұраққа қосымша уақыт", price: 120, icon: "more_time", color: "#4F9BFF", how: ["Батл кезінде сағат белгісін бас", "Турнирде қолданылмайды"] },
-    { id: "retry", cat: "boost", name: "Екінші мүмкіндік", desc: "Батлда бір қате жауапты қайта таңдау", price: 180, icon: "replay", color: "#B07CFF", how: ["Бір батлда бір рет", "Турнирде қолданылмайды"] },
-    { id: "frame_gold", cat: "style", slot: "frame", name: "Алтын жиек", desc: "Аватарыңның айналасында", price: 300, icon: "account_circle", color: "#F2C230" },
-    { id: "frame_fire", cat: "style", slot: "frame", name: "От жиегі", desc: "Жалынды жиек", price: 500, icon: "local_fire_department", color: "#FF6A3D" },
-    { id: "frame_neon", cat: "style", slot: "frame", name: "Неон жиек", desc: "Жарқырайтын көк жиек", price: 450, icon: "blur_circular", color: "#4FD1FF", lvl: 5 },
-    { id: "title_master", cat: "style", slot: "title", name: "«Тарих шебері»", desc: "Атыңның астындағы атақ", price: 400, icon: "military_tech", color: "#B07CFF" },
-    { id: "title_king", cat: "style", slot: "title", name: "«Батл патшасы»", desc: "Рейтингте және батлда көрінеді", price: 600, icon: "workspace_premium", color: "#E9A825", lvl: 8 },
-    { id: "theme_neon", cat: "style", slot: "theme", name: "«Неон» тақырыбы", desc: "Қосымшаның түс тақырыбы", price: 600, icon: "palette", color: "#4F9BFF" },
-    { id: "sticker", cat: "real", name: "I4U стикерпак", desc: "10 стикер", price: 800, icon: "sell", color: "#E2574C", stock: 40 },
-    { id: "notebook", cat: "real", name: "I4U дәптер", desc: "ҰБТ-ға дайындық дәптері", price: 1200, icon: "menu_book", color: "#5CB36D", stock: 25 },
-    { id: "bottle", cat: "real", name: "Су бөтелкесі", desc: "I4U логотипімен, 600 мл", price: 2500, icon: "water_drop", color: "#4F9BFF", stock: 12 },
-    { id: "mentor", cat: "real", name: "Ментормен 1:1", desc: "30 минуттық жеке сабақ", price: 3000, icon: "support_agent", color: "#B07CFF", stock: 10 },
-    { id: "hoodie", cat: "real", name: "I4U худи", desc: "Шектеулі коллекция", price: 5000, icon: "checkroom", color: "#8A94F5", stock: 5, lvl: 10 },
-    { id: "discount", cat: "real", name: "Курсқа −10%", desc: "Келесі айдың төлеміне жеңілдік", price: 6000, icon: "percent", color: "#F2A93B", stock: 3 },
+    { id: "hint5", cat: "boost", rar: "common", name: "Кеңес ×5", desc: "Тестте бір қате нұсқаны алып тастайды", price: 150, icon: "lightbulb", color: "#FFD54F", how: ["Сабақ тесті мен тренажёрда", "ҰБТ сынағы мен апталық сынақта қолданылмайды"] },
+    { id: "time", cat: "boost", rar: "common", name: "+10 секунд ×3", desc: "Батлдағы сұраққа қосымша уақыт", price: 120, icon: "more_time", color: "#4F9BFF", how: ["Батл кезінде сағат белгісін бас", "Турнирде қолданылмайды"] },
+    { id: "freeze", cat: "boost", rar: "rare", name: "Серияны қатыру", desc: "Бір күн кірмесең де серия үзілмейді", price: 200, icon: "ac_unit", color: "#7FD3E8", how: ["Кірмеген күні өздігінен қолданылады", "Ең көбі 2 дана сақталады"], max: 2 },
+    { id: "retry", cat: "boost", rar: "rare", name: "Екінші мүмкіндік", desc: "Батлда бір қате жауапты қайта таңдау", price: 180, icon: "replay", color: "#B07CFF", how: ["Бір батлда бір рет", "Турнирде қолданылмайды"] },
+    { id: "x2", cat: "boost", rar: "epic", name: "×2 монета", desc: "24 сағат бойы барлық монета екі есе", price: 350, icon: "bolt", color: "#5CB36D", how: ["«Қойма» ішінен іске қосасың", "Сабақ, тест, батл, турнир монеталары ×2"] },
+    { id: "frame_silver", cat: "frame", slot: "frame", rar: "common", name: "Күміс жиек", desc: "Аватарыңның айналасында", price: 150, icon: "account_circle", color: "#B8C2CC" },
+    { id: "frame_gold", cat: "frame", slot: "frame", rar: "epic", name: "Алтын жиек", desc: "Жылтыр алтын сақина", price: 300, icon: "account_circle", color: "#F2C230" },
+    { id: "frame_neon", cat: "frame", slot: "frame", rar: "epic", name: "Неон жиек", desc: "Жарқырайтын көк жиек", price: 450, icon: "blur_circular", color: "#4FD1FF", lvl: 5, tag: "new" },
+    { id: "frame_fire", cat: "frame", slot: "frame", rar: "legend", name: "От жиегі", desc: "Жалынды аңыз жиек", price: 500, icon: "local_fire_department", color: "#FF6A3D" },
+    { id: "title_star", cat: "title", slot: "title", rar: "common", name: "«Жас талант»", desc: "Атыңның астындағы атақ", price: 150, icon: "star", color: "#8A93A6" },
+    { id: "title_master", cat: "title", slot: "title", rar: "rare", name: "«Тарих шебері»", desc: "Атыңның астындағы атақ", price: 400, icon: "military_tech", color: "#B07CFF" },
+    { id: "title_king", cat: "title", slot: "title", rar: "legend", name: "«Батл патшасы»", desc: "Рейтингте және батлда көрінеді", price: 600, icon: "workspace_premium", color: "#E9A825", lvl: 8, tag: "limited", until: "3 күн" },
+    { id: "theme_forest", cat: "theme", slot: "theme", rar: "rare", name: "«Орман»", desc: "Жасыл түс тақырыбы", price: 450, icon: "forest", color: "#4CAF50" },
+    { id: "theme_neon", cat: "theme", slot: "theme", rar: "epic", name: "«Неон»", desc: "Көк-күлгін түс тақырыбы", price: 600, icon: "palette", color: "#4F9BFF" },
+    { id: "b_battle", cat: "bundle", rar: "legend", name: "Батл жиынтығы", desc: "+10 сек ×3 · Екінші мүмкіндік · От жиегі", price: 560, icon: "sports_kabaddi", color: "#E2574C", items: ["time", "retry", "frame_fire"], tag: "limited", until: "5 күн" },
+    { id: "b_study", cat: "bundle", rar: "epic", name: "Оқу жиынтығы", desc: "Кеңес ×5 ×2 · Серияны қатыру · ×2 монета", price: 590, icon: "school", color: "#5CB36D", items: ["hint5", "hint5", "freeze", "x2"] },
+    { id: "sticker", cat: "real", rar: "common", name: "I4U стикерпак", desc: "10 стикер", price: 800, icon: "sell", color: "#E2574C", stock: 40 },
+    { id: "notebook", cat: "real", rar: "rare", name: "I4U дәптер", desc: "ҰБТ-ға дайындық дәптері", price: 1200, icon: "menu_book", color: "#5CB36D", stock: 25 },
+    { id: "bottle", cat: "real", rar: "rare", name: "Су бөтелкесі", desc: "I4U логотипімен, 600 мл", price: 2500, icon: "water_drop", color: "#4F9BFF", stock: 12 },
+    { id: "mentor", cat: "real", rar: "epic", name: "Ментормен 1:1", desc: "30 минуттық жеке сабақ", price: 3000, icon: "support_agent", color: "#B07CFF", stock: 10 },
+    { id: "hoodie", cat: "real", rar: "legend", name: "I4U худи", desc: "Шектеулі коллекция", price: 5000, icon: "checkroom", color: "#8A94F5", stock: 5, lvl: 10 },
+    { id: "discount", cat: "real", rar: "legend", name: "Курсқа −10%", desc: "Келесі айдың төлеміне", price: 6000, icon: "percent", color: "#F2A93B", stock: 3 },
+  ];
+  const bundleFull = (x) => x.items.reduce((t, id) => t + SHOP.find((i) => i.id === id).price, 0);
+  const SPIN = [
+    { t: "+5", c: 5, col: "#3D8BFF" },
+    { t: "Кеңес", item: "hint5", col: "#A64DFF" },
+    { t: "+10", c: 10, col: "#2FB34F" },
+    { t: "+50", c: 50, col: "#FF9F1A" },
+    { t: "+15", c: 15, col: "#3D8BFF" },
+    { t: "Қатыру", item: "freeze", col: "#A64DFF" },
+    { t: "+20", c: 20, col: "#2FB34F" },
+    { t: "+10 сек", item: "time", col: "#E2574C" },
   ];
   const MY_LEVEL = 7;
   function wallet() {
@@ -3354,81 +3382,107 @@
   }
   /** Күннің ұсынысы: күн сайын ауысады, −30% */
   function dailyDeal() {
-    const pool = SHOP.filter((x) => !x.hidden && x.cat !== "real");
+    const pool = SHOP.filter((x) => !x.hidden && ["boost", "frame", "title", "theme"].includes(x.cat));
     const x = pool[(AN_TODAY.getDate() * 7) % pool.length];
     return { ...x, old: x.price, price: Math.round((x.price * 0.7) / 10) * 10, deal: true };
   }
+  const isStyle = (x) => !!x.slot;
   const priceOf = (x) => (dailyDeal().id === x.id ? dailyDeal().price : x.price);
-  const ownedOf = (x) => (x.cat === "boost" ? wallet().counts[x.id] || 0 : wallet().owned.includes(x.id) ? 1 : 0);
+  const ownedOf = (x) => (x.cat === "boost" ? wallet().counts[x.id] || 0 : isStyle(x) && wallet().owned.includes(x.id) ? 1 : 0);
+  const discountOf = (x) => (dailyDeal().id === x.id ? 30 : x.cat === "bundle" ? Math.round((1 - x.price / bundleFull(x)) * 100) : 0);
   /** Сатып алуға бола ма — себебі */
   function buyState(x) {
     const w = wallet(), p = priceOf(x);
     if (x.lvl && MY_LEVEL < x.lvl) return { ok: false, why: "lvl", txt: `${x.lvl}-деңгейден` };
-    if (x.cat === "style" && w.owned.includes(x.id)) return { ok: false, why: "own", txt: w.equip[x.slot] === x.id ? "Киюлі" : "Сенде бар" };
+    if (isStyle(x) && w.owned.includes(x.id)) return { ok: false, why: "own", txt: w.equip[x.slot] === x.id ? "Киюлі" : "Сенде бар" };
     if (x.max && (w.counts[x.id] || 0) >= x.max) return { ok: false, why: "max", txt: `Ең көбі ${x.max}` };
     if (x.cat === "real" && !(x.stock > 0)) return { ok: false, why: "out", txt: "Таусылды" };
     if (w.coins < p) return { ok: false, why: "poor", txt: `тағы ${(p - w.coins).toLocaleString("ru-RU")}`, pct: Math.round((w.coins / p) * 100) };
     return { ok: true };
   }
   const medal = (x, size = "") => `<span class="sh-med ${size}" style="--c:${x.color}">${icon(x.icon)}</span>`;
-  function shopCard(x) {
-    const S = buyState(x), n = ownedOf(x), p = priceOf(x);
-    return `<button type="button" class="sh-card ${S.why === "own" ? "own" : ""} ${S.why === "lvl" ? "lock" : ""}" data-shopitem="${x.id}">
-      ${x.cat === "boost" && n ? `<em class="sh-n">×${n}</em>` : ""}
-      ${x.cat === "real" ? `<em class="sh-stock ${x.stock <= 5 ? "low" : ""}">қалды ${x.stock}</em>` : ""}
-      ${medal(x)}
-      <b>${x.name}</b><small>${x.desc}</small>
+  /** Free Fire карточкасы: сиректік фоны, белгілер, баға жолағы */
+  function ffCard(x) {
+    const S = buyState(x), n = ownedOf(x), p = priceOf(x), R = RARITY[x.rar], off = discountOf(x);
+    return `<button type="button" class="ff-card ${S.why === "own" ? "own" : ""} ${S.why === "lvl" ? "lock" : ""}" style="--r:${R.c}" data-shopitem="${x.id}">
+      ${off ? `<em class="ff-tag off">−${off}%</em>` : x.tag === "new" ? `<em class="ff-tag new">ЖАҢА</em>` : x.tag === "limited" ? `<em class="ff-tag lim">${icon("schedule", "material-icons-outlined")}${x.until}</em>` : ""}
+      ${x.cat === "boost" && n ? `<em class="ff-n">×${n}</em>` : ""}
+      ${x.cat === "real" ? `<em class="ff-n st ${x.stock <= 5 ? "low" : ""}">${x.stock}</em>` : ""}
+      <span class="ff-art">${medal(x)}</span>
+      <span class="ff-rar">${R.name}</span>
+      <b>${x.name}</b>
       ${
-        S.why === "own" ? `<span class="sh-btn own">${icon("check")}${S.txt}</span>`
-        : S.why === "lvl" ? `<span class="sh-btn lock">${icon("lock")}${S.txt}</span>`
-        : S.why === "out" || S.why === "max" ? `<span class="sh-btn lock">${S.txt}</span>`
-        : S.why === "poor" ? `<span class="sh-btn poor">${COIN}${p.toLocaleString("ru-RU")}<i style="width:${S.pct}%"></i></span>`
-        : `<span class="sh-btn">${COIN}${p.toLocaleString("ru-RU")}</span>`
+        S.why === "own" ? `<span class="ff-price own">${icon("check")}${S.txt}</span>`
+        : S.why === "lvl" ? `<span class="ff-price lock">${icon("lock")}${S.txt}</span>`
+        : S.why === "out" || S.why === "max" ? `<span class="ff-price lock">${S.txt}</span>`
+        : `<span class="ff-price ${S.why === "poor" ? "poor" : ""}">${COIN}${p.toLocaleString("ru-RU")}${off && x.cat !== "bundle" ? `<s>${SHOP.find((i) => i.id === x.id).price}</s>` : ""}</span>`
       }
     </button>`;
   }
+  function spinState() {
+    return (MOCK.spin ||= { freeLeft: 1, bonus: 0, deg: 0, last: null, tasks: 1 });
+  }
   function shopHtml() {
     const w = wallet();
-    const tab = state.shopTab || "store";
-    const D = dailyDeal();
-    const S = buyState(D);
-    const left = (() => { const m = new Date(AN_TODAY); m.setHours(24, 0, 0, 0); const ms = m - new Date(AN_TODAY.getTime() + (Date.now() % 36e5)); return `${Math.floor(ms / 36e5)} сағ ${Math.floor((ms % 36e5) / 6e4)} мин`; })();
+    const cat = state.shopCat || "hot";
     const inv = SHOP.filter((x) => ownedOf(x));
     const myOrders = shopOrders().filter((o) => o.st.me);
-    const head = `
-      <div class="shop-bal">
-        <img src="assets/coin/coin.png" alt="" />
-        <div><small>Менің монеталарым</small><b>${w.coins.toLocaleString("ru-RU")}</b></div>
-        <div class="shop-bal-r"><button type="button" class="shop-how" id="shopHow">${icon("add")}Жинау</button><button type="button" class="shop-how ghost" id="shopLog">${icon("history")}Тарих</button></div>
-      </div>
-      <div class="seg-tabs sh-tabs">
-        <button type="button" data-shoptab="store" class="${tab === "store" ? "on" : ""}">Дүкен</button>
-        <button type="button" data-shoptab="inv" class="${tab === "inv" ? "on" : ""}">Менің заттарым${inv.length + myOrders.length ? ` · ${inv.length + myOrders.length}` : ""}</button>
-      </div>`;
-    if (tab === "inv") {
-      const boosts = inv.filter((x) => x.cat === "boost"), styles = inv.filter((x) => x.cat === "style");
-      return `<div class="list-pad shop">${head}
+    const rail = `<nav class="ff-rail">${Object.entries(SHOP_CATS)
+      .map(([k, c]) => `<button type="button" class="${cat === k ? "on" : ""} ${k === "inv" ? "vault" : ""}" data-shopcat="${k}">${icon(c.icon)}<span>${c.name}</span>${k === "spin" && spinState().freeLeft ? `<i></i>` : ""}</button>`)
+      .join("")}</nav>`;
+    const top = `<div class="ff-top"><span class="ff-bal">${COIN}<b>${w.coins.toLocaleString("ru-RU")}</b><button type="button" id="shopHow">${icon("add")}</button></span><button type="button" class="ff-ic" id="shopLog" title="Тарих">${icon("history")}</button></div>`;
+    let main;
+    if (cat === "hot") {
+      const D = dailyDeal();
+      const hero = SHOP.find((x) => x.id === "frame_fire");
+      const me = TOUR_ME();
+      main = `
+        <button type="button" class="ff-hero" style="--r:${RARITY.legend.c}" data-shopitem="${hero.id}">
+          <span class="ff-rays"></span>
+          <span class="ff-hero-t"><em>${icon("auto_awesome")}АҢЫЗ · МАУСЫМ</em><b>${hero.name}</b><small>${icon("schedule", "material-icons-outlined")}Маусым аяқталуына 12 күн</small><span class="ff-price">${COIN}${hero.price}</span></span>
+          <span class="ff-hero-av pf-av fr-${hero.id}">${avatarHtml(me, "xl")}</span>
+        </button>
+        <div class="ff-h">${icon("local_offer")}Күннің ұсынысы <small>${icon("schedule", "material-icons-outlined")}23 сағ</small></div>
+        <div class="ff-grid">${ffCard(D)}${ffCard(SHOP.find((x) => x.id === "b_battle"))}</div>
+        <div class="ff-h">${icon("fiber_new")}Жаңа және шектеулі</div>
+        <div class="ff-grid">${SHOP.filter((x) => x.tag && x.cat !== "bundle").map(ffCard).join("")}</div>
+        <div class="ff-h">${icon("redeem")}Жиынтықтар</div>
+        <div class="ff-grid">${SHOP.filter((x) => x.cat === "bundle").map(ffCard).join("")}</div>`;
+    } else if (cat === "spin") {
+      const SP = spinState();
+      const seg = 360 / SPIN.length;
+      main = `
+        <div class="ff-spin">
+          <div class="ff-h" style="margin-top:0">${icon("casino")}Сәттілік дөңгелегі</div>
+          <div class="sp-wrap">
+            <span class="sp-pin"></span>
+            <div class="sp-wheel" id="spWheel" style="transform:rotate(${SP.deg}deg);background:conic-gradient(${SPIN.map((s, i) => `${s.col} ${i * seg}deg ${(i + 1) * seg}deg`).join(",")})">
+              ${SPIN.map((s, i) => `<span class="sp-lbl" style="transform:rotate(${i * seg + seg / 2}deg) translateY(-78px)">${s.c ? `<img src="assets/coin/coin.png" alt="" />` : ""}${s.t}</span>`).join("")}
+            </div>
+            <span class="sp-hub">I4U</span>
+          </div>
+          <button type="button" class="sh-btn ff-go" id="spGo" ${SP.freeLeft + SP.bonus ? "" : "disabled"}>${SP.freeLeft ? "Тегін айналдыру" : SP.bonus ? `Айналдыру · бонус ${SP.bonus}` : "Ертең тегін"}</button>
+          <div class="sp-note">${icon("info", "material-icons-outlined")}<span>Күніне <b>1 рет тегін</b>. Қосымша айналдыру тек оқу арқылы: бүгін 3 сабақ өтсең +1 (${SP.tasks}/3). Монетаға айналдыру <b>жоқ</b>.</span></div>
+          ${SP.last ? `<div class="sp-last">${icon("celebration", "material-icons-outlined")}Соңғы ұтыс: <b>${SP.last}</b></div>` : ""}
+        </div>`;
+    } else if (cat === "inv") {
+      const boosts = inv.filter((x) => x.cat === "boost"), styles = inv.filter(isStyle);
+      main = `
         ${w.x2Until ? `<div class="sh-active">${icon("bolt")}<span><b>×2 монета белсенді</b><small>${w.x2Until} дейін</small></span></div>` : ""}
-        <div class="t3-sec">Күшейткіштер</div>
-        ${boosts.length ? boosts.map((x) => `<div class="sh-row">${medal(x, "sm")}<span><b>${x.name} <i>×${ownedOf(x)}</i></b><small>${x.how?.[0] || x.desc}</small></span>${x.id === "x2" ? `<button type="button" class="sh-use" data-shopuse="${x.id}">Қосу</button>` : `<span class="sh-auto">өздігінен</span>`}</div>`).join("") : `<div class="sh-empty">Күшейткіш жоқ — дүкеннен ал</div>`}
-        <div class="t3-sec">Безендіру</div>
-        ${styles.length ? styles.map((x) => { const on = w.equip[x.slot] === x.id; return `<div class="sh-row">${medal(x, "sm")}<span><b>${x.name}</b><small>${{ frame: "Аватар жиегі", title: "Атақ", theme: "Тақырып" }[x.slot]}</small></span><button type="button" class="sh-use ${on ? "on" : ""}" data-shopequip="${x.id}">${on ? `${icon("check")}Киюлі` : "Кию"}</button></div>`; }).join("") : `<div class="sh-empty">Әзірге жоқ</div>`}
-        <div class="t3-sec">Тапсырыстарым</div>
-        ${myOrders.length ? myOrders.map((o) => { const it = SHOP.find((x) => x.id === o.item); const [lb, c] = ORDER_ST[o.status]; return `<div class="sh-row">${medal(it, "sm")}<span><b>${it.name}</b><small>${o.date}</small></span><em class="sh-ost" style="--c:${c}">${lb}</em></div>`; }).join("") : `<div class="sh-empty">Шынайы сыйлық сатып алсаң, осында көрінеді</div>`}
-      </div>`;
+        <div class="ff-h" style="margin-top:0">${icon("bolt")}Күшейткіштер</div>
+        ${boosts.length ? boosts.map((x) => `<div class="sh-row">${medal(x, "sm")}<span><b>${x.name} <i>×${ownedOf(x)}</i></b><small>${x.how?.[0] || x.desc}</small></span>${x.id === "x2" ? `<button type="button" class="sh-use" data-shopuse="${x.id}">Қосу</button>` : `<span class="sh-auto">өздігінен</span>`}</div>`).join("") : `<div class="sh-empty">Күшейткіш жоқ</div>`}
+        <div class="ff-h">${icon("checkroom")}Безендіру</div>
+        ${styles.length ? styles.map((x) => { const on = w.equip[x.slot] === x.id; return `<div class="sh-row" style="--r:${RARITY[x.rar].c}">${medal(x, "sm")}<span><b>${x.name}</b><small>${{ frame: "Аватар жиегі", title: "Атақ", theme: "Тақырып" }[x.slot]} · <span style="color:${RARITY[x.rar].c}">${RARITY[x.rar].name}</span></small></span><button type="button" class="sh-use ${on ? "on" : ""}" data-shopequip="${x.id}">${on ? `${icon("check")}Киюлі` : "Кию"}</button></div>`; }).join("") : `<div class="sh-empty">Әзірге жоқ</div>`}
+        <div class="ff-h">${icon("card_giftcard")}Тапсырыстарым</div>
+        ${myOrders.length ? myOrders.map((o) => { const it = SHOP.find((x) => x.id === o.item); const [lb, c] = ORDER_ST[o.status]; return `<div class="sh-row">${medal(it, "sm")}<span><b>${it.name}</b><small>${o.date}</small></span><em class="sh-ost" style="--c:${c}">${lb}</em></div>`; }).join("") : `<div class="sh-empty">Сыйлық сатып алсаң, осында көрінеді</div>`}`;
+    } else {
+      const list = SHOP.filter((x) => x.cat === cat && !x.hidden).sort((a, b) => Object.keys(RARITY).indexOf(b.rar) - Object.keys(RARITY).indexOf(a.rar));
+      main = `${cat === "real" ? `<div class="sp-note" style="margin:0 0 10px">${icon("storefront", "material-icons-outlined")}<span>Сатып алған соң куратор дайындайды → хабарлама → офистен аласың</span></div>` : ""}
+        <div class="ff-grid">${list.map(ffCard).join("")}</div>`;
     }
-    return `<div class="list-pad shop">${head}
-      <button type="button" class="sh-deal" data-shopitem="${D.id}">
-        <span class="sh-deal-tag">${icon("local_offer")}Күннің ұсынысы · −30%</span>
-        <span class="sh-deal-time">${icon("schedule", "material-icons-outlined")}${left}</span>
-        <div class="sh-deal-b">${medal(D, "lg")}<span><b>${D.name}</b><small>${D.desc}</small><span class="sh-deal-p"><s>${D.old}</s>${COIN}<b>${D.price}</b></span></span></div>
-        ${S.ok ? `<span class="sh-btn">Сатып алу</span>` : ""}
-      </button>
-      ${Object.entries(SHOP_CATS).map(([k, c]) => `
-        <div class="sh-sec"><b>${c.name}</b><small>${c.desc}</small></div>
-        <div class="sh-grid">${SHOP.filter((x) => x.cat === k && !x.hidden).map(shopCard).join("")}</div>`).join("")}
-    </div>`;
+    return `<div class="ff">${rail}<div class="ff-main">${top}${main}</div></div>`;
   }
+
   /* —— Staff: Магазин ——
      Бас куратор: тауарлар (қосу, баға, қалдық, жасыру), барлық тапсырыстар, монета беру (≤500)
      Куратор: өз топтарының тапсырыстары (дайын → берілді), оқушы монеталары, бонус (≤50/апта бір оқушыға) */
@@ -3506,8 +3560,8 @@
     );
   }
   function openShopItemForm(x) {
-    const f = x ? { ...x } : { id: `it${nextId()}`, cat: "real", name: "", desc: "", price: 500, icon: "redeem", color: "#8A94F5", stock: 20 };
-    const cats = [["boost", "Күшейткіш"], ["style", "Безендіру"], ["real", "Шынайы сыйлық"]];
+    const f = x ? { ...x } : { id: `it${nextId()}`, cat: "real", rar: "rare", name: "", desc: "", price: 500, icon: "redeem", color: "#8A94F5", stock: 20 };
+    const cats = [["boost", "Күшейткіш"], ["frame", "Жиек"], ["title", "Атақ"], ["theme", "Тақырып"], ["real", "Сыйлық"]];
     openSheet(`
       <div class="sheet-handle"></div>
       <div class="ef-head"><span>${x ? "Тауарды өзгерту" : "Жаңа тауар"}</span><button type="button" id="siClose">${icon("close")}</button></div>
@@ -3528,6 +3582,7 @@
       f.price = +$("#siPrice").value;
       f.stock = +$("#siStock").value;
       if (!f.name || !(f.price > 0)) return toast("Атауы мен бағасын толтырыңыз", "err");
+      f.slot = ["frame", "title", "theme"].includes(f.cat) ? f.cat : undefined;
       if (x) Object.assign(x, f);
       else SHOP.push(f);
       closeSheet();
@@ -3564,52 +3619,68 @@
     draw();
   }
   function openShopItem(x) {
-    const w = wallet(), S = buyState(x), p = priceOf(x), deal = dailyDeal().id === x.id;
+    const w = wallet(), S = buyState(x), p = priceOf(x), R = RARITY[x.rar], off = discountOf(x);
     const me = TOUR_ME();
-    const prev = x.slot === "frame" ? `<div class="sh-prev"><span class="pf-av fr-${x.id}">${avatarHtml(me, "lg")}</span><small>Сенің аватарың</small></div>` : x.slot === "title" ? `<div class="sh-prev"><b>${me.name}</b><span class="pf-title" style="--c:${x.color}">${x.name.replace(/[«»]/g, "")}</span></div>` : "";
+    let tryOn = false;
     const how = x.cat === "real"
       ? ["Сатып алған соң тапсырыс жасалады", "Куратор дайындағанда хабарлама келеді", "Офистен (Абай 52, 2-қабат) алып кетесің", `Қалдығы: ${x.stock} дана`]
-      : x.how || (x.slot ? ["«Менің заттарым» ішінен киесің / шешесің", "Басқалар профиліңде және рейтингте көреді"] : []);
-    openSheet(`
-      <div class="sheet-handle"></div>
-      <div class="sh-detail">
-        ${medal(x, "xl")}
-        <b>${x.name}</b>
-        <small>${x.desc}</small>
-        ${x.cat === "boost" && ownedOf(x) ? `<span class="sh-have">Сенде: ×${ownedOf(x)}</span>` : ""}
-      </div>
-      ${prev}
-      ${how.length ? `<div class="sh-how">${how.map((h) => `<div>${icon("check_circle", "material-icons-outlined")}<span>${h}</span></div>`).join("")}</div>` : ""}
-      ${S.why === "poor" ? `<div class="sh-need"><span>Монета жетпейді: ${S.txt}</span><i><b style="width:${S.pct}%"></b></i><button type="button" class="t3-all" id="shNeedHow">Қалай жинаймын?</button></div>` : ""}
-      <div class="sheet-actions btn-row">
-        <button type="button" class="btn btn-ghost" id="shClose">Жабу</button>
-        ${
-          S.why === "own" ? `<button type="button" class="btn btn-primary" id="shEquip">${w.equip[x.slot] === x.id ? "Шешу" : "Кию"}</button>`
-          : `<button type="button" class="btn btn-primary sh-buy" id="shBuy" ${S.ok ? "" : "disabled"}>${S.ok ? `Сатып алу · ${COIN}${p.toLocaleString("ru-RU")}${deal ? ` <s>${x.price}</s>` : ""}` : S.txt}</button>`
-        }
-      </div>`);
-    $("#shClose").onclick = closeSheet;
-    $("#shNeedHow")?.addEventListener("click", coinRulesSheet);
-    $("#shEquip")?.addEventListener("click", () => {
-      w.equip[x.slot] = w.equip[x.slot] === x.id ? null : x.id;
-      closeSheet();
-      toast(w.equip[x.slot] ? `${x.name} киілді` : "Шешілді");
-      paintStack();
-    });
-    $("#shBuy")?.addEventListener("click", () => {
-      if (!buyState(x).ok) return;
-      w.coins -= p;
-      if (x.cat === "boost") w.counts[x.id] = (w.counts[x.id] || 0) + 1;
-      else if (x.cat === "style") (w.owned.push(x.id), (w.equip[x.slot] = x.id));
-      else {
-        x.stock -= 1;
-        shopOrders().unshift({ id: nextId(), st: TOUR_ME(), g: MOCK.groups[0], item: x.id, date: dmy(AN_TODAY), status: "new" });
-      }
-      w.log.unshift({ t: `Дүкен: ${x.name}`, c: -p, d: dmy(new Date()).slice(0, 5) });
-      closeSheet();
-      toast(x.cat === "real" ? "Тапсырыс жасалды! Дайын болғанда хабарлама келеді 🎁" : x.cat === "style" ? `${x.name} — сенікі, киілді!` : `${x.name} қосылды`);
-      paintStack();
-    });
+      : x.how || (x.slot ? ["«Қойма» ішінен киесің / шешесің", "Басқалар профиліңде және рейтингте көреді"] : []);
+    const draw = () => {
+      const stage = tryOn && x.slot === "frame"
+        ? `<span class="pf-av fr-${x.id}">${avatarHtml(me, "xl")}</span>`
+        : tryOn && x.slot === "title"
+          ? `<span class="ff-try-t"><b>${me.name}</b><span class="pf-title" style="--c:${x.color}">${x.name.replace(/[«»]/g, "")}</span></span>`
+          : medal(x, "xl");
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ff-stage" style="--r:${R.c}">
+          <span class="ff-rays"></span>
+          <span class="ff-rar big">${R.name}</span>
+          ${off ? `<em class="ff-tag off">−${off}%</em>` : ""}
+          ${stage}
+        </div>
+        <div class="sh-detail" style="padding-top:10px"><b style="margin-top:0">${x.name}</b><small>${x.desc}</small>
+          ${x.cat === "boost" && ownedOf(x) ? `<span class="sh-have">Сенде: ×${ownedOf(x)}</span>` : ""}
+          ${x.slot === "frame" || x.slot === "title" ? `<button type="button" class="ff-tryb ${tryOn ? "on" : ""}" id="ffTry">${icon(tryOn ? "visibility_off" : "visibility", "material-icons-outlined")}${tryOn ? "Қайтару" : "Киіп көру"}</button>` : ""}
+        </div>
+        ${x.items ? `<div class="ff-bun">${x.items.map((id) => { const it = SHOP.find((i) => i.id === id); return `<span style="--r:${RARITY[it.rar].c}">${medal(it, "sm")}<small>${it.name}</small></span>`; }).join("")}</div><div class="ff-bun-p">Бөлек алсаң: <s>${bundleFull(x)}</s> · үнем <b>${bundleFull(x) - x.price}</b> ${COIN}</div>` : ""}
+        ${how.length ? `<div class="sh-how">${how.map((h) => `<div>${icon("check_circle", "material-icons-outlined")}<span>${h}</span></div>`).join("")}</div>` : ""}
+        ${S.why === "poor" ? `<div class="sh-need"><span>Монета жетпейді: ${S.txt}</span><i><b style="width:${S.pct}%"></b></i><button type="button" class="t3-all" id="shNeedHow">Қалай жинаймын?</button></div>` : ""}
+        <div class="sheet-actions btn-row">
+          <button type="button" class="btn btn-ghost" id="shClose">Жабу</button>
+          ${
+            S.why === "own" ? `<button type="button" class="btn btn-primary" id="shEquip">${w.equip[x.slot] === x.id ? "Шешу" : "Кию"}</button>`
+            : `<button type="button" class="btn btn-primary sh-buy" id="shBuy" ${S.ok ? "" : "disabled"}>${S.ok ? `Сатып алу · ${COIN}${p.toLocaleString("ru-RU")}` : S.txt}</button>`
+          }
+        </div>`);
+      $("#shClose").onclick = closeSheet;
+      $("#ffTry")?.addEventListener("click", () => ((tryOn = !tryOn), draw()));
+      $("#shNeedHow")?.addEventListener("click", coinRulesSheet);
+      $("#shEquip")?.addEventListener("click", () => {
+        w.equip[x.slot] = w.equip[x.slot] === x.id ? null : x.id;
+        closeSheet();
+        toast(w.equip[x.slot] ? `${x.name} киілді` : "Шешілді");
+        paintStack();
+      });
+      $("#shBuy")?.addEventListener("click", () => {
+        if (!buyState(x).ok) return;
+        w.coins -= p;
+        const give = (it) => {
+          if (it.cat === "boost") w.counts[it.id] = (w.counts[it.id] || 0) + 1;
+          else if (isStyle(it) && !w.owned.includes(it.id)) (w.owned.push(it.id), (w.equip[it.slot] = it.id));
+        };
+        if (x.items) x.items.forEach((id) => give(SHOP.find((i) => i.id === id)));
+        else if (x.cat === "real") {
+          x.stock -= 1;
+          shopOrders().unshift({ id: nextId(), st: TOUR_ME(), g: MOCK.groups[0], item: x.id, date: dmy(AN_TODAY), status: "new" });
+        } else give(x);
+        w.log.unshift({ t: `Дүкен: ${x.name}`, c: -p, d: dmy(new Date()).slice(0, 5) });
+        closeSheet();
+        toast(x.cat === "real" ? "Тапсырыс жасалды! Дайын болғанда хабарлама келеді 🎁" : x.items ? `${x.name} — барлығы «Қоймаға» түсті` : isStyle(x) ? `${x.name} — сенікі, киілді!` : `${x.name} қосылды`);
+        paintStack();
+      });
+    };
+    draw();
   }
   function coinRulesSheet() {
     openSheet(`
@@ -3622,7 +3693,25 @@
   }
   function bindShop() {
     const w = wallet();
-    $$("[data-shoptab]").forEach((b) => (b.onclick = () => ((state.shopTab = b.dataset.shoptab), paintStack())));
+    $$("[data-shopcat]").forEach((b) => (b.onclick = () => ((state.shopCat = b.dataset.shopcat), paintStack())));
+    $("#spGo")?.addEventListener("click", () => {
+      const SP = spinState();
+      if (!(SP.freeLeft + SP.bonus)) return;
+      SP.freeLeft ? (SP.freeLeft -= 1) : (SP.bonus -= 1);
+      const k = Math.floor(Math.random() * SPIN.length), seg = 360 / SPIN.length;
+      SP.deg += 360 * 5 + (360 - (SP.deg % 360)) - (k * seg + seg / 2);
+      const wh = $("#spWheel");
+      wh.style.transition = "transform 3.2s cubic-bezier(.17,.67,.2,1)";
+      wh.style.transform = `rotate(${SP.deg}deg)`;
+      $("#spGo").disabled = true;
+      setTimeout(() => {
+        const r = SPIN[k];
+        if (r.c) earnCoins(r.c, "Сәттілік дөңгелегі");
+        else (w.counts[r.item] = (w.counts[r.item] || 0) + 1), toast(`Ұтыс: ${SHOP.find((i) => i.id === r.item).name} — «Қоймаға» түсті 🎉`);
+        SP.last = r.c ? `+${r.c} монета` : SHOP.find((i) => i.id === r.item).name;
+        paintStack();
+      }, 3300);
+    });
     $("#shopHow")?.addEventListener("click", coinRulesSheet);
     $("#shopLog")?.addEventListener("click", () => {
       openSheet(`
@@ -4269,7 +4358,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const go = (fn) => (closeScreen(), (state.navStack = []), fn());
     $$("[data-pf]", el).forEach((b) => (b.onclick = () => {
       const k = b.dataset.pf;
-      if (k === "shop") go(() => ((state.shopTab = "store"), openService("shop", "Магазин")));
+      if (k === "shop") go(() => ((state.shopCat = "hot"), openService("shop", "Магазин")));
       if (k === "battle") go(() => openService("battle", "Батл"));
       if (k === "tour") go(() => openService("tournament", "Турниры"));
     }));
@@ -4297,8 +4386,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           return;
         }
         if (a === "achievements") return openAllAchievements();
-        if (a === "inventory") return go(() => ((state.shopTab = "inv"), openService("shop", "Магазин")));
-        if (a === "coinlog") return go(() => ((state.shopTab = "store"), openService("shop", "Магазин"), setTimeout(() => $("#shopLog")?.click(), 50)));
+        if (a === "inventory") return go(() => ((state.shopCat = "inv"), openService("shop", "Магазин")));
+        if (a === "coinlog") return go(() => ((state.shopCat = "hot"), openService("shop", "Магазин"), setTimeout(() => $("#shopLog")?.click(), 50)));
         if (a === "restore") {
           openSheet(`
             <div class="sheet-handle"></div>

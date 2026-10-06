@@ -127,6 +127,17 @@
         "#2A3170",
         "#1E1E22"
       ]
+    },
+    "rarity": {
+      "common": "#8A93A6",
+      "rare": "#3D8BFF",
+      "epic": "#A64DFF",
+      "legend": "#FF9F1A"
+    },
+    "shopTag": {
+      "discount": "#E2373C",
+      "new": "#2FB34F",
+      "limited": "#FF9F1A"
     }
   },
   "radius": {
