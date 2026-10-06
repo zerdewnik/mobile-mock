@@ -4403,3 +4403,31 @@ button.so-row { cursor: pointer; }
 .t3-ban { flex: 0 0 100%; height: 112px; border-radius: 12px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
 .t3-ban.off { filter: grayscale(1) opacity(.5); }
 .t3-card.has-ban .t3-body { flex: 1; min-width: 0; }
+/* Онлайн батл */
+.dv-av { position: relative; display: inline-flex; }
+.dv-av i { position: absolute; right: -1px; bottom: -1px; width: 11px; height: 11px; border-radius: 50%; border: 2px solid #1e1e1e; background: #6c6f84; display: none; }
+.dv-av.on i { display: block; background: #4CC96B; }
+.dv-seen { display: block; font-size: 11px; color: #8a8d9c; }
+.dv-seen.on { color: #4CC96B; }
+.dv-on-n { color: #4CC96B; font-weight: 600; }
+#dvAsync, #dvLive { display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+#dvAsync .material-icons-outlined, #dvLive .material-icons-round { font-size: 18px; }
+.btn:disabled { opacity: .4; cursor: default; }
+.lv-wait { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0 4px; text-align: center; }
+.lv-av { position: relative; margin-bottom: 6px; }
+.lv-av i { position: absolute; right: 2px; bottom: 2px; width: 14px; height: 14px; border-radius: 50%; border: 3px solid #1e1e1e; background: #4CC96B; }
+.lv-wait > b { font-size: 16px; }
+.lv-wait > small { font-size: 12px; color: #8a8d9c; }
+.lv-ring { width: 96px; height: 96px; margin: 14px 0 6px; border-radius: 50%; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 4px solid var(--primary); box-shadow: 0 0 0 6px color-mix(in srgb, var(--primary) 18%, transparent); animation: lvPulse 1.4s ease-in-out infinite; }
+.lv-ring span { font-size: 30px; font-weight: 800; line-height: 1; }
+.lv-ring small { font-size: 11px; color: #8a8d9c; }
+@keyframes lvPulse { 50% { box-shadow: 0 0 0 12px color-mix(in srgb, var(--primary) 6%, transparent); } }
+.du-live { display: inline-flex; align-items: center; gap: 5px; margin-bottom: 4px; padding: 2px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; letter-spacing: .5px; color: #4CC96B; background: rgba(76,201,107,.14); }
+.du-live i { width: 6px; height: 6px; border-radius: 50%; background: #4CC96B; animation: svDot 1.2s ease-in-out infinite; }
+@keyframes svDot { 50% { opacity: .3; } }
+.du-mid { display: flex; flex-direction: column; align-items: center; }
+.du-opst { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #8a8d9c; }
+.du-opst .material-icons-outlined, .du-opst .material-icons-round { font-size: 16px; }
+.du-opst.done { color: #4CC96B; }
+.sheet:has(#dvLive) .pick-list { max-height: 250px; overflow-y: auto; }
+.sheet:has(#dvLive) > .sheet-actions { position: sticky; bottom: -1px; background: inherit; padding-bottom: 4px; }

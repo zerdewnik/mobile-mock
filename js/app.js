@@ -2698,7 +2698,7 @@
     }
   }
 
-  async function startDuel({ opp, subject, subjectTitle, match, T, onDone }) {
+  async function startDuel({ opp, subject, subjectTitle, match, T, onDone, live = false }) {
     toast("Сұрақтар дайындалуда…");
     const seed = Date.now() % 100000;
     const qs = await duelQuestions(subject, seed);
@@ -2706,6 +2706,8 @@
     const D = { i: 0, my: 0, op: 0, myT: 0, opT: 0, pick: null, reveal: false, splash: 0, done: false, left: 20, res: [] };
     const me = { name: "Сен", initials: MOCK.me.initials, color: "#5B6EC2" };
     let timer = null;
+    // Қарсыластың әр сұраққа жауап беру уақыты (онлайн режимде экранда «жауап берді» болып көрінеді)
+    const opTimes = plan.map((_, i) => 4 + rnd(opp.id, seed, i + 50) * 13);
     const oppCorrect = (i) => rnd(opp.id, seed, i) < [0.78, 0.6, 0.42][plan[i].ri] * (0.65 + (opp.score || 0) / 220);
     const answer = (k) => {
       if (D.reveal) return;
@@ -2715,7 +2717,7 @@
       D.reveal = true;
       const ok = k === q.answer;
       const opOk = oppCorrect(D.i);
-      const opTime = 4 + rnd(opp.id, seed, D.i + 50) * 13;
+      const opTime = opTimes[D.i];
       D.myT += 20 - D.left;
       D.opT += opTime;
       if (ok) D.my += p.pts;
@@ -2727,8 +2729,11 @@
         D.pick = null;
         D.i += 1;
         if (D.i >= plan.length) finish();
-        else if (plan[D.i].ri !== plan[D.i - 1].ri) D.splash = plan[D.i].ri;
-        else startTimer();
+        else if (plan[D.i].ri !== plan[D.i - 1].ri) {
+          D.splash = plan[D.i].ri;
+          // Онлайн: екеуі бір уақытта — келесі раунд өзі басталады
+          if (live) setTimeout(() => { if (D.splash) { D.splash = 0; startTimer(); paintStack(); } }, 2500);
+        } else startTimer();
         paintStack();
       }, 1100);
     };
@@ -2740,6 +2745,8 @@
         if (!el) return clearInterval(timer);
         D.left -= 1;
         el.textContent = D.left;
+        const os = $("#duOpSt");
+        if (live && os && !D.reveal && 20 - D.left >= opTimes[D.i]) (os.className = "du-opst done"), (os.innerHTML = `${icon("check_circle")}${firstName(opp)} жауап берді`);
         $("#duTimeBar").style.width = `${(D.left / 20) * 100}%`;
         if (D.left <= 0) answer(-1);
       }, 1000);
@@ -2765,7 +2772,7 @@
     const scoreBar = () => `
       <div class="du-top">
         <div class="du-side">${avatarHtml(me)}<div><b>Сен</b><span class="du-pts">${D.my}</span></div></div>
-        <div class="du-mid"><span class="du-round ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].cls}">${plan[Math.min(D.i, plan.length - 1)].ri + 1}-раунд · ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].name}</span><small>${subjectTitle}</small></div>
+        <div class="du-mid">${live ? `<span class="du-live"><i></i>ОНЛАЙН</span>` : ""}<span class="du-round ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].cls}">${plan[Math.min(D.i, plan.length - 1)].ri + 1}-раунд · ${DUEL_ROUNDS[plan[Math.min(D.i, plan.length - 1)].ri].name}</span><small>${subjectTitle}</small></div>
         <div class="du-side r"><div><b>${opp.name.split(" ")[0]}</b><span class="du-pts">${D.op}</span></div>${avatarHtml(opp)}</div>
       </div>
       <div class="du-dots">${plan.map((p, i) => {
@@ -2789,7 +2796,7 @@
       }
       if (D.splash) {
         const r = DUEL_ROUNDS[D.splash];
-        return `${scoreBar()}<div class="du-splash ${r.cls}"><div class="du-sp-n">${D.splash + 1}-раунд</div><div class="du-sp-t">${r.name}</div><div class="du-sp-s">${r.n} сұрақ · әр сұрақ ${r.pts} ұпай</div><button type="button" class="tr-play" id="duGo">Бастау</button></div>`;
+        return `${scoreBar()}<div class="du-splash ${r.cls}"><div class="du-sp-n">${D.splash + 1}-раунд</div><div class="du-sp-t">${r.name}</div><div class="du-sp-s">${r.n} сұрақ · әр сұрақ ${r.pts} ұпай</div>${live ? `<div class="du-sp-s">Екеуіңе бірге басталады…</div>` : `<button type="button" class="tr-play" id="duGo">Бастау</button>`}</div>`;
       }
       const q = qs[D.i];
       return `${scoreBar()}
@@ -2805,6 +2812,7 @@
               return `<button type="button" class="pr-opt ${cls}" data-du="${k}"><span class="pr-radio"></span><span>${md(o)}</span></button>`;
             })
             .join("")}
+          ${live && !D.reveal ? `<div class="du-opst" id="duOpSt">${icon("hourglass_top", "material-icons-outlined")}${firstName(opp)} ойланып жатыр…</div>` : ""}
           ${D.reveal ? `<div class="du-op">${opp.name.split(" ")[0]}: ${D.res[D.res.length - 1].opOk ? `<span class="up">дұрыс жауап берді</span>` : `<span class="down">қателесті</span>`}</div>` : ""}
         </div>`;
     };
@@ -3512,56 +3520,109 @@
     });
   }
 
+  /** Макет: сыныптастың онлайн күйі (нақты қосымшада — presence, соңғы 60 с белсенділік) */
+  const isOnline = (x) => rnd(x.id, 404) > 0.62;
+  const lastSeen = (x) => ["10 мин бұрын", "1 сағ бұрын", "кеше", "3 сағ бұрын"][Math.floor(rnd(x.id, 405) * 4)];
+
+  /** Кезекпен: шақырушы өз бөлігін қазір ойнайды → досына push (24 сағ) → дос ойнаған соң екеуіне нәтиже */
+  function playAsyncDuel(opp, c) {
+    const B = battleState();
+    setTimeout(
+      () =>
+        startDuel({
+          opp,
+          subject: T_SUBJ[c.id],
+          subjectTitle: c.title,
+          onDone: (_, my) => {
+            const inv = { opp, subjectTitle: c.title, my, left: "24 сағ" };
+            B.outgoing.unshift(inv);
+            setTimeout(() => {
+              B.outgoing = B.outgoing.filter((x) => x !== inv);
+              const op = Math.round(6 + rnd(opp.id, my, 3) * 16);
+              const win = my > op || (my === op && rnd(opp.id, 9) > 0.5);
+              battleDone(win);
+              notify({ type: "battle", title: `${firstName(opp)} шақыруыңа жауап берді`, body: `${c.title}: сен ${my} : ${op} ${opp.name}. ${win ? "Жеңіс! +15 рейтинг" : "Жеңіліс. Реванш жасап көр"}`, go: { service: "battle", title: "Батл" } });
+              if (state.navStack.length) paintStack();
+            }, 8000);
+          },
+        }),
+      600
+    );
+  }
+
+  /** Онлайн: досқа 60 с шақыру → қабылдаса екеуі бір уақытта ойнайды; қабылдамаса — өздігінен кезекпен ойнауға ауысады */
+  function inviteLive(opp, c) {
+    let left = 60, t = null, done = false;
+    const accepts = rnd(opp.id, Date.now() % 7) > 0.25;
+    const stop = () => ((done = true), clearInterval(t));
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="lv-wait">
+        <div class="lv-av">${avatarHtml(opp, "lg")}<i></i></div>
+        <b>${opp.name}</b>
+        <small>${c.title} · онлайн батл</small>
+        <div class="lv-ring"><span id="lvLeft">60</span><small>сек</small></div>
+        <div class="tf-sum" style="justify-content:center">${icon("notifications_active", "material-icons-outlined")}Досыңа шақыру кетті — қабылдауын күтудеміз</div>
+      </div>
+      <div class="sheet-actions btn-row"><button type="button" class="btn btn-ghost" id="lvCancel">Болдырмау</button><button type="button" class="btn btn-ghost" id="lvAsync">Кезекпен ойнау</button></div>`);
+    const toAsync = (msg) => {
+      stop();
+      closeSheet();
+      toast(msg);
+      playAsyncDuel(opp, c);
+    };
+    $("#lvCancel").onclick = () => (stop(), closeSheet(), toast("Шақыру болдырылмады"));
+    $("#lvAsync").onclick = () => toAsync(`Кезекпен: ${firstName(opp)} 24 сағат ішінде ойнайды. Өз раундыңды ойна`);
+    t = setInterval(() => {
+      if (done) return;
+      left -= 1;
+      const el = $("#lvLeft");
+      if (el) el.textContent = left;
+      if (accepts && left === 57) {
+        stop();
+        closeSheet();
+        toast(`${firstName(opp)} қабылдады — бастаймыз!`);
+        setTimeout(() => startDuel({ opp, subject: T_SUBJ[c.id], subjectTitle: c.title, onDone: battleDone, live: true }), 500);
+      } else if (!accepts && left === 54) toAsync(`${firstName(opp)} жауап бермеді — шақыру кезекпен ойнауға ауысты (24 сағ)`);
+    }, 1000);
+  }
+
   function openDuelInvite() {
     const g = MOCK.groups[0];
     const subs = MOCK.myCourses.filter((c) => T_SUBJ[c.id]);
     const st = { who: null, sub: subs[0]?.id };
+    const list = [...g.students].sort((a, b) => isOnline(b) - isOnline(a));
     const draw = () => {
+      const who = g.students.find((x) => x.id === st.who);
+      const on = who && isOnline(who);
       openSheet(
         `
         <div class="sheet-handle"></div>
         <div class="ef-head"><span>Жарысқа шақыру</span><button type="button" id="dvClose">${icon("close")}</button></div>
         <div class="ef-label">Пән</div>
         <div class="ent-chips">${subs.map((c) => `<button type="button" class="ent-chip ${st.sub === c.id ? "on" : ""}" style="--c:#6C7FD8" data-dvs="${c.id}">${c.title}</button>`).join("")}</div>
-        <div class="ef-label">Сыныптас</div>
-        <div class="pick-list">${g.students
-          .map((x) => `<button type="button" class="pick-opt dv-p ${st.who === x.id ? "on" : ""}" data-dvp="${x.id}">${avatarHtml(x)}<span style="flex:1">${x.name}</span>${st.who === x.id ? icon("check") : ""}</button>`)
+        <div class="ef-label">Сыныптас · <span class="dv-on-n">${list.filter(isOnline).length} онлайн</span></div>
+        <div class="pick-list">${list
+          .map((x) => `<button type="button" class="pick-opt dv-p ${st.who === x.id ? "on" : ""}" data-dvp="${x.id}"><span class="dv-av ${isOnline(x) ? "on" : ""}">${avatarHtml(x)}<i></i></span><span style="flex:1;min-width:0">${x.name}<small class="dv-seen ${isOnline(x) ? "on" : ""}">${isOnline(x) ? "онлайн" : lastSeen(x)}</small></span>${st.who === x.id ? icon("check") : ""}</button>`)
           .join("")}</div>
-        <button type="button" class="ef-submit" id="dvGo" ${st.who ? "" : "disabled"}>Шақыру</button>`,
+        <div class="tf-sum">${icon("info", "material-icons-outlined")}${!who ? "Сыныптасты таңдаңыз" : on ? "Онлайн: екеуің бір уақытта ойнайсыңдар. Кезекпен: досың 24 сағат ішінде ойнайды" : `${firstName(who)} қазір желіде емес — тек кезекпен (24 сағ)`}</div>
+        <div class="sheet-actions btn-row">
+          <button type="button" class="btn btn-ghost" id="dvAsync" ${who ? "" : "disabled"}>${icon("schedule", "material-icons-outlined")}Кезекпен</button>
+          <button type="button" class="btn btn-primary" id="dvLive" ${on ? "" : "disabled"}>${icon("bolt")}Қазір ойнау</button>
+        </div>`,
         { tall: true }
       );
       $("#dvClose").onclick = closeSheet;
       $$("[data-dvs]").forEach((b) => (b.onclick = () => ((st.sub = Number(b.dataset.dvs)), draw())));
       $$("[data-dvp]").forEach((b) => (b.onclick = () => ((st.who = Number(b.dataset.dvp)), draw())));
-      $("#dvGo").onclick = () => {
-        const opp = g.students.find((x) => x.id === st.who);
-        const c = MOCK.myCourses.find((x) => x.id === st.sub);
-        const B = battleState();
+      const c = () => MOCK.myCourses.find((x) => x.id === st.sub);
+      $("#dvAsync").onclick = () => {
+        if (!who) return;
         closeSheet();
-        // Кезекпен: шақырушы өз бөлігін қазір ойнайды → досына push «X сені батлға шақырды» (24 сағ) → дос ойнаған соң екеуіне нәтиже
-        toast(`Шақыру жіберілді — ${firstName(opp)} хабарлама алды. Енді өз раундыңды ойна`);
-        setTimeout(
-          () =>
-            startDuel({
-              opp,
-              subject: T_SUBJ[c.id],
-              subjectTitle: c.title,
-              onDone: (_, my) => {
-                const inv = { opp, subjectTitle: c.title, my, left: "24 сағ" };
-                B.outgoing.unshift(inv);
-                setTimeout(() => {
-                  B.outgoing = B.outgoing.filter((x) => x !== inv);
-                  const op = Math.round(6 + rnd(opp.id, my, 3) * 16);
-                  const win = my > op || (my === op && rnd(opp.id, 9) > 0.5);
-                  battleDone(win);
-                  notify({ type: "battle", title: `${firstName(opp)} шақыруыңа жауап берді`, body: `${c.title}: сен ${my} : ${op} ${opp.name}. ${win ? "Жеңіс! +15 рейтинг" : "Жеңіліс. Реванш жасап көр"}`, go: { service: "battle", title: "Батл" } });
-                  if (state.navStack.length) paintStack();
-                }, 8000);
-              },
-            }),
-          600
-        );
+        toast(`Шақыру жіберілді — ${firstName(who)} хабарлама алды. Енді өз раундыңды ойна`);
+        playAsyncDuel(who, c());
       };
+      $("#dvLive").onclick = () => on && inviteLive(who, c());
     };
     draw();
   }
