@@ -956,8 +956,6 @@
       let streak = 0;
       for (const d of duels) { if (d.win) streak++; else break; }
       const seg = state.btSeg || "play";
-      const myG = MOCK.groups[0];
-      const rival = B.rival;
       const head = `
         <div class="bt-stats">
           <div><b>${B.rating}</b><small>Батл рейтингі</small></div>
@@ -981,21 +979,10 @@
         </div>`;
       return `
         <div class="list-pad tour" style="padding-top:12px">${head}
-          <div class="bt-gvg">
-            <div class="bt-gvg-h">${icon("groups", "material-icons-outlined")}Топтар батлы · осы апта</div>
-            <div class="bt-gvg-row">
-              <div class="bt-gvg-t me"><b>${myG.name}</b><span>${rival.myPts}</span></div>
-              <div class="bt-gvg-vs">VS</div>
-              <div class="bt-gvg-t"><b>${rival.group.name}</b><span>${rival.theirPts}</span></div>
-            </div>
-            <div class="bt-gvg-bar"><i style="width:${(rival.myPts / Math.max(1, rival.myPts + rival.theirPts)) * 100}%"></i></div>
-            <div class="bt-gvg-s">Басқа топтан қарсыласты жеңсең — тобыңа +1 ұпай</div>
-          </div>
-          <div class="bt-play3">
-            <button type="button" class="bt-btn rand" id="btRandom">${icon("shuffle")}<b>Өз тобымнан</b><small>Деңгейі жақын сыныптас</small></button>
-            <button type="button" class="bt-btn other" id="btOther">${icon("public")}<b>Басқа топтан</b><small>${rival.group.name} тобынан кездейсоқ</small></button>
-            <button type="button" class="bt-btn friend wide" id="duelInvite">${icon("person_add", "material-icons-outlined")}<b>Досты шақыру</b><small>Сыныптасты таңдап, батлға шақыр</small></button>
-          </div>
+          <div class="t3-sec">Топ соғысы</div>
+          ${warCardHtml()}
+          <div class="t3-sec">Жекпе-жек</div>
+          <button type="button" class="bt-btn rand wide" id="btRandom">${icon("sports_kabaddi")}<b>Өз тобымнан қарсылас</b><small>Деңгейі жақын сыныптас</small>${icon("chevron_right")}</button>
           ${B.incoming.length ? `<div class="t3-sec">Саған шақыру · ${B.incoming.length}</div>${B.incoming.map((c, i) => `
             <div class="bt-inv">${avatarHtml(c.opp)}<div style="flex:1;min-width:0"><b>${c.opp.name}</b><small>${c.subjectTitle} · ${c.left} қалды</small></div>
               <button type="button" class="bt-no" data-btno="${i}">${icon("close")}</button><button type="button" class="bt-yes" data-btyes="${i}">Қабылдау</button></div>`).join("")}` : ""}
@@ -1967,7 +1954,7 @@
   /** Куратор курсы → ЕНТ банкіндегі пән кілті */
   const STAFF_SUBJ = { 10: "world_history", 11: "mathematics", 12: "law_basics", 13: "history_kz", 14: "chemistry", 15: "biology", 16: "english" };
   const COURSE_TITLE = { 10: "Дүниежүзі тарихы", 11: "Математика", 12: "Құқық негіздері", 13: "Қазақстан тарихы", 14: "Химия", 15: "Биология", 16: "Ағылшын тілі" };
-  const TOUR_ME = () => ({ id: 0, name: `${MOCK.me.firstName} ${MOCK.me.lastName}`, initials: MOCK.me.initials, color: "#5B6EC2", score: 60, me: true });
+  const TOUR_ME = () => ({ id: 0, name: `${MOCK.me.firstName} ${MOCK.me.lastName}`, initials: (MOCK.me.firstName[0] + MOCK.me.lastName[0]).toUpperCase(), color: "#5B6EC2", score: 60, me: true });
   const STAGE_DAYS = { 1: "1 күн", 2: "2 күн", 3: "3 күн" };
 
   /** Олимпиялық жүйе: тіркелгендер жұпқа бөлінеді, тақ болса — BYE (автоматты өтеді) */
@@ -2856,6 +2843,7 @@
     const B = battleState();
     $$("[data-btseg]").forEach((b) => (b.onclick = () => ((state.btSeg = b.dataset.btseg), paintStack())));
     $("#btRules")?.addEventListener("click", battleRules);
+    $("#warOpen")?.addEventListener("click", () => openWar());
     $("#btOther")?.addEventListener("click", () => {
       const g = B.rival.group;
       const opp = { ...g.students[Math.floor(Math.random() * g.students.length)] };
@@ -2898,6 +2886,304 @@
       const c = MOCK.myCourses.find((x) => x.title === d.subjectTitle) || MOCK.myCourses.find((x) => T_SUBJ[x.id]);
       startDuel({ opp: d.opp, subject: T_SUBJ[c.id] || "world_history", subjectTitle: d.subjectTitle, onDone: battleDone });
     }));
+  }
+
+  /* ============================================================
+     ТОП СОҒЫСЫ (Clash of Clans «Clan War» үлгісімен)
+     Куратор бастайды → ортақ пәні бар, көлемі мен күші жақын топ ізделеді →
+     Дайындық күні → Шайқас күні (әр қатысушыға 2 шабуыл) → көп ★ жинаған топ жеңеді
+     ★: 40%+ = 1, 70%+ = 2, 100% = 3 (жекпе-жектегі 24 ұпайдан)
+     ============================================================ */
+  const WAR_SIZES = [5, 10, 15];
+  const warStars = (pct) => (pct >= 100 ? 3 : pct >= 70 ? 2 : pct >= 40 ? 1 : 0);
+  const starsHtml = (n, max = 3) => Array.from({ length: max }, (_, i) => `<i class="${i < n ? "on" : ""}">★</i>`).join("");
+  const groupPower = (g) => Math.round(g.students.reduce((t, x) => t + (x.score || 0), 0) / Math.max(1, g.students.length));
+
+  function warCandidates(g, size) {
+    return MOCK.groups
+      .filter((x) => x.id !== g.id && x.courseId === g.courseId && x.students.length >= size)
+      .map((x) => ({ g: x, diff: Math.abs(groupPower(x) - groupPower(g)) }))
+      .sort((a, b) => a.diff - b.diff);
+  }
+  function makeLineup(g, size, withMe) {
+    const list = [...g.students].sort((a, b) => b.score - a.score).slice(0, withMe ? size - 1 : size);
+    if (withMe) list.splice(Math.min(3, list.length), 0, TOUR_ME());
+    return list.map((x, i) => ({ ...x, pos: i + 1 }));
+  }
+  /** Қарсыластың жауап шабуылдары (макет) */
+  function simAttacks(W, side, count) {
+    const atk = side === "them" ? W.them.lineup : W.us.lineup;
+    const def = side === "them" ? W.us.lineup : W.them.lineup;
+    let n = 0;
+    for (const a of atk) {
+      if (a.me) continue;
+      const used = W.attacks.filter((x) => x.side === side && x.by === a.id).length;
+      for (let k = used; k < 2 && n < count; k++) {
+        const done = new Set(W.attacks.filter((x) => x.side === side && x.by === a.id).map((x) => x.target));
+        const t = def.find((d) => Math.abs(d.pos - a.pos) <= 2 + k && !done.has(d.id)) || def.find((d) => !done.has(d.id));
+        if (!t) break;
+        const pct = Math.min(100, Math.round(35 + rnd(a.id, t.id, k, W.id) * 70 + ((a.score || 0) - (t.score || 0)) / 4));
+        W.attacks.push({ side, by: a.id, target: t.id, pct, stars: warStars(pct) });
+        n++;
+      }
+    }
+  }
+  function warTotals(W, side) {
+    const def = side === "us" ? W.them.lineup : W.us.lineup;
+    let stars = 0, pct = 0;
+    def.forEach((d) => {
+      const hits = W.attacks.filter((x) => x.side === side && x.target === d.id);
+      const best = hits.reduce((m, x) => (x.stars > m.stars || (x.stars === m.stars && x.pct > m.pct) ? x : m), { stars: 0, pct: 0 });
+      stars += best.stars;
+      pct += best.pct;
+    });
+    return { stars, pct: Math.round(pct / def.length), used: W.attacks.filter((x) => x.side === side).length, max: W.size * 2 };
+  }
+  function war() {
+    if (MOCK.war === undefined) {
+      const g = MOCK.groups[0];
+      const opp = warCandidates(g, 10)[0]?.g;
+      const end = new Date(AN_TODAY);
+      end.setHours(end.getHours() + 14);
+      MOCK.war = opp && {
+        id: 1,
+        status: "battle",
+        courseId: g.courseId,
+        size: 10,
+        startedBy: "Диана · куратор",
+        us: { group: g, lineup: makeLineup(g, 10, true) },
+        them: { group: opp, lineup: makeLineup(opp, 10, false) },
+        attacks: [],
+        battleEnd: end,
+        history: [{ vs: "Тарихшылар", us: 21, them: 17, win: true, date: "28.09.2026" }],
+      };
+      if (MOCK.war) {
+        simAttacks(MOCK.war, "us", 9);
+        simAttacks(MOCK.war, "them", 11);
+      }
+    }
+    return MOCK.war;
+  }
+  const warLeft = (W) => countdown(W.status === "prep" ? W.prepEnd : W.battleEnd) || "аяқталды";
+
+  /** Батл бетіндегі соғыс карточкасы */
+  function warCardHtml() {
+    const W = war();
+    if (!W) return `<div class="wr-card none">${icon("shield", "material-icons-outlined")}<div><b>Топ соғысы жоқ</b><small>Соғысты куратор бастайды</small></div></div>`;
+    const me = W.us.lineup.find((x) => x.me);
+    const myUsed = me ? W.attacks.filter((x) => x.side === "us" && x.by === me.id).length : 0;
+    const U = warTotals(W, "us"), T = warTotals(W, "them");
+    const st = { prep: "Дайындық күні", battle: "Шайқас күні", ended: U.stars > T.stars || (U.stars === T.stars && U.pct >= T.pct) ? "Жеңіс!" : "Жеңіліс" }[W.status];
+    return `
+      <button type="button" class="wr-card" id="warOpen">
+        <div class="wr-top"><span class="wr-badge ${W.status}">${icon(W.status === "battle" ? "local_fire_department" : W.status === "prep" ? "construction" : "emoji_events")}${st}</span><span class="wr-time">${W.status === "ended" ? "" : `${icon("timer", "material-icons-outlined")}${warLeft(W)}`}</span></div>
+        <div class="wr-vs">
+          <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">★ ${U.stars}</span><small>${U.pct}%</small></div>
+          <div class="wr-x"><img src="assets/tournament/battle_line.png" alt="" /><small>${W.size}×${W.size}</small></div>
+          <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">★ ${T.stars}</span><small>${T.pct}%</small></div>
+        </div>
+        ${me && W.status === "battle" ? `<div class="wr-me">Сенің шабуылдарың: <span>${Array.from({ length: 2 }, (_, i) => `<i class="${i < myUsed ? "used" : ""}">⚔️</i>`).join("")}</span> ${2 - myUsed ? `· ${2 - myUsed} қалды` : "· бәрі қолданылды"}</div>` : ""}
+        <div class="wr-sub">${COURSE_TITLE[W.courseId]} · соғыс картасын ашу ›</div>
+      </button>`;
+  }
+
+  /** Соғыс картасы: қарсылас базалары / біздің топ / шабуылдар */
+  function openWar({ staff = false } = {}) {
+    const W = war();
+    if (!W) return staff ? openWarStart() : toast("Топ соғысы жоқ");
+    let tab = staff ? "us" : "them";
+    const me = W.us.lineup.find((x) => x.me);
+    const build = () => {
+      const U = warTotals(W, "us"), T = warTotals(W, "them");
+      const best = (side, id) => W.attacks.filter((x) => x.side === side && x.target === id).reduce((m, x) => (x.stars > m.stars || (x.stars === m.stars && x.pct > m.pct) ? x : m), { stars: 0, pct: 0 });
+      const myDone = me ? new Set(W.attacks.filter((x) => x.side === "us" && x.by === me.id).map((x) => x.target)) : new Set();
+      const myLeft = me ? 2 - myDone.size : 0;
+      const nameOf = (side, id) => (side === "us" ? W.us.lineup : W.them.lineup).find((x) => x.id === id);
+      let body;
+      if (tab === "them")
+        body = W.them.lineup
+          .map((d) => {
+            const b = best("us", d.id);
+            const can = W.status === "battle" && me && myLeft > 0 && !myDone.has(d.id);
+            return `<button type="button" class="wr-base ${b.stars === 3 ? "down" : ""}" ${can ? `data-watk="${d.id}"` : ""}>
+              <span class="wr-pos">${d.pos}</span>${avatarHtml(d)}
+              <span class="wr-bn"><b>${d.name}</b><small>${b.pct ? `${b.pct}% · ` : ""}рейтинг ${d.score}</small></span>
+              <span class="wr-stars">${starsHtml(b.stars)}</span>
+              ${can ? `<span class="wr-atk">${icon("sports_kabaddi")}</span>` : myDone.has(d.id) ? `<span class="wr-done">${icon("check")}</span>` : ""}
+            </button>`;
+          })
+          .join("");
+      else if (tab === "us")
+        body = W.us.lineup
+          .map((m) => {
+            const mine = W.attacks.filter((x) => x.side === "us" && x.by === m.id);
+            const got = best("them", m.id);
+            return `<div class="wr-base ${m.me ? "me" : ""}">
+              <span class="wr-pos">${m.pos}</span>${avatarHtml(m)}
+              <span class="wr-bn"><b>${m.me ? "Сен" : m.name}</b><small>Қорғаныс: ${starsHtml(got.stars)} берді</small></span>
+              <span class="wr-atks">${[0, 1].map((k) => (mine[k] ? `<em class="s${mine[k].stars}">${mine[k].stars}★</em>` : `<em class="no">—</em>`)).join("")}</span>
+            </div>`;
+          })
+          .join("");
+      else
+        body =
+          [...W.attacks]
+            .reverse()
+            .map((a) => {
+              const by = nameOf(a.side, a.by), t = nameOf(a.side === "us" ? "them" : "us", a.target);
+              return `<div class="wr-log ${a.side}"><span>${a.side === "us" ? "🟦" : "🟥"}</span><span style="flex:1;min-width:0"><b>${by?.me ? "Сен" : firstName(by)}</b> → #${t?.pos} ${firstName(t)}</span><span class="wr-stars sm">${starsHtml(a.stars)}</span><small>${a.pct}%</small></div>`;
+            })
+            .join("") || `<div class="empty">Әзірге шабуыл жоқ</div>`;
+      return `
+        <div class="wr-hero">
+          <div class="wr-top"><span class="wr-badge ${W.status}">${W.status === "battle" ? "Шайқас күні" : W.status === "prep" ? "Дайындық күні" : "Соғыс аяқталды"}</span><span class="wr-time">${W.status === "ended" ? "" : warLeft(W)}</span></div>
+          <div class="wr-vs big">
+            <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">★ ${U.stars}</span><small>${U.pct}% · ${U.used}/${U.max} шабуыл</small></div>
+            <div class="wr-x"><img src="assets/tournament/battle_line.png" alt="" /></div>
+            <div class="wr-side r"><b>${W.them.group.name}</b><span class="wr-st">★ ${T.stars}</span><small>${T.pct}% · ${T.used}/${T.max} шабуыл</small></div>
+          </div>
+          <div class="wr-bar"><i style="width:${(U.stars / Math.max(1, U.stars + T.stars)) * 100}%"></i></div>
+          <div class="wr-sub">${COURSE_TITLE[W.courseId]} · ${W.size}×${W.size} · бастаған: ${W.startedBy}</div>
+        </div>
+        ${W.status === "prep" ? `<div class="t3-note">${icon("construction", "material-icons-outlined")}Дайындық күні: шабуыл әлі жоқ. Тренажёрда «${COURSE_TITLE[W.courseId]}» тақырыптарын қайталаңдар — шайқас ${countdown(W.prepEnd) || "жақында"} кейін басталады.</div>` : ""}
+        ${!staff && me && W.status === "battle" ? `<div class="wr-hint">${icon("touch_app", "material-icons-outlined")}Қарсыластың базасын таңда — ${myLeft} шабуыл қалды. Бір базаға екі рет шабуылдауға болмайды.</div>` : ""}
+        <div class="seg-tabs seg-3 wr-tabs">
+          ${[["them", "Қарсылас"], ["us", "Біздің топ"], ["log", "Шабуылдар"]].map(([k, l]) => `<button type="button" data-wtab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`).join("")}
+        </div>
+        <div class="list-pad" style="padding-top:8px">${body}</div>
+        ${staff && W.status !== "ended" ? `<div class="list-pad"><button type="button" class="btn3d ghost danger" id="warStop">${icon("flag", "material-icons-outlined")}Соғысты аяқтау</button></div>` : ""}
+        ${staff && W.status === "ended" ? `<div class="list-pad"><button type="button" class="btn3d" id="warNew">${icon("add")}Жаңа соғыс бастау</button></div>` : ""}
+        ${W.history?.length ? `<div class="list-pad"><div class="t3-sec">Өткен соғыстар</div>${W.history.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">★ ${h.us} : ${h.them}</span></div>`).join("")}</div>` : ""}`;
+    };
+    pushScreen(
+      "Топ соғысы",
+      build,
+      () => {
+        $$("[data-wtab]").forEach((b) => (b.onclick = () => ((tab = b.dataset.wtab), paintStack())));
+        $("#warRules")?.addEventListener("click", warRules);
+        $("#warNew")?.addEventListener("click", () => ((MOCK.war = null), state.navStack.pop(), openWarStart()));
+        $("#warStop")?.addEventListener("click", async () => {
+          const ok = await confirmDialog({ title: "Соғысты аяқтау?", message: "Қалған шабуылдар жабылады, нәтиже қазіргі ★ бойынша.", confirmLabel: "Аяқтау", danger: true });
+          if (!ok) return;
+          W.status = "ended";
+          const U = warTotals(W, "us"), T = warTotals(W, "them");
+          W.history = [{ vs: W.them.group.name, us: U.stars, them: T.stars, win: U.stars > T.stars, date: dmy(AN_TODAY) }, ...(W.history || [])];
+          paintStack();
+        });
+        $$("[data-watk]").forEach((b) => {
+          b.onclick = () => {
+            const d = W.them.lineup.find((x) => String(x.id) === b.dataset.watk);
+            openSheet(`
+              <div class="sheet-handle"></div>
+              <div class="ex-title">Шабуыл: #${d.pos} ${d.name}</div>
+              <div class="wr-atk-p">${avatarHtml(d, "lg")}<div><b>${W.them.group.name}</b><small>Рейтинг ${d.score} · ${COURSE_TITLE[W.courseId]}</small></div></div>
+              <div class="ex-block"><ol><li>3 раунд, 13 сұрақ, макс 24 ұпай</li><li>40% = ★ · 70% = ★★ · 100% = ★★★</li><li>Тобыңа ең жақсы нәтижең есептеледі</li></ol></div>
+              <div class="sheet-actions btn-row"><button type="button" class="btn btn-ghost" id="waNo">Болдырмау</button><button type="button" class="btn btn-primary" id="waGo">Шабуылдау ⚔️</button></div>`);
+            $("#waNo").onclick = closeSheet;
+            $("#waGo").onclick = () => {
+              closeSheet();
+              startDuel({
+                opp: { ...d, groupName: W.them.group.name },
+                subject: STAFF_SUBJ[W.courseId],
+                subjectTitle: COURSE_TITLE[W.courseId],
+                onDone: (win, my) => {
+                  const pct = Math.round((my / DUEL_MAX) * 100);
+                  W.attacks.push({ side: "us", by: me.id, target: d.id, pct, stars: warStars(pct) });
+                  simAttacks(W, "them", 1);
+                  toast(`${warStars(pct)} ★ · ${pct}%`);
+                },
+              });
+            };
+          };
+        });
+      },
+      { right: `<button type="button" class="appbar-icon-btn" id="warRules" title="Ереже">${icon("info", "material-icons-outlined")}</button>` }
+    );
+  }
+  function warRules() {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="ex-title">Топ соғысы қалай өтеді</div>
+      <div class="ex-block"><ol>
+        <li><b>Кім бастайды:</b> топтың кураторы (немесе бас куратор). Қатысушыларды таңдайды — 5, 10 не 15 адам</li>
+        <li><b>Қарсылас:</b> жүйе ортақ пәні бар, көлемі бірдей, рейтингі жақын топты табады</li>
+        <li><b>Дайындық күні</b> (24 сағ): шабуыл жоқ, тақырыптарды қайталау</li>
+        <li><b>Шайқас күні</b> (24 сағ): әр қатысушыға 2 шабуыл, кез келген қарсылас базасына, бір базаға бір рет</li>
+        <li><b>Шабуыл = жекпе-жек:</b> 40% → ★, 70% → ★★, 100% → ★★★</li>
+        <li><b>Жеңіс:</b> көп ★ жинаған топ; тең болса — орташа % жоғары топ</li>
+      </ol></div>
+      <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="wrClose" style="width:100%">Түсінікті</button></div>`);
+    $("#wrClose").onclick = closeSheet;
+  }
+
+  /** Куратор: соғыс бастау — көлем, қатысушылар, қарсылас іздеу */
+  function openWarStart() {
+    const g = visibleGroups()[0] || MOCK.groups[0];
+    const f = { size: 10, picked: new Set([...g.students].sort((a, b) => b.score - a.score).slice(0, 10).map((x) => x.id)), found: null, prep: 24 };
+    const draw = () => {
+      const cands = warCandidates(g, f.size);
+      openSheet(
+        `
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Топ соғысын бастау</span><button type="button" id="wsClose">${icon("close")}</button></div>
+        <div class="wr-from">${icon("groups", "material-icons-outlined")}<b>${g.name}</b><span>${COURSE_TITLE[g.courseId]} · күші ${groupPower(g)}</span></div>
+        <div class="ef-label">Соғыс көлемі</div>
+        <div class="ent-chips">${WAR_SIZES.map((n) => `<button type="button" class="ent-chip ${f.size === n ? "on" : ""}" style="--c:var(--primary)" data-wsz="${n}" ${g.students.length < n ? "disabled" : ""}>${n} × ${n}</button>`).join("")}</div>
+        <div class="ef-label">Қатысушылар · ${f.picked.size}/${f.size} <button type="button" class="t3-all" id="wsTop">рейтинг бойынша үздіктер</button></div>
+        <div class="tf-checks">${[...g.students].sort((a, b) => b.score - a.score).map((x) => `<button type="button" class="tf-check ${f.picked.has(x.id) ? "on" : ""}" data-wsp="${x.id}">${icon(f.picked.has(x.id) ? "check_box" : "check_box_outline_blank")}<span>${x.name}<small>рейтинг ${x.score}</small></span></button>`).join("")}</div>
+        <div class="ef-label">Дайындық күні</div>
+        <div class="ent-chips">${[12, 24, 48].map((h) => `<button type="button" class="ent-chip ${f.prep === h ? "on" : ""}" style="--c:var(--primary)" data-wsprep="${h}">${h} сағат</button>`).join("")}</div>
+        ${
+          f.found
+            ? `<div class="wr-found">${icon("radar", "material-icons-outlined")}<div><b>Қарсылас табылды: ${f.found.name}</b><small>${COURSE_TITLE[f.found.courseId]} · ${f.found.studentsCount} оқушы · күші ${groupPower(f.found)}</small></div></div>`
+            : `<div class="tf-sum ${cands.length ? "" : "warn"}">${icon("search", "material-icons-outlined")}${cands.length ? `Ортақ пәні бар ${cands.length} топ: ${cands.map((c) => c.g.name).join(", ")}` : "Ортақ пәні бар, көлемі жететін топ жоқ"}</div>`
+        }
+        <button type="button" class="ef-submit" id="wsGo" ${cands.length ? "" : "disabled"}>${f.found ? "Соғысты бастау ⚔️" : "Қарсылас іздеу"}</button>`,
+        { tall: true }
+      );
+      $("#wsClose").onclick = closeSheet;
+      $$("[data-wsz]").forEach((b) => (b.onclick = () => ((f.size = +b.dataset.wsz), (f.found = null), (f.picked = new Set([...g.students].sort((a, c) => c.score - a.score).slice(0, f.size).map((x) => x.id))), draw())));
+      $("#wsTop").onclick = () => ((f.picked = new Set([...g.students].sort((a, c) => c.score - a.score).slice(0, f.size).map((x) => x.id))), draw());
+      $$("[data-wsp]").forEach((b) => (b.onclick = () => {
+        const id = +b.dataset.wsp;
+        if (f.picked.has(id)) f.picked.delete(id);
+        else if (f.picked.size < f.size) f.picked.add(id);
+        else return toast(`Тек ${f.size} қатысушы`, "err");
+        draw();
+      }));
+      $$("[data-wsprep]").forEach((b) => (b.onclick = () => ((f.prep = +b.dataset.wsprep), draw())));
+      $("#wsGo").onclick = () => {
+        if (f.picked.size !== f.size) return toast(`${f.size} қатысушы таңдаңыз`, "err");
+        if (!f.found) {
+          f.found = cands[0].g;
+          toast("Іздеу… қарсылас табылды");
+          return draw();
+        }
+        const prepEnd = new Date(AN_TODAY);
+        prepEnd.setHours(prepEnd.getHours() + f.prep);
+        const battleEnd = new Date(prepEnd);
+        battleEnd.setHours(battleEnd.getHours() + 24);
+        const lineup = [...g.students].filter((x) => f.picked.has(x.id)).sort((a, b) => b.score - a.score).map((x, i) => ({ ...x, pos: i + 1 }));
+        MOCK.war = {
+          id: nextId(),
+          status: "prep",
+          courseId: g.courseId,
+          size: f.size,
+          startedBy: `${myName()} · ${state.staffRole === "head" ? "бас куратор" : "куратор"}`,
+          us: { group: g, lineup },
+          them: { group: f.found, lineup: makeLineup(f.found, f.size, false) },
+          attacks: [],
+          prepEnd,
+          battleEnd,
+          history: [],
+        };
+        closeSheet();
+        toast("Соғыс жарияланды — екі топқа хабарлама кетті");
+        state.navStack = [];
+        openWar({ staff: true });
+      };
+    };
+    draw();
   }
 
   function openDuelInvite() {
@@ -3157,7 +3443,7 @@
         build: pageHtml,
         after: bindService,
         screenCls: id === "analytics" ? "an-screen" : "",
-        right: id === "battle" ? `<button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button>` : id === "tournament" ? "<span></span>" : undefined,
+        right: id === "battle" ? `<span class="ab-icons"><button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button><button type="button" class="appbar-icon-btn" id="duelInvite" title="Досты шақыру">${icon("person_add", "material-icons-outlined")}</button></span>` : id === "tournament" ? "<span></span>" : undefined,
         centered: id === "analytics",
         footer: () =>
           id === "tests" && state.svc.tab === "ent" && state.entOpen
@@ -5643,6 +5929,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { sub: "efir", label: "Эфир", icon: "live_tv" },
       { sub: "tours", label: "Турнирлер", img: "assets/tournament/tournament_line.png" },
+      { sub: "war", label: "Топ соғысы", img: "assets/tournament/battle_line.png" },
     ];
     return `
       ${bannerHtml()}
@@ -7204,6 +7491,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
     $$("[data-staff-sub]").forEach((b) => {
       b.onclick = () => {
+        if (b.dataset.staffSub === "war") {
+          state.navStack = [];
+          return openWar({ staff: true });
+        }
         if (b.dataset.staffSub === "tours") {
           state.navStack = [];
           return openStaffTournaments();

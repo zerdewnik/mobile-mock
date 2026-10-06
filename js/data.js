@@ -54,6 +54,8 @@ window.MOCK = {
       ],
     },
     /* Басқа кураторлардың топтары — тек бас куратор / академ. бөлім басшысына көрінеді */
+    { id: 6, name: "Хронос 2", courseId: 10, courseLabel: "ДЖТ · Айгерім", curatorId: 2, studentsCount: 14 },
+    { id: 11, name: "Тарихшылар", courseId: 10, courseLabel: "ДЖТ · Назгүл", curatorId: 4, studentsCount: 9 },
     { id: 1, name: "құқық", courseId: 12, courseLabel: "құқық · Назгүл", curatorId: 4, studentsCount: 8 },
     { id: 2, name: "Math Empire", courseId: 11, courseLabel: "мат · Еркебұлан", curatorId: 5, studentsCount: 9 },
     { id: 3, name: "Хронос 3", courseId: 13, courseLabel: "тарих · Назгүл", curatorId: 4, studentsCount: 29 },
