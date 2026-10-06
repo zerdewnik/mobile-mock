@@ -3142,7 +3142,7 @@
   /** Staff: Топтар шайқасы — өз топтары (бас куратор — барлық топ), әр топқа шайқас бастау / ашу */
   function openStaffWars() {
     pushScreen(
-      "Топтар шайқасы",
+      "Батл",
       () => {
         const groups = visibleGroups();
         const wars = allWars();
@@ -6245,9 +6245,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const services = [
       { sub: "analytics", label: "Аналитика", img: "assets/v2/analyticsv2.png" },
       { sub: "efir", label: "Эфир", icon: "live_tv" },
-      { sub: "tours", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
-      { sub: "war", label: "Топтар шайқасы", img: "assets/tournament/clash_line.png", hot: "war" },
       { sub: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
+      { sub: "war", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
+      { sub: "tours", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
     ];
     return `
       ${bannerHtml()}
