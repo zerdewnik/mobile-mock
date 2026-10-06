@@ -3443,7 +3443,7 @@
         build: pageHtml,
         after: bindService,
         screenCls: id === "analytics" ? "an-screen" : "",
-        right: id === "battle" ? `<span class="ab-icons"><button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button><button type="button" class="appbar-icon-btn" id="duelInvite" title="Досты шақыру">${icon("person_add", "material-icons-outlined")}</button></span>` : id === "tournament" ? "<span></span>" : undefined,
+        right: id === "battle" ? `<span class="ab-icons"><button type="button" class="appbar-icon-btn" id="duelInvite" title="Досты шақыру">${icon("person_add", "material-icons-outlined")}</button><button type="button" class="appbar-icon-btn" id="btRules" title="Ережелер">${icon("info", "material-icons-outlined")}</button></span>` : id === "tournament" ? "<span></span>" : undefined,
         centered: id === "analytics",
         footer: () =>
           id === "tests" && state.svc.tab === "ent" && state.entOpen
