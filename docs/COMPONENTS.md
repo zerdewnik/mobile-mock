@@ -97,3 +97,5 @@ Flutter: `Container(decoration: I4U3D.card())`, hero үшін `I4U3D.card(glow: 
 | Көрсеткіш түсіндірмесі | Аналитика карточкасын басқанда: Бұл не? / Қалай есептеледі? / Қазір / Дереккөз | `openMetricExplain()`, `.ex-*` |
 | Сертификат | I4U бланкі, canvas → PNG | `drawCertificate()` |
 | Отчёт PDF | A4, html2canvas + jsPDF | `reportDocHtml()` |
+- `.wr-grp` — топ соғысы хабындағы топ қатары (3D карточка) + `.wr-go` күлгін 3D батырма «Бастау» (32px, градиент #A07CFF→#8B5CF6, төменгі жиек #4B2F8F).
+- `.so-row` — staff Магазин қатары (тапсырыс / тауар / оқушы монетасы), статус-пилюля `em`.

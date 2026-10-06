@@ -2911,7 +2911,7 @@
 
   function warCandidates(g, size) {
     return MOCK.groups
-      .filter((x) => x.id !== g.id && x.courseId === g.courseId && x.students.length >= size)
+      .filter((x) => x.id !== g.id && x.courseId === g.courseId && x.students.length >= size && !(MOCK.war !== undefined && warOf(x)))
       .map((x) => ({ g: x, diff: Math.abs(groupPower(x) - groupPower(g)) }))
       .sort((a, b) => a.diff - b.diff);
   }
@@ -2977,15 +2977,14 @@
   const warLeft = (W) => countdown(W.status === "prep" ? W.prepEnd : W.battleEnd) || "аяқталды";
 
   /** Батл бетіндегі соғыс карточкасы */
-  function warCardHtml() {
-    const W = war();
+  function warCardHtml(W = war(), attr = 'id="warOpen"') {
     if (!W) return `<div class="wr-card none">${icon("shield", "material-icons-outlined")}<div><b>Топ соғысы жоқ</b><small>Соғысты куратор бастайды</small></div></div>`;
-    const me = W.us.lineup.find((x) => x.me);
+    const me = attr.startsWith("data-wopen") ? null : W.us.lineup.find((x) => x.me);
     const myUsed = me ? W.attacks.filter((x) => x.side === "us" && x.by === me.id).length : 0;
     const U = warTotals(W, "us"), T = warTotals(W, "them");
     const st = { prep: "Дайындық күні", battle: "Шайқас күні", ended: U.stars > T.stars || (U.stars === T.stars && U.pct >= T.pct) ? "Жеңіс!" : "Жеңіліс" }[W.status];
     return `
-      <button type="button" class="wr-card" id="warOpen">
+      <button type="button" class="wr-card" ${attr}>
         <div class="wr-top"><span class="wr-badge ${W.status}">${icon(W.status === "battle" ? "local_fire_department" : W.status === "prep" ? "construction" : "emoji_events")}${st}</span><span class="wr-time">${W.status === "ended" ? "" : `${icon("timer", "material-icons-outlined")}${warLeft(W)}`}</span></div>
         <div class="wr-vs">
           <div class="wr-side"><b>${W.us.group.name}</b><span class="wr-st">${COIN}${U.stars}</span><small>${U.pct}%</small></div>
@@ -2998,9 +2997,8 @@
   }
 
   /** Соғыс картасы: қарсылас базалары / біздің топ / шабуылдар */
-  function openWar({ staff = false } = {}) {
-    const W = war();
-    if (!W) return staff ? openWarStart() : toast("Топ соғысы жоқ");
+  function openWar({ staff = false, W = war() } = {}) {
+    if (!W) return staff ? openStaffWars() : toast("Топ соғысы жоқ");
     let tab = staff ? "us" : "them";
     const me = W.us.lineup.find((x) => x.me);
     const build = () => {
@@ -3075,7 +3073,7 @@
       () => {
         $$("[data-wtab]").forEach((b) => (b.onclick = () => ((tab = b.dataset.wtab), paintStack())));
         $("#warRules")?.addEventListener("click", warRules);
-        $("#warNew")?.addEventListener("click", () => ((MOCK.war = null), state.navStack.pop(), openWarStart()));
+        $("#warNew")?.addEventListener("click", () => (state.navStack.pop(), openWarStart(W.us.group)));
         $("#warStop")?.addEventListener("click", async () => {
           const ok = await confirmDialog({ title: "Соғысты аяқтау?", message: "Қалған шабуылдар жабылады, нәтиже қазіргі ★ бойынша.", confirmLabel: "Аяқтау", danger: true });
           if (!ok) return;
@@ -3130,10 +3128,50 @@
     $("#wrClose").onclick = closeSheet;
   }
 
+  const allWars = () => [war(), ...(MOCK.extraWars || [])].filter(Boolean);
+  /** Топтың белсенді соғысы (біз жақта да, қарсылас жақта да) */
+  const warOf = (g) => allWars().find((w) => w.status !== "ended" && (w.us.group.id === g.id || w.them.group.id === g.id));
+
+  /** Staff: Топ соғысы — өз топтары (бас куратор — барлық топ), әр топқа соғыс бастау / ашу */
+  function openStaffWars() {
+    pushScreen(
+      "Топ соғысы",
+      () => {
+        const groups = visibleGroups();
+        const wars = allWars();
+        const hist = wars.flatMap((w) => (w.history || []).map((h) => ({ ...h, g: w.us.group.name })));
+        return `<div class="list-pad tour">
+          <div class="t3-note">${icon("campaign", "material-icons-outlined")}<span>Соғысты <b>топтың кураторы</b> ашады${isHead() ? ", бас куратор — <b>кез келген топқа</b>" : ""}. Топты таңдап «Бастау» → көлем мен қатысушыларды белгілеу → жүйе ортақ пәні бар қарсылас топты табады.</span></div>
+          <div class="t3-sec">${isHead() ? "Барлық топтар" : "Менің топтарым"} · ${groups.length}</div>
+          ${groups
+            .map((g) => {
+              const W = warOf(g);
+              if (W) return warCardHtml(W, `data-wopen="${g.id}"`);
+              const cands = warCandidates(g, WAR_SIZES[0]);
+              return `<div class="wr-grp">
+                ${icon("groups", "material-icons-outlined")}
+                <div style="flex:1;min-width:0"><b>${g.name}</b><small>${COURSE_TITLE[g.courseId] || ""} · ${g.students.length} оқушы · ${cands.length ? `${cands.length} қарсылас топ бар` : "ортақ пәні бар топ жоқ"}</small></div>
+                <button type="button" class="wr-go" data-wstart="${g.id}" ${cands.length ? "" : "disabled"}>${icon("shield")}Бастау</button>
+              </div>`;
+            })
+            .join("")}
+          ${hist.length ? `<div class="t3-sec">Өткен соғыстар</div>${hist.map((h) => `<div class="tr-hist"><span class="wr-hres ${h.win ? "w" : "l"}">${h.win ? "Ж" : "Ж-с"}</span><div style="flex:1"><b>${h.g} vs ${h.vs}</b><small>${h.date}</small></div><span class="${h.win ? "up" : "down"}">${h.us} : ${h.them}</span></div>`).join("")}` : ""}
+        </div>`;
+      },
+      () => {
+        $("#warRules2").onclick = warRules;
+        $$("[data-wstart]").forEach((b) => (b.onclick = () => openWarStart(MOCK.groups.find((g) => g.id === +b.dataset.wstart))));
+        $$("[data-wopen]").forEach((b) => (b.onclick = () => openWar({ staff: true, W: warOf({ id: +b.dataset.wopen }) })));
+      },
+      { right: `<button type="button" class="appbar-icon-btn" id="warRules2" title="Ереже">${icon("info", "material-icons-outlined")}</button>` }
+    );
+  }
+
   /** Куратор: соғыс бастау — көлем, қатысушылар, қарсылас іздеу */
-  function openWarStart() {
-    const g = visibleGroups()[0] || MOCK.groups[0];
-    const f = { size: 10, picked: new Set([...g.students].sort((a, b) => b.score - a.score).slice(0, 10).map((x) => x.id)), found: null, prep: 24 };
+  function openWarStart(g = visibleGroups()[0] || MOCK.groups[0]) {
+    if (warOf(g)) return toast(`${g.name}: соғыс әлі жүріп жатыр`, "err");
+    const size0 = [...WAR_SIZES].reverse().find((n) => n <= 10 && n <= g.students.length && warCandidates(g, n).length) || WAR_SIZES[0];
+    const f = { size: size0, picked: new Set([...g.students].sort((a, b) => b.score - a.score).slice(0, size0).map((x) => x.id)), found: null, prep: 24 };
     const draw = () => {
       const cands = warCandidates(g, f.size);
       openSheet(
@@ -3178,7 +3216,8 @@
         const battleEnd = new Date(prepEnd);
         battleEnd.setHours(battleEnd.getHours() + 24);
         const lineup = [...g.students].filter((x) => f.picked.has(x.id)).sort((a, b) => b.score - a.score).map((x, i) => ({ ...x, pos: i + 1 }));
-        MOCK.war = {
+        const prev = allWars().find((w) => w.us.group.id === g.id);
+        const W = {
           id: nextId(),
           status: "prep",
           courseId: g.courseId,
@@ -3189,12 +3228,15 @@
           attacks: [],
           prepEnd,
           battleEnd,
-          history: [],
+          history: prev ? (prev.status === "ended" ? prev.history : []) : [],
         };
+        // Оқушы көретін топ (макетте — бірінші топ) MOCK.war-да, қалғандары extraWars-та
+        if (g.id === MOCK.groups[0].id) MOCK.war = W;
+        else MOCK.extraWars = [...(MOCK.extraWars || []).filter((w) => w.us.group.id !== g.id), W];
         closeSheet();
         toast("Соғыс жарияланды — екі топқа хабарлама кетті");
-        state.navStack = [];
-        openWar({ staff: true });
+        if (state.navStack.length) paintStack();
+        openWar({ staff: true, W });
       };
     };
     draw();
@@ -3253,7 +3295,7 @@
     const w = wallet();
     const cat = state.shopCat || "all";
     const cats = [["all", "Барлығы"], ["avatar", "Аватар"], ["boost", "Күшейткіш"], ["theme", "Тақырып"], ["merch", "Мерч"]];
-    const items = SHOP.filter((x) => cat === "all" || x.cat === cat);
+    const items = SHOP.filter((x) => !x.hidden && (cat === "all" || x.cat === cat));
     return `
       <div class="list-pad shop">
         <div class="shop-bal">
@@ -3276,6 +3318,140 @@
         ${w.log.slice(0, 8).map((l) => `<div class="coin-log"><span>${l.t}</span><small>${l.d}</small><b class="${l.c > 0 ? "up" : "down"}">${l.c > 0 ? "+" : ""}${l.c}</b></div>`).join("")}
       </div>`;
   }
+  /* —— Staff: Магазин ——
+     Бас куратор: тауарлар (қосу, баға, қалдық, жасыру), барлық тапсырыстар, монета беру (≤500)
+     Куратор: өз топтарының тапсырыстары (дайын → берілді), оқушы монеталары, бонус (≤50/апта бір оқушыға) */
+  const stCoins = (st) => (MOCK.stCoins ||= {})[st.id] ?? Math.round(150 + rnd(st.id, 77) * 1850);
+  const ORDER_ST = { new: ["Жаңа", "#F2A93B"], ready: ["Дайын · алып кетуді күтуде", "#5B9BF2"], given: ["Берілді", "#5CB36D"] };
+  function shopOrders() {
+    if (!MOCK.shopOrders) {
+      const merch = SHOP.filter((x) => x.cat === "merch");
+      MOCK.shopOrders = MOCK.groups.flatMap((g) =>
+        g.students.filter((st) => rnd(st.id, 31) > 0.82).map((st, i) => ({ id: nextId(), st, g, item: merch[i % merch.length].id, date: `0${1 + Math.floor(rnd(st.id, 5) * 5)}.10.2026`, status: ["new", "ready", "given"][Math.floor(rnd(st.id, 9) * 3)] }))
+      );
+    }
+    return MOCK.shopOrders;
+  }
+  function openStaffShop() {
+    let tab = "orders";
+    let gid = visibleGroups()[0]?.id;
+    pushScreen(
+      "Магазин",
+      () => {
+        const gids = new Set(visibleGroups().map((g) => g.id));
+        const orders = shopOrders().filter((o) => gids.has(o.g.id));
+        const nNew = orders.filter((o) => o.status !== "given").length;
+        let body;
+        if (tab === "orders")
+          body = orders.length
+            ? orders
+                .map((o) => {
+                  const it = SHOP.find((x) => x.id === o.item);
+                  const [lb, c] = ORDER_ST[o.status];
+                  return `<div class="so-row">
+                    <span class="shop-ic" style="--c:${it.color}">${icon(it.icon)}</span>
+                    <div style="flex:1;min-width:0"><b>${it.name}</b><small>${o.st.name} · ${o.g.name} · ${o.date}</small><em style="--c:${c}">${lb}</em></div>
+                    ${o.status === "given" ? "" : `<button type="button" class="wr-go" data-ord="${o.id}">${o.status === "new" ? "Дайын" : "Берілді"}</button>`}
+                  </div>`;
+                })
+                .join("")
+            : `<div class="empty">Тапсырыс жоқ</div>`;
+        else if (tab === "items")
+          body = `${isHead() ? "" : `<div class="t3-note">${icon("info", "material-icons-outlined")}<span>Тауарлар мен бағаны <b>бас куратор</b> басқарады</span></div>`}
+            ${SHOP.map((x) => `<button type="button" class="so-row ${x.hidden ? "off" : ""}" ${isHead() ? `data-item="${x.id}"` : ""}>
+              <span class="shop-ic" style="--c:${x.color}">${icon(x.icon)}</span>
+              <div style="flex:1;min-width:0"><b>${x.name}</b><small>${x.desc}${x.cat === "merch" ? ` · қалдық ${x.stock ?? 20}` : ""}${x.hidden ? " · жасырын" : ""}</small></div>
+              <span class="shop-price">${COIN}${x.price.toLocaleString("ru-RU")}</span>
+            </button>`).join("")}`;
+        else {
+          const g = MOCK.groups.find((x) => x.id === gid);
+          body = `<div class="acc-chips shop-cats">${visibleGroups().map((x) => `<button type="button" class="ent-chip ${x.id === gid ? "on" : ""}" style="--c:var(--primary)" data-sgid="${x.id}">${x.name}</button>`).join("")}</div>
+            <div class="t3-note">${icon("redeem", "material-icons-outlined")}<span>Оқушыны басып бонус монета беріңіз${isHead() ? " (бір реттік ≤500)" : " — бір оқушыға аптасына ≤50"}</span></div>
+            ${[...g.students].sort((a, b) => stCoins(b) - stCoins(a)).map((st, i) => `<button type="button" class="so-row" data-coinst="${st.id}">
+              <span class="wr-pos">${i + 1}</span>${avatarHtml(st)}
+              <div style="flex:1;min-width:0"><b>${st.name}</b><small>рейтинг ${st.score}</small></div>
+              <span class="shop-price">${COIN}${stCoins(st).toLocaleString("ru-RU")}</span>
+            </button>`).join("")}`;
+        }
+        return `<div class="list-pad shop">
+          <div class="seg-tabs seg-3">${[["orders", `Тапсырыс${nNew ? ` · ${nNew}` : ""}`], ["items", "Тауарлар"], ["coins", "Монеталар"]].map(([k, l]) => `<button type="button" data-stab="${k}" class="${tab === k ? "on" : ""}">${l}</button>`).join("")}</div>
+          <div style="margin-top:10px">${body}</div>
+        </div>`;
+      },
+      () => {
+        $$("[data-stab]").forEach((b) => (b.onclick = () => ((tab = b.dataset.stab), paintStack())));
+        $$("[data-sgid]").forEach((b) => (b.onclick = () => ((gid = +b.dataset.sgid), paintStack())));
+        $$("[data-ord]").forEach((b) => (b.onclick = () => {
+          const o = shopOrders().find((x) => x.id === +b.dataset.ord);
+          o.status = o.status === "new" ? "ready" : "given";
+          toast(o.status === "ready" ? `${o.st.name}: «алып кет» хабарламасы кетті` : "Берілді деп белгіленді");
+          paintStack();
+        }));
+        $$("[data-item]").forEach((b) => (b.onclick = () => openShopItemForm(SHOP.find((x) => x.id === b.dataset.item))));
+        $("#siNew")?.addEventListener("click", () => openShopItemForm());
+        $$("[data-coinst]").forEach((b) => (b.onclick = () => openCoinAward(MOCK.groups.find((g) => g.id === gid).students.find((x) => x.id === +b.dataset.coinst))));
+      },
+      { right: isHead() ? `<button type="button" class="appbar-add" id="siNew" title="Тауар қосу">${icon("add")}</button>` : "<span></span>" }
+    );
+  }
+  function openShopItemForm(x) {
+    const f = x ? { ...x } : { id: `it${nextId()}`, cat: "merch", name: "", desc: "", price: 500, icon: "redeem", color: "#8A94F5", stock: 20 };
+    const cats = [["avatar", "Аватар"], ["boost", "Күшейткіш"], ["theme", "Тақырып"], ["merch", "Мерч"]];
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="ef-head"><span>${x ? "Тауарды өзгерту" : "Жаңа тауар"}</span><button type="button" id="siClose">${icon("close")}</button></div>
+      <div class="ef-label">Атауы</div><input class="ef-input" id="siName" value="${f.name}" placeholder="Мысалы: I4U дәптер" />
+      <div class="ef-label">Сипаттама</div><input class="ef-input" id="siDesc" value="${f.desc}" />
+      <div class="ef-label">Санат</div>
+      <div class="ent-chips">${cats.map(([k, l]) => `<button type="button" class="ent-chip ${f.cat === k ? "on" : ""}" style="--c:var(--primary)" data-sicat="${k}">${l}</button>`).join("")}</div>
+      <div class="ef-label">Бағасы (I4U монета)</div><input class="ef-input" id="siPrice" type="number" min="1" value="${f.price}" />
+      <div class="ef-label">Қалдық (мерч үшін)</div><input class="ef-input" id="siStock" type="number" min="0" value="${f.stock ?? 20}" />
+      <button type="button" class="tf-check ${f.hidden ? "on" : ""}" id="siHide">${icon(f.hidden ? "check_box" : "check_box_outline_blank")}<span>Оқушылардан жасыру</span></button>
+      <button type="button" class="ef-submit" id="siSave">${x ? "Сақтау" : "Қосу"}</button>`, { tall: true });
+    $("#siClose").onclick = closeSheet;
+    $$("[data-sicat]").forEach((b) => (b.onclick = () => { f.cat = b.dataset.sicat; $$("[data-sicat]").forEach((c) => c.classList.toggle("on", c === b)); }));
+    $("#siHide").onclick = (e) => { f.hidden = !f.hidden; e.currentTarget.classList.toggle("on", f.hidden); e.currentTarget.querySelector(".material-icons-round").textContent = f.hidden ? "check_box" : "check_box_outline_blank"; };
+    $("#siSave").onclick = () => {
+      f.name = $("#siName").value.trim();
+      f.desc = $("#siDesc").value.trim();
+      f.price = +$("#siPrice").value;
+      f.stock = +$("#siStock").value;
+      if (!f.name || !(f.price > 0)) return toast("Атауы мен бағасын толтырыңыз", "err");
+      if (x) Object.assign(x, f);
+      else SHOP.push(f);
+      closeSheet();
+      toast(x ? "Сақталды" : "Тауар қосылды — оқушылар дүкенінде көрінеді");
+      paintStack();
+    };
+  }
+  function openCoinAward(st) {
+    const max = isHead() ? 500 : 50;
+    const given = (MOCK.coinAwards || []).filter((a) => a.st === st.id).reduce((t, a) => t + a.n, 0);
+    const left = isHead() ? max : Math.max(0, max - given);
+    let n = Math.min(10, left);
+    const draw = () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Бонус монета</span><button type="button" id="caClose">${icon("close")}</button></div>
+        <div class="wr-atk-p">${avatarHtml(st, "lg")}<div><b>${st.name}</b><small>Балансы: ${stCoins(st).toLocaleString("ru-RU")} монета${isHead() ? "" : ` · осы аптада тағы ${left} беруге болады`}</small></div></div>
+        <div class="ef-label">Саны</div>
+        <div class="ent-chips">${[5, 10, 20, 50, ...(isHead() ? [100, 200, 500] : [])].map((v) => `<button type="button" class="ent-chip ${n === v ? "on" : ""}" style="--c:var(--primary)" data-can="${v}" ${v > left ? "disabled" : ""}>+${v}</button>`).join("")}</div>
+        <div class="ef-label">Себебі (оқушыға көрінеді)</div><input class="ef-input" id="caWhy" placeholder="Мысалы: эфирде белсенді болды" />
+        <button type="button" class="ef-submit" id="caGo" ${left && n ? "" : "disabled"}>${left ? `+${n} монета беру` : "Апталық лимит таусылды"}</button>`);
+      $("#caClose").onclick = closeSheet;
+      $$("[data-can]").forEach((b) => (b.onclick = () => ((n = +b.dataset.can), draw())));
+      $("#caGo").onclick = () => {
+        const why = $("#caWhy").value.trim();
+        if (!why) return toast("Себебін жазыңыз", "err");
+        MOCK.stCoins[st.id] = stCoins(st) + n;
+        (MOCK.coinAwards ||= []).push({ st: st.id, n, why, by: myName() });
+        closeSheet();
+        toast(`${st.name}: +${n} монета · ${why}`);
+        paintStack();
+      };
+    };
+    draw();
+  }
   function bindShop() {
     $$("[data-shopcat]").forEach((b) => (b.onclick = () => ((state.shopCat = b.dataset.shopcat), paintStack())));
     $("#shopHow")?.addEventListener("click", () => {
@@ -3297,7 +3473,8 @@
         w.coins -= x.price;
         if (!w.owned.includes(x.id)) w.owned.push(x.id);
         w.log.unshift({ t: `Дүкен: ${x.name}`, c: -x.price, d: dmy(new Date()).slice(0, 5) });
-        toast(x.cat === "merch" ? "Сатып алынды! Офистен алып кет 🎁" : "Сатып алынды!");
+        if (x.cat === "merch") shopOrders().unshift({ id: nextId(), st: TOUR_ME(), g: MOCK.groups[0], item: x.id, date: dmy(AN_TODAY), status: "new" });
+        toast(x.cat === "merch" ? "Сатып алынды! Куратор дайын деп белгілегенде офистен алып кет 🎁" : "Сатып алынды!");
         paintStack();
       };
     });
@@ -6050,6 +6227,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { sub: "efir", label: "Эфир", icon: "live_tv" },
       { sub: "tours", label: "Турнирлер", img: "assets/tournament/tournament_line.png" },
       { sub: "war", label: "Топ соғысы", img: "assets/tournament/battle_line.png" },
+      { sub: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
     ];
     return `
       ${bannerHtml()}
@@ -7615,7 +7793,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       b.onclick = () => {
         if (b.dataset.staffSub === "war") {
           state.navStack = [];
-          return openWar({ staff: true });
+          return openStaffWars();
+        }
+        if (b.dataset.staffSub === "shop") {
+          state.navStack = [];
+          return openStaffShop();
         }
         if (b.dataset.staffSub === "tours") {
           state.navStack = [];
