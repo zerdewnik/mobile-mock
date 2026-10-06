@@ -2239,7 +2239,7 @@
   function openTournament(T, { staff = false } = {}) {
     const build = () => {
       const stages = tourStages(T);
-      const groups = T.groups.map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ");
+      const groups = T.allStudents ? "Барлық оқушылар" : T.groups.map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ");
       const cur = T.rounds?.[T.rounds.length - 1];
       const mm = myMatch(T);
       const opp = mm && (mm.a.me ? mm.b : mm.a);
@@ -2448,7 +2448,7 @@
     const g0 = visibleGroups()[0] || MOCK.groups[0];
     const iso2 = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
     const STAGES = [16, 8, 4, 2, 1];
-    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1, dates: {}, banners: [] };
+    const f = { step: 0, title: "", format: "knockout", first: 8, swissRounds: 5, arenaHours: 3, groups: new Set([g0.id]), seeding: "rating", checkin: true, courseId: g0.courseId || 10, mods: new Set(), topics: new Set(), regTo: "2026-10-05T23:59", start: "2026-10-06T19:00", gap: 1, dates: {}, banners: [], aud: "groups" };
     const secs = () => (STAFF_SECTIONS[f.courseId] || []).map(([t, items]) => ({ t, topics: items.filter((x) => !x.startsWith("w:")) }));
     const stageList = () => STAGES.filter((n) => n <= f.first);
     const pool = () => MOCK.groups.filter((g) => f.groups.has(g.id)).reduce((t, g) => t + g.studentsCount, 0);
@@ -2485,9 +2485,11 @@
           }`;
       if (f.step === 1)
         return `
-          <div class="ef-label">Қатысатын топтар <i>*</i></div>
-          <div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>
-          <div class="tf-sum ${cap() && pool() < cap() ? "warn" : ""}">${icon("groups", "material-icons-outlined")}Топтарда ${pool()} оқушы${cap() ? (pool() < cap() ? ` — ${cap()} орынға жетпейді, бос орын BYE` : pool() > cap() ? ` — алғашқы ${cap()} тіркелген қатысады` : " — дәл сай") : ""}</div>
+          ${state.staffRole === "head" ? `<div class="ef-label">Кімге ашылады</div>
+          <div class="ent-chips">${[["all", "Барлық оқушылар"], ["groups", "Таңдалған топтар"]].map(([k, l]) => `<button type="button" class="ent-chip ${f.aud === k ? "on" : ""}" style="--c:var(--primary)" data-tfaud="${k}">${l}</button>`).join("")}</div>` : ""}
+          ${f.aud === "all" ? `<div class="tf-sum">${icon("public", "material-icons-outlined")}Платформадағы барлық ${MOCK.groups.reduce((t, g) => t + g.studentsCount, 0)} оқушыға ашылады (${MOCK.groups.length} топ)</div>` : `<div class="ef-label">Қатысатын топтар <i>*</i></div>`}
+          ${f.aud === "all" ? "" : `<div class="ent-chips">${visibleGroups().map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-tfg="${g.id}">${g.name} · ${g.studentsCount}</button>`).join("")}</div>`}
+          <div class="tf-sum ${cap() && pool() < cap() ? "warn" : ""}">${icon("groups", "material-icons-outlined")}${f.aud === "all" ? "" : `Топтарда ${pool()} оқушы`}${cap() ? (pool() < cap() ? ` — ${cap()} орынға жетпейді, бос орын BYE` : pool() > cap() ? `${f.aud === "all" ? "Алғашқы" : " — алғашқы"} ${cap()} тіркелген қатысады` : " — дәл сай") : f.aud === "all" ? "Қатысушылар саны шектелмейді" : ""}</div>
           <div class="ef-label">Жұптастыру</div>
           <div class="ent-chips">${[["rating", "Рейтинг бойынша"], ["random", "Кездейсоқ"]].map(([k, l]) => `<button type="button" class="ent-chip ${f.seeding === k ? "on" : ""}" style="--c:var(--primary)" data-tfseed="${k}">${l}</button>`).join("")}</div>
           <div class="tf-sum">${f.seeding === "rating" ? "Күштілер бірінші кезеңде кездеспейді (1-орын 16-орынмен ойнайды)" : "Жұптар жеребе арқылы"}</div>
@@ -2523,7 +2525,7 @@
         <div class="tf-preview">
           ${f.banners.length ? `<div class="tf-pv-ban" style="background-image:url(${f.banners[0]})"></div>` : ""}
           <div class="tf-pv-h"><img src="assets/tournament/belt_icon.png" alt="" /><div><b>${f.title || "Атауы"}</b><small>${T_FORMATS[f.format].name} · ${COURSE_TITLE[f.courseId]}</small></div></div>
-          <div class="tf-pv-r"><span>Қатысушылар</span><b>${cap() ? `${cap()} орын` : "шектеусіз"} · ${[...f.groups].map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ")}</b></div>
+          <div class="tf-pv-r"><span>Қатысушылар</span><b>${cap() ? `${cap()} орын` : "шектеусіз"} · ${f.aud === "all" ? "барлық оқушылар" : [...f.groups].map((id) => MOCK.groups.find((g) => g.id === id)?.name).join(", ")}</b></div>
           <div class="tf-pv-r"><span>Тақырыптар</span><b>${f.topics.size} тақырып · ${f.mods.size} модуль</b></div>
           <div class="tf-pv-r"><span>Жұптастыру</span><b>${f.seeding === "rating" ? "рейтинг" : "кездейсоқ"}${f.checkin ? " · check-in" : ""}</b></div>
         </div>`;
@@ -2580,6 +2582,10 @@
       on("[data-tfa]", (b) => (f.arenaHours = +b.dataset.tfa));
       on("[data-tfg]", (b) => (f.groups.has(+b.dataset.tfg) ? f.groups.delete(+b.dataset.tfg) : f.groups.add(+b.dataset.tfg)));
       on("[data-tfseed]", (b) => (f.seeding = b.dataset.tfseed));
+      on("[data-tfaud]", (b) => {
+        f.aud = b.dataset.tfaud;
+        f.groups = f.aud === "all" ? new Set(MOCK.groups.map((g) => g.id)) : new Set([g0.id]);
+      });
       on("#tfCheck", () => (f.checkin = !f.checkin));
       on("#tfDdM", () => ((f.openM = !f.openM), (f.openT = false)));
       on("#tfDdT", () => ((f.openT = !f.openT), (f.openM = false)));
@@ -2620,6 +2626,7 @@
           checkin: f.checkin,
           organizer: `${myName()} · ${state.staffRole === "head" ? "бас куратор" : "куратор"}`,
           groups: [...f.groups],
+          allStudents: f.aud === "all",
           courseId: f.courseId,
           module: [...f.mods].join(" · "),
           topics: [...f.topics],
@@ -3957,7 +3964,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="sp-avatar" style="background:${s.color}">${s.initials}</div>
           <div class="sp-name">${s.name.toUpperCase()}</div>
           <div class="sp-seen">${s.lastSeen || ""}</div>
-          <button type="button" class="lvl-btn" id="spLevel">${levelBadge(data.done, data.total)}${icon("expand_more")}</button>
+          ${(() => {
+            const L = levelOf(data.done, data.total);
+            return `<div class="sp-lvl2" style="--lc:${L.level.color}"><span>${L.level.emoji}</span><b>${L.level.name}</b><em>${L.i + 1}/10</em><i style="width:${L.pct}%"></i></div>`;
+          })()}
         </div>
         <div class="sp-actions">
           <button type="button" class="sp-act" id="spCall">${icon("call", "material-icons-outlined")}<span>Звонок</span></button>
@@ -3987,7 +3997,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       build,
       () => {
         $("#spCourse").onclick = () => openStaffCourse(s, data);
-        $("#spLevel").onclick = () => openLevelRoad(data.done, data.total, data.poster.title);
         $("#spCall").onclick = (e) => openContactMenu(e.currentTarget, s, "call");
         $("#spWa").onclick = (e) => openContactMenu(e.currentTarget, s, "wa");
         $("#spHistory").onclick = () => openLoginHistory(s);

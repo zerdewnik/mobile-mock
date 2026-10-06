@@ -4256,3 +4256,9 @@ button.wr-base[data-watk] { cursor: pointer; border-color: #5a2a24; }
 .wr-found b { display: block; font-size: 13.5px; }
 .wr-found small { font-size: 11.5px; color: #a9c7b6; }
 .ent-chip:disabled { opacity: .35; }
+/* Оқушы профиліндегі деңгей (басылмайды) */
+.sp-lvl2 { position: relative; display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 6px 12px 9px; border-radius: 12px; background: #1e1e1e; border: 1px solid color-mix(in srgb, var(--lc) 40%, #2c2c33); overflow: hidden; }
+.sp-lvl2 span { font-size: 15px; }
+.sp-lvl2 b { font-size: 13px; color: var(--lc); }
+.sp-lvl2 em { font-style: normal; font-size: 11px; color: #8a8d9c; }
+.sp-lvl2 i { position: absolute; left: 0; bottom: 0; height: 3px; background: var(--lc); }
