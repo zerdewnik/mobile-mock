@@ -4429,5 +4429,9 @@ button.so-row { cursor: pointer; }
 .du-opst { margin-top: 12px; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 12px; color: #8a8d9c; }
 .du-opst .material-icons-outlined, .du-opst .material-icons-round { font-size: 16px; }
 .du-opst.done { color: #4CC96B; }
-.sheet:has(#dvLive) .pick-list { max-height: 250px; overflow-y: auto; }
-.sheet:has(#dvLive) > .sheet-actions { position: sticky; bottom: -1px; background: inherit; padding-bottom: 4px; }
+/* Батл шақыру: тұрақты биіктік — тізім ортада айналады, батырмалар әрдайым төменде */
+.sheet:has(#dvLive) { height: calc(100% - 64px); max-height: none; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 14px; }
+.sheet:has(#dvLive) > * { flex-shrink: 0; }
+.sheet:has(#dvLive) > .pick-list { flex: 1 1 auto; min-height: 0; overflow-y: auto; }
+.sheet:has(#dvLive) > .sheet-actions { margin-top: 0; padding-top: 12px; border-top: 1px solid #2a2a30; }
+.sheet:has(#dvLive) > .tf-sum { margin: 10px 0 10px; }

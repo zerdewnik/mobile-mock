@@ -3614,7 +3614,8 @@
       );
       $("#dvClose").onclick = closeSheet;
       $$("[data-dvs]").forEach((b) => (b.onclick = () => ((st.sub = Number(b.dataset.dvs)), draw())));
-      $$("[data-dvp]").forEach((b) => (b.onclick = () => ((st.who = Number(b.dataset.dvp)), draw())));
+      // Бір басса — таңдалады, қайта басса — алынады
+      $$("[data-dvp]").forEach((b) => (b.onclick = () => ((st.who = st.who === Number(b.dataset.dvp) ? null : Number(b.dataset.dvp)), draw())));
       const c = () => MOCK.myCourses.find((x) => x.id === st.sub);
       $("#dvAsync").onclick = () => {
         if (!who) return;
