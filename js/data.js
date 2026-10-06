@@ -115,6 +115,7 @@ window.MOCK = {
     initials: "ТД",
     color: "#5B6EC2",
     phone: "+7 778 215 35 57",
+    photo: "assets/avatar/me.jpg",
     canStaff: true,
   },
   stories: [
