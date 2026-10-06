@@ -1968,7 +1968,7 @@
   /** Куратор курсы → ЕНТ банкіндегі пән кілті */
   const STAFF_SUBJ = { 10: "world_history", 11: "mathematics", 12: "law_basics", 13: "history_kz", 14: "chemistry", 15: "biology", 16: "english" };
   const COURSE_TITLE = { 10: "Дүниежүзі тарихы", 11: "Математика", 12: "Құқық негіздері", 13: "Қазақстан тарихы", 14: "Химия", 15: "Биология", 16: "Ағылшын тілі" };
-  const TOUR_ME = () => ({ id: 0, name: `${MOCK.me.firstName} ${MOCK.me.lastName}`, initials: (MOCK.me.firstName[0] + MOCK.me.lastName[0]).toUpperCase(), color: "#5B6EC2", score: 60, me: true });
+  const TOUR_ME = () => ({ id: 0, name: `${MOCK.me.firstName} ${MOCK.me.lastName}`, initials: (MOCK.me.firstName[0] + MOCK.me.lastName[0]).toUpperCase(), color: "#5B6EC2", photo: MOCK.me.photo, score: 60, me: true });
   const STAGE_DAYS = { 1: "1 күн", 2: "2 күн", 3: "3 күн" };
 
   /** Олимпиялық жүйе: тіркелгендер жұпқа бөлінеді, тақ болса — BYE (автоматты өтеді) */
@@ -2114,6 +2114,7 @@
 
   function avatarHtml(p, cls = "") {
     if (!p) return `<span class="du-av ${cls}" style="background:#34343c">—</span>`;
+    if (p.photo) return `<span class="du-av ${cls} ph" style="background:#2a2a30 url(${p.photo}) center/cover"></span>`;
     return `<span class="du-av ${cls}" style="background:${p.color}">${p.initials}</span>`;
   }
   /** Турнир беті басы: баннерлер (1–3) болса — карусель, болмаса — жинақы тақырып */
@@ -4368,6 +4369,83 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /** Профильді өзгерту: фото (галерея/камера, шаршы етіп қиылады), аты-жөні, туған күні, қала, мектеп, сынып */
+  function openProfileEdit() {
+    const me = MOCK.me;
+    const f = { photo: me.photo || null, first: me.firstName, last: me.lastName, birth: me.birth || "", city: me.city || "", school: me.school || "", grade: me.grade || 11 };
+    const keep = () => {
+      if (!$("#peFirst")) return;
+      f.first = $("#peFirst").value;
+      f.last = $("#peLast").value;
+      f.birth = $("#peBirth").value;
+      f.city = $("#peCity").value;
+      f.school = $("#peSchool").value;
+    };
+    const draw = () => {
+      const pv = { name: `${f.first} ${f.last}`, initials: ((f.first[0] || "") + (f.last[0] || "")).toUpperCase() || "?", color: "#5B6EC2", photo: f.photo };
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Профильді өзгерту</span><button type="button" id="peClose">${icon("close")}</button></div>
+        <div class="pe-ph">
+          <button type="button" class="pe-av" id="pePick">${avatarHtml(pv, "xl")}<i>${icon("photo_camera")}</i></button>
+          <div class="pe-ph-b">
+            <button type="button" class="pe-btn" id="pePick2">${icon("photo_library", "material-icons-outlined")}${f.photo ? "Фотоны ауыстыру" : "Фото қою"}</button>
+            ${f.photo ? `<button type="button" class="pe-btn del" id="peDel">${icon("delete_outline", "material-icons-outlined")}Өшіру</button>` : ""}
+          </div>
+        </div>
+        <div class="tf-row">
+          <div><div class="ef-label">Аты <i>*</i></div><input class="ef-input" id="peFirst" value="${f.first}" maxlength="30" /></div>
+          <div><div class="ef-label">Тегі <i>*</i></div><input class="ef-input" id="peLast" value="${f.last}" maxlength="30" /></div>
+        </div>
+        <div class="ef-label">Туған күні</div><input class="ef-input" type="date" id="peBirth" value="${f.birth}" />
+        <div class="tf-row">
+          <div><div class="ef-label">Қала</div><input class="ef-input" id="peCity" value="${f.city}" placeholder="Алматы" /></div>
+          <div><div class="ef-label">Мектеп</div><input class="ef-input" id="peSchool" value="${f.school}" placeholder="№ 25 мектеп" /></div>
+        </div>
+        <div class="ef-label">Сынып</div>
+        <div class="ent-chips">${[9, 10, 11, 12].map((g) => `<button type="button" class="ent-chip ${f.grade === g ? "on" : ""}" style="--c:var(--primary)" data-peg="${g}">${g === 12 ? "Түлек" : `${g}-сынып`}</button>`).join("")}</div>
+        <div class="ef-label">Телефон</div>
+        <div class="pe-ro">${icon("lock", "material-icons-outlined")}<span>${me.phone}</span><small>Нөмірді өзгерту — қолдау қызметі арқылы</small></div>
+        <button type="button" class="ef-submit" id="peSave">Сақтау</button>`, { tall: true });
+      $("#peClose").onclick = closeSheet;
+      const pick = () => {
+        keep();
+        const inp = document.createElement("input");
+        inp.type = "file";
+        inp.accept = "image/*";
+        inp.onchange = () => {
+          const file = inp.files[0];
+          if (!file) return;
+          const img = new Image();
+          img.onload = () => {
+            // ортасынан шаршы етіп қиып, 256×256-ға кішірейту
+            const k = Math.min(img.width, img.height), cv = document.createElement("canvas");
+            cv.width = cv.height = 256;
+            cv.getContext("2d").drawImage(img, (img.width - k) / 2, (img.height - k) / 2, k, k, 0, 0, 256, 256);
+            f.photo = cv.toDataURL("image/jpeg", 0.85);
+            draw();
+          };
+          img.src = URL.createObjectURL(file);
+        };
+        inp.click();
+      };
+      $("#pePick").onclick = pick;
+      $("#pePick2").onclick = pick;
+      $("#peDel")?.addEventListener("click", () => (keep(), (f.photo = null), draw()));
+      $$("[data-peg]").forEach((b) => (b.onclick = () => (keep(), (f.grade = +b.dataset.peg), draw())));
+      $("#peSave").onclick = () => {
+        keep();
+        const first = f.first.trim(), last = f.last.trim();
+        if (!first || !last) return toast("Аты мен тегін толтырыңыз", "err");
+        Object.assign(me, { firstName: first, lastName: last, initials: (first[0] + last[0]).toUpperCase(), photo: f.photo, birth: f.birth, city: f.city.trim(), school: f.school.trim(), grade: f.grade });
+        closeSheet();
+        toast("Профиль сақталды", "ok");
+        openUserProfile();
+      };
+    };
+    draw();
+  }
+
   const PROFILE_T = {
     ru: { about: "О компании I4U", terms: "Условия и положения", privacy: "Политика конфиденциальности", help: "Помощь и поддержка", restore: "Восстановить покупки", dark: "Тёмная тема", lang: "Язык", ig: "Наш Instagram", wa: "Написать в WhatsApp", admin: "Админ-панель", back: "Вернуться в приложение" },
     kk: { about: "I4U компаниясы туралы", terms: "Шарттар мен ережелер", privacy: "Құпиялылық саясаты", help: "Көмек және қолдау", restore: "Сатып алуларды қалпына келтіру", dark: "Қараңғы тема", lang: "Тіл", ig: "Біздің Instagram", wa: "WhatsApp-қа жазу", admin: "Админ-панель", back: "Қосымшаға оралу" },
@@ -4406,7 +4484,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="user-card-body">
             ${
               inStaff
-                ? `<div class="user-avatar" style="background:${me.color}">${me.initials}</div>`
+                ? me.photo ? `<div class="user-avatar" style="background:#2a2a30 url(${me.photo}) center/cover"></div>` : `<div class="user-avatar" style="background:${me.color}">${me.initials}</div>`
                 : `<div class="user-avatar ph">${icon("person")}</div>`
             }
             <div class="user-name">${me.firstName} ${me.lastName}</div>
@@ -4460,7 +4538,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         toast("Вы вышли", "ok");
       }
     };
-    $("#profileEdit").onclick = () => toast("Редактировать профиль", "ok");
+    $("#profileEdit").onclick = openProfileEdit;
     $("#pfAch")?.addEventListener("click", openAllAchievements);
     $$("[data-ach]", el).forEach((b) => (b.onclick = () => openAchievement(achievements().find((a) => a.id === b.dataset.ach))));
     const go = (fn) => (closeScreen(), (state.navStack = []), fn());
