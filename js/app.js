@@ -7334,7 +7334,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       const unread = MOCK.studentNotifs.filter((n) => !n.read).length;
       return `
         <div class="appbar-title" style="flex:1">${titles[state.tab] || "Главная"}</div>
-        ${state.tab === 0 ? `<button type="button" class="ab-coin" id="abCoin">${coinChip()}</button>` : ""}
         <button type="button" class="appbar-bell" id="studentBell" title="Уведомления">${icon("notifications_none")}${unread ? `<i>${unread}</i>` : ""}</button>
         <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     }
@@ -7419,7 +7418,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       };
     });
     bindBanner();
-    $("#abCoin")?.addEventListener("click", () => openService("shop", "Магазин"));
     $("#sgToggle")?.addEventListener("click", () => {
       state.sgClosed = !state.sgClosed;
       render();

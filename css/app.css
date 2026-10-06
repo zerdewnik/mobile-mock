@@ -4326,3 +4326,9 @@ img.coin { width: 1.05em; height: 1.05em; vertical-align: -0.15em; margin-right:
 .coin-rule .material-icons-outlined { color: var(--primary); }
 .coin-rule span { flex: 1; }
 .coin-rule b { color: #ffd54f; white-space: nowrap; }
+/* Көк монета: мәтін түстері */
+.coin-chip, .shop-price { color: #a9b4ff; }
+.shop-bal b { color: #c3cbff; }
+.shop-bal { background: radial-gradient(ellipse at 20% 30%, #2a3170, #1e1e22 70%); border-color: #3b4089; }
+.coin-rule b { color: #a9b4ff; }
+.shop-bal small { color: #c8cad4; }

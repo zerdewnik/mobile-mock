@@ -37,6 +37,12 @@ class I4UColors {
   static const danger = Color(0xFFE06B5B);
   static const dangerBg = Color(0xFF3A2020);
   static const info = Color(0xFF6C7FD8);
+  // I4U монета (көк)
+  static const coinLight = Color(0xFFDDE3FF);
+  static const coin = Color(0xFF8A97F2);
+  static const coinDark = Color(0xFF3B4089);
+  static const coinText = Color(0xFFA9B4FF);
+
   // Алтын (кубок, жеңіс, 3D gold батырма)
   static const goldLight = Color(0xFFFFF1B8);
   static const gold = Color(0xFFFFD24D);
