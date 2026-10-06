@@ -4778,3 +4778,42 @@ input[type="date"].ef-input { color-scheme: dark; }
 .champ-crown { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #ffe08a, #d4a72c 55%, #8a6510); box-shadow: 0 3px 0 #5e4508, 0 4px 10px rgba(0,0,0,.5); }
 .champ-crown .material-icons-round { font-size: 19px; color: #3a2a06; }
 .champ-pic .champ-ava { margin-top: 26px; }
+/* Монета ережелері: мәтін солға тураланады */
+.coin-rule > .material-icons-outlined { flex: 0 0 auto; }
+.coin-rule > span:not([class*="material"]) { flex: 1; text-align: left; }
+.coin-rule b { display: inline-flex; align-items: center; gap: 3px; }
+.coin-rule b img.coin { width: 16px; height: 16px; }
+/* ====== Құттықтау (3D) ====== */
+.cel { position: absolute; inset: 0; z-index: 90; display: grid; place-items: center; padding: 24px; background: rgba(6,8,20,0); transition: background .25s; }
+.cel.in { background: rgba(6,8,20,.72); backdrop-filter: blur(3px); }
+.cel.out { background: rgba(6,8,20,0); }
+.cel-card { position: relative; overflow: hidden; width: 100%; max-width: 310px; padding: 22px 18px 18px; border-radius: 26px; text-align: center; color: #fff; background: radial-gradient(circle at 50% 30%, color-mix(in srgb, var(--r) 45%, transparent), transparent 60%), linear-gradient(180deg, #232845, #16161c); border: 1px solid color-mix(in srgb, var(--r) 60%, #000); box-shadow: inset 0 1px 0 rgba(255,255,255,.12), 0 6px 0 #0a0a10, 0 24px 60px rgba(0,0,0,.6); transform: scale(.6) translateY(30px); opacity: 0; transition: transform .45s cubic-bezier(.2,1.6,.4,1), opacity .2s; }
+.cel.in .cel-card { transform: none; opacity: 1; }
+.cel.out .cel-card { transform: scale(.9); opacity: 0; transition: transform .2s, opacity .2s; }
+.cel-card .ff-rays { inset: -40%; opacity: .9; }
+.cel-card > *:not(.ff-rays):not(.cel-conf) { position: relative; z-index: 1; }
+.cel-stage { height: 150px; display: grid; place-items: center; perspective: 600px; }
+/* 3D монета: алдыңғы/артқы бет + қыры (10 қабат) */
+.cel-coin { position: relative; width: 120px; height: 120px; transform-style: preserve-3d; animation: celDrop .7s cubic-bezier(.2,1.5,.4,1) both, celSpin 1.8s linear .7s infinite; }
+.cel-coin b { position: absolute; inset: 6px; border-radius: 50%; background: linear-gradient(90deg, #232766, #5B6EC2, #232766); }
+.cel-coin img { position: absolute; inset: 0; width: 100%; height: 100%; backface-visibility: hidden; filter: drop-shadow(0 0 18px rgba(138,151,242,.6)); }
+.cel-coin img.f { transform: translateZ(7.5px); }
+.cel-coin img.bk { transform: rotateY(180deg) translateZ(7.5px); }
+@keyframes celDrop { from { transform: translateY(-160px) scale(.3) rotateY(-540deg); } to { transform: translateY(0) scale(1) rotateY(0); } }
+@keyframes celSpin { to { transform: rotateY(360deg); } }
+.cel-item { transform-style: preserve-3d; animation: celDrop .7s cubic-bezier(.2,1.5,.4,1) both; }
+.cel-item .x3d-obj { width: 110px; height: 110px; animation-duration: 4s; }
+.cel-item .x3d-obj > i, .cel-item .x3d-face { border-radius: 32px; }
+.cel-item .x3d-face .material-icons-round { font-size: 58px; }
+.cel-t { margin-top: 6px; font-size: 24px; font-weight: 900; letter-spacing: .3px; text-shadow: 0 2px 0 rgba(0,0,0,.4); animation: celPop .5s .45s both; }
+.cel-n { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; font-size: 40px; font-weight: 900; color: #c3cbff; text-shadow: 0 0 20px rgba(138,151,242,.6); animation: celPop .5s .55s both; }
+.cel-n img { width: 34px; height: 34px; }
+.cel-name { margin-top: 6px; font-size: 19px; font-weight: 800; animation: celPop .5s .55s both; }
+.cel-card .it-rar { display: inline-block; margin-top: 8px; animation: celPop .5s .5s both; }
+.cel-s { margin-top: 6px; font-size: 13px; color: #b8bbd0; animation: celPop .5s .65s both; }
+@keyframes celPop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+.cel-ok { margin-top: 16px; width: 100%; height: 46px; border: 0; border-radius: 14px; font-family: inherit; font-size: 16px; font-weight: 800; color: #2a1d02; background: linear-gradient(180deg, #ffd27a, #F2A93B); box-shadow: inset 0 1px 0 rgba(255,255,255,.45), 0 4px 0 #8a5a10; cursor: pointer; animation: celPop .4s .8s both; }
+.cel-ok:active { transform: translateY(3px); box-shadow: 0 1px 0 #8a5a10; }
+.cel-conf { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.cel-conf i { position: absolute; top: -12px; width: 7px; height: 12px; border-radius: 2px; opacity: 0; animation: celConf linear infinite; }
+@keyframes celConf { 0% { opacity: 1; transform: translate(0, 0) rotate(0); } 100% { opacity: 0; transform: translate(var(--x), 420px) rotate(540deg); } }

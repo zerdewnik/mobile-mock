@@ -2705,7 +2705,7 @@
     const qs = await duelQuestions(subject, seed);
     const plan = DUEL_ROUNDS.flatMap((r, ri) => Array.from({ length: r.n }, () => ({ ri, pts: r.pts })));
     const D = { i: 0, my: 0, op: 0, myT: 0, opT: 0, pick: null, reveal: false, splash: 0, done: false, left: 20, res: [] };
-    const me = { name: "Сен", initials: MOCK.me.initials, color: "#5B6EC2" };
+    const me = { name: "Сен", initials: MOCK.me.initials, color: "#5B6EC2", photo: MOCK.me.photo };
     let timer = null;
     // Қарсыластың әр сұраққа жауап беру уақыты (онлайн режимде экранда «жауап берді» болып көрінеді)
     const opTimes = plan.map((_, i) => 4 + rnd(opp.id, seed, i + 50) * 13);
@@ -2868,7 +2868,7 @@
     return MOCK.battle;
   }
   function battleDone(win) {
-    if (win) earnCoins(15, "Батлда жеңіс");
+    if (win) earnCoins(15, "Батлда жеңдің!");
     const B = battleState();
     B.rating = Math.max(0, B.rating + (win ? 15 : -10));
   }
@@ -3140,7 +3140,7 @@
                   const pct = Math.round((my / DUEL_MAX) * 100);
                   W.attacks.push({ side: "us", by: me.id, target: d.id, pct, stars: warStars(pct) });
                   simAttacks(W, "them", 1);
-                  earnCoins(warStars(pct) * 10, "Топтар шайқасы");
+                  earnCoins(warStars(pct) * 10, "Топтар шайқасында шабуыл");
                 },
               });
             };
@@ -3365,7 +3365,63 @@
     w.coins += n;
     w.earned += n;
     w.log.unshift({ t: why, c: n, d: dmy(new Date()).slice(0, 5) });
-    toast(`+${n} I4U монета · ${why}`);
+    celebrate({ kind: "coin", n, why });
+  }
+
+  /* —— Құттықтау анимациясы (3D): монета берілгенде және дүкеннен зат алғанда ——
+     Кезекпен көрсетіледі; 3D монета/зат айналады, артында сәулелер, конфетти, сан 0-ден өседі */
+  const celQ = [];
+  window.__i4uCelebrate = (o) => celebrate(o); // макетті көрсету/тексеру үшін
+  let celOn = false;
+  function celebrate(o) {
+    celQ.push(o);
+    if (!celOn) celNext();
+  }
+  function celNext() {
+    const o = celQ.shift();
+    if (!o) return void (celOn = false);
+    celOn = true;
+    const host = $("#overlay").parentElement;
+    const el = document.createElement("div");
+    el.className = `cel ${o.kind}`;
+    const R = o.item ? RARITY[o.item.rar] : null;
+    const conf = Array.from({ length: 30 }, (_, i) => `<i style="left:${(i * 37) % 100}%;background:${["#FFD54F", "#8A97F2", "#5CB36D", "#E2574C", "#4FD1FF", "#B07CFF"][i % 6]};animation-delay:${(i % 10) * 0.08}s;animation-duration:${1.6 + (i % 5) * 0.25}s;--x:${((i * 53) % 80) - 40}px"></i>`).join("");
+    const coin3d = `<div class="cel-coin">${Array.from({ length: 10 }, (_, k) => `<b style="transform:translateZ(${k * 1.4 - 7}px)"></b>`).join("")}<img class="f" src="assets/coin/coin.png" alt="" /><img class="bk" src="assets/coin/coin.png" alt="" /></div>`;
+    const item3 = o.item ? `<div class="cel-item" style="--c:${o.item.color}"><div class="x3d-obj">${Array.from({ length: 9 }, (_, k) => `<i style="transform:translateZ(${k * 2 - 8}px)"></i>`).join("")}<span class="x3d-face">${icon(o.item.icon)}</span><span class="x3d-face back">${icon(o.item.icon)}</span></div></div>` : "";
+    el.innerHTML = `
+      <div class="cel-card" style="${R ? `--r:${R.c}` : "--r:#8A97F2"}">
+        <span class="ff-rays"></span>
+        <div class="cel-conf">${conf}</div>
+        <div class="cel-stage">${o.kind === "coin" ? coin3d : item3}</div>
+        <div class="cel-t">Құттықтаймыз!</div>
+        ${
+          o.kind === "coin"
+            ? `<div class="cel-n">+<span id="celN">0</span> <img src="assets/coin/coin.png" alt="" /></div><div class="cel-s">${o.why}</div>`
+            : `<span class="it-rar" style="--r:${R.c}">${R.name}</span><div class="cel-name">${o.item.name}</div><div class="cel-s">${o.item.cat === "real" ? "Тапсырыс жасалды — куратор дайындағанда хабарлама келеді" : o.item.items ? "Барлық заттар «Қоймаға» түсті" : o.item.slot ? "Сенікі! Бірден киілді" : "«Қоймаға» қосылды"}</div>`
+        }
+        <button type="button" class="cel-ok">Керемет!</button>
+      </div>`;
+    host.appendChild(el);
+    requestAnimationFrame(() => el.classList.add("in"));
+    if (o.kind === "coin") {
+      const t0 = performance.now(), dur = 900;
+      const step = (t) => {
+        const k = Math.min(1, (t - t0) / dur), sp = el.querySelector("#celN");
+        if (!sp) return;
+        sp.textContent = Math.round(o.n * (1 - Math.pow(1 - k, 3)));
+        if (k < 1) requestAnimationFrame(step);
+      };
+      setTimeout(() => requestAnimationFrame(step), 350);
+    }
+    const close = () => {
+      if (el.classList.contains("out")) return;
+      clearTimeout(auto);
+      el.classList.add("out");
+      setTimeout(() => (el.remove(), celNext()), 260);
+    };
+    el.querySelector(".cel-ok").onclick = close;
+    el.onclick = (e) => e.target === el && close();
+    const auto = setTimeout(close, o.kind === "coin" ? 3200 : 5000);
   }
   function coinChip() {
     return `<span class="coin-chip">${COIN}<b>${wallet().coins.toLocaleString("ru-RU")}</b></span>`;
@@ -3737,8 +3793,8 @@
             shopOrders().unshift({ id: nextId(), st: TOUR_ME(), g: MOCK.groups[0], item: x.id, date: dmy(AN_TODAY), status: "new" });
           } else give(x);
           w.log.unshift({ t: `Дүкен: ${x.name}`, c: -p, d: dmy(new Date()).slice(0, 5) });
-          toast(x.cat === "real" ? "Тапсырыс жасалды! Дайын болғанда хабарлама келеді 🎁" : x.items ? `${x.name} — барлығы «Қоймаға» түсті` : isStyle(x) ? `${x.name} — сенікі, киілді!` : `${x.name} қосылды`);
           paintStack();
+          celebrate({ kind: "item", item: x });
         });
       },
       {
@@ -7883,7 +7939,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           });
         $("#vNext").onclick = () => {
           clearInterval(v.timer);
-          if (i === cc.cur) earnCoins(5, "Видеосабақ");
+          if (i === cc.cur) earnCoins(5, "Видеосабақ соңына дейін қаралды");
           finishLesson(c, cc, i);
         };
         sync();
@@ -7996,7 +8052,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
               if (!ok) return;
             }
             T.done = true;
-            if (x.state !== "done") earnCoins(10, "Сабақ тесті");
+            if (x.state !== "done") earnCoins(10, "Сабақ тесті тапсырылды");
             paintStack();
           });
         $("#tqBack") &&
