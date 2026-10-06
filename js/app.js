@@ -3299,7 +3299,7 @@
   ];
   /* Дүкен v3 — Free Fire «Store» үлгісімен:
      жоғарыда көлденең бөлімдер жолағы · ұсыныс баннері · сиректік түсі (қарапайым/сирек/эпик/аңыз) ·
-     −30% / ЖАҢА / ШЕКТЕУЛІ белгілері · жиынтықтар · «киіп көру» · күнделікті тегін дөңгелек (ақылы gacha жоқ) */
+     −30% / ЖАҢА / ШЕКТЕУЛІ белгілері · жиынтықтар · «киіп көру» */
   const RARITY = {
     common: { name: "Қарапайым", c: "#8A93A6" },
     rare: { name: "Сирек", c: "#3D8BFF" },
@@ -3314,7 +3314,6 @@
     theme: { name: "Тақырып", icon: "palette" },
     bundle: { name: "Жиынтық", icon: "redeem" },
     real: { name: "Сыйлық", icon: "card_giftcard" },
-    spin: { name: "Сәттілік", icon: "casino" },
     inv: { name: "Қойма", icon: "inventory_2" },
   };
   const SHOP = [
@@ -3342,16 +3341,6 @@
     { id: "discount", cat: "real", rar: "legend", name: "Курсқа −10%", desc: "Келесі айдың төлеміне", price: 6000, icon: "percent", color: "#F2A93B", stock: 3 },
   ];
   const bundleFull = (x) => x.items.reduce((t, id) => t + SHOP.find((i) => i.id === id).price, 0);
-  const SPIN = [
-    { t: "+5", c: 5, col: "#3D8BFF" },
-    { t: "Кеңес", item: "hint5", col: "#A64DFF" },
-    { t: "+10", c: 10, col: "#2FB34F" },
-    { t: "+50", c: 50, col: "#FF9F1A" },
-    { t: "+15", c: 15, col: "#3D8BFF" },
-    { t: "Қатыру", item: "freeze", col: "#A64DFF" },
-    { t: "+20", c: 20, col: "#2FB34F" },
-    { t: "+10 сек", item: "time", col: "#E2574C" },
-  ];
   const MY_LEVEL = 7;
   function wallet() {
     if (!MOCK.wallet)
@@ -3420,16 +3409,13 @@
       }
     </button>`;
   }
-  function spinState() {
-    return (MOCK.spin ||= { freeLeft: 1, bonus: 0, deg: 0, last: null, tasks: 1 });
-  }
   function shopHtml() {
     const w = wallet();
     const cat = state.shopCat || "hot";
     const inv = SHOP.filter((x) => ownedOf(x));
     const myOrders = shopOrders().filter((o) => o.st.me);
     const rail = `<nav class="ff-rail">${Object.entries(SHOP_CATS)
-      .map(([k, c]) => `<button type="button" class="${cat === k ? "on" : ""} ${k === "inv" ? "vault" : ""}" data-shopcat="${k}">${icon(c.icon)}<span>${c.name}</span>${k === "spin" && spinState().freeLeft ? `<i></i>` : ""}</button>`)
+      .map(([k, c]) => `<button type="button" class="${cat === k ? "on" : ""} ${k === "inv" ? "vault" : ""}" data-shopcat="${k}">${icon(c.icon)}<span>${c.name}</span></button>`)
       .join("")}</nav>`;
     let main;
     if (cat === "hot") {
@@ -3448,23 +3434,6 @@
         <div class="ff-grid">${SHOP.filter((x) => x.tag && x.cat !== "bundle").map(ffCard).join("")}</div>
         <div class="ff-h">${icon("redeem")}Жиынтықтар</div>
         <div class="ff-grid">${SHOP.filter((x) => x.cat === "bundle").map(ffCard).join("")}</div>`;
-    } else if (cat === "spin") {
-      const SP = spinState();
-      const seg = 360 / SPIN.length;
-      main = `
-        <div class="ff-spin">
-          <div class="ff-h" style="margin-top:0">${icon("casino")}Сәттілік дөңгелегі</div>
-          <div class="sp-wrap">
-            <span class="sp-pin"></span>
-            <div class="sp-wheel" id="spWheel" style="transform:rotate(${SP.deg}deg);background:conic-gradient(${SPIN.map((s, i) => `${s.col} ${i * seg}deg ${(i + 1) * seg}deg`).join(",")})">
-              ${SPIN.map((s, i) => `<span class="sp-lbl" style="transform:rotate(${i * seg + seg / 2}deg) translateY(-78px)">${s.c ? `<img src="assets/coin/coin.png" alt="" />` : ""}${s.t}</span>`).join("")}
-            </div>
-            <span class="sp-hub">I4U</span>
-          </div>
-          <button type="button" class="sh-btn ff-go" id="spGo" ${SP.freeLeft + SP.bonus ? "" : "disabled"}>${SP.freeLeft ? "Тегін айналдыру" : SP.bonus ? `Айналдыру · бонус ${SP.bonus}` : "Ертең тегін"}</button>
-          <div class="sp-note">${icon("info", "material-icons-outlined")}<span>Күніне <b>1 рет тегін</b>. Қосымша айналдыру тек оқу арқылы: бүгін 3 сабақ өтсең +1 (${SP.tasks}/3). Монетаға айналдыру <b>жоқ</b>.</span></div>
-          ${SP.last ? `<div class="sp-last">${icon("celebration", "material-icons-outlined")}Соңғы ұтыс: <b>${SP.last}</b></div>` : ""}
-        </div>`;
     } else if (cat === "inv") {
       const boosts = inv.filter((x) => x.cat === "boost"), styles = inv.filter(isStyle);
       main = `
@@ -3811,24 +3780,6 @@
     const w = wallet();
     $$("[data-shopcat]").forEach((b) => (b.onclick = () => ((state.shopCat = b.dataset.shopcat), paintStack())));
     centerIn($(".ff-rail button.on"), "x");
-    $("#spGo")?.addEventListener("click", () => {
-      const SP = spinState();
-      if (!(SP.freeLeft + SP.bonus)) return;
-      SP.freeLeft ? (SP.freeLeft -= 1) : (SP.bonus -= 1);
-      const k = Math.floor(Math.random() * SPIN.length), seg = 360 / SPIN.length;
-      SP.deg += 360 * 5 + (360 - (SP.deg % 360)) - (k * seg + seg / 2);
-      const wh = $("#spWheel");
-      wh.style.transition = "transform 3.2s cubic-bezier(.17,.67,.2,1)";
-      wh.style.transform = `rotate(${SP.deg}deg)`;
-      $("#spGo").disabled = true;
-      setTimeout(() => {
-        const r = SPIN[k];
-        if (r.c) earnCoins(r.c, "Сәттілік дөңгелегі");
-        else (w.counts[r.item] = (w.counts[r.item] || 0) + 1), toast(`Ұтыс: ${SHOP.find((i) => i.id === r.item).name} — «Қоймаға» түсті 🎉`);
-        SP.last = r.c ? `+${r.c} монета` : SHOP.find((i) => i.id === r.item).name;
-        paintStack();
-      }, 3300);
-    });
     $("#shopHow")?.addEventListener("click", coinRulesSheet);
     $("#shopLog")?.addEventListener("click", openCoinLog);
     $$("[data-shopitem]").forEach((b) => (b.onclick = () => openShopItem(SHOP.find((x) => x.id === b.dataset.shopitem))));
