@@ -6188,7 +6188,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const c = g.lastChampion;
     const st = c && g.students.find((x) => x.id === c.id);
     if (!st) return "";
-    const photo = champPhoto(st.id);
+    // Фото — чемпионның өз профиль фотосы (профильді өзгертуде қояды); жоқ болса — аватары
+    const photo = st.photo || (st.me || st.id === 0 ? MOCK.me.photo : null);
     return `
       <div class="champ" data-student-id="${st.id}">
         <div class="champ-text">
@@ -6197,9 +6198,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="champ-sub">Чемпион · ${c.score} баллов</div>
           <div class="champ-week">${c.week}</div>
         </div>
-        <div class="champ-pic" data-champ-photo="${st.id}" title="Поставить фото">
-          ${photo ? `<img class="champ-photo" src="${photo}" alt="" />` : PERSON_SVG}
-          <span class="champ-cam">${icon("photo_camera", "material-icons-outlined")}</span>
+        <div class="champ-pic">
+          <span class="champ-ava" style="${photo ? `background:#2a2a30 url(${photo}) center/cover` : `background:${st.color}`}">${photo ? "" : st.initials}</span>
+          <span class="champ-crown">${icon("emoji_events")}</span>
         </div>
       </div>`;
   }

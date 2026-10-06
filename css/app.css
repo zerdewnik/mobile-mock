@@ -4771,3 +4771,10 @@ button.pf-stats > *, .pf-stats > button { cursor: pointer; }
 .pe-ro .material-icons-outlined { grid-row: 1 / 3; font-size: 18px; color: #6c6f84; }
 .pe-ro small { font-size: 11px; color: #6c6f84; }
 input[type="date"].ef-input { color-scheme: dark; }
+
+/* Өткен апта чемпионы: оның өз профиль фотосы (жоқ болса — аватары) алтын сақинада */
+.champ-pic { display: grid; place-items: center; width: 140px; }
+.champ-ava { position: relative; width: 112px; height: 112px; border-radius: 50%; display: grid; place-items: center; font-family: "Oswald", "Roboto", sans-serif; font-size: 38px; font-weight: 700; color: #fff; box-shadow: 0 0 0 4px #1e1e1e, 0 0 0 7px #d4a72c, 0 0 26px rgba(212,167,44,.45), 0 10px 22px rgba(0,0,0,.5); }
+.champ-crown { position: absolute; left: 50%; top: 14px; transform: translateX(-50%); width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: radial-gradient(circle at 35% 30%, #ffe08a, #d4a72c 55%, #8a6510); box-shadow: 0 3px 0 #5e4508, 0 4px 10px rgba(0,0,0,.5); }
+.champ-crown .material-icons-round { font-size: 19px; color: #3a2a06; }
+.champ-pic .champ-ava { margin-top: 26px; }
