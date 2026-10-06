@@ -104,3 +104,4 @@ Flutter: `Container(decoration: I4U3D.card())`, hero үшін `I4U3D.card(glow: 
 - 2026-10-06: `.sv-badge` (LIVE / сан) плиткалардан алынды — `.service-tile.hot` тек жарқыл мен жиек.
 - `.push-row.unread` — оқылмаған хабарлама (фон primary 10%, қызыл нүкте). Толығы — features/NOTIFICATIONS.md.
 - Bottom sheet: ашық парақшаның мазмұны ауысқанда қайта ашылу анимациясы жоқ (`.sheet.still`), айналдыру орны сақталады. `.t3-card.has-ban` + `.t3-ban` — баннері бар турнир карточкасы.
+- `.sh-card` / `.sh-med` / `.sh-btn` / `.sh-deal` — дүкен v2; `.ach-med` / `.ach-cell` — жетістік медалі; `.pf-stats`, `.pf-av.fr-*`, `.pf-title` — профиль. Толығы features/COINS_SHOP.md, features/ACHIEVEMENTS.md.
