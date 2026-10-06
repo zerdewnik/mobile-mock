@@ -3297,7 +3297,7 @@
     ["local_fire_department", "7 күн қатарынан кіру", 50],
   ];
   /* Дүкен v3 — Free Fire «Store» үлгісімен:
-     сол жақта тік бөлімдер · жоғарыда ұсыныс баннері · сиректік түсі (қарапайым/сирек/эпик/аңыз) ·
+     жоғарыда көлденең бөлімдер жолағы · ұсыныс баннері · сиректік түсі (қарапайым/сирек/эпик/аңыз) ·
      −30% / ЖАҢА / ШЕКТЕУЛІ белгілері · жиынтықтар · «киіп көру» · күнделікті тегін дөңгелек (ақылы gacha жоқ) */
   const RARITY = {
     common: { name: "Қарапайым", c: "#8A93A6" },
@@ -3480,7 +3480,7 @@
       main = `${cat === "real" ? `<div class="sp-note" style="margin:0 0 10px">${icon("storefront", "material-icons-outlined")}<span>Сатып алған соң куратор дайындайды → хабарлама → офистен аласың</span></div>` : ""}
         <div class="ff-grid">${list.map(ffCard).join("")}</div>`;
     }
-    return `<div class="ff">${rail}<div class="ff-main">${top}${main}</div></div>`;
+    return `<div class="ff">${top}${rail}<div class="ff-main">${main}</div></div>`;
   }
 
   /* —— Staff: Магазин ——
@@ -3694,6 +3694,7 @@
   function bindShop() {
     const w = wallet();
     $$("[data-shopcat]").forEach((b) => (b.onclick = () => ((state.shopCat = b.dataset.shopcat), paintStack())));
+    centerIn($(".ff-rail button.on"), "x");
     $("#spGo")?.addEventListener("click", () => {
       const SP = spinState();
       if (!(SP.freeLeft + SP.bonus)) return;
