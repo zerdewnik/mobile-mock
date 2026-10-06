@@ -3359,6 +3359,14 @@
       };
     return MOCK.wallet;
   }
+  /** Бір сабаққа / тестке монета тек БІР рет: қайта қараса не қайта тапсырса берілмейді */
+  function awardOnce(key, n, why) {
+    const got = (MOCK.coinAwarded ||= new Set());
+    if (got.has(key)) return false;
+    got.add(key);
+    earnCoins(n, why);
+    return true;
+  }
   function earnCoins(n, why) {
     if (!n) return;
     const w = wallet();
@@ -7939,7 +7947,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           });
         $("#vNext").onclick = () => {
           clearInterval(v.timer);
-          if (i === cc.cur) earnCoins(5, "Видеосабақ соңына дейін қаралды");
+          if (i === cc.cur) awardOnce(`v:${c.id}:${x.title || i}`, 5, "Видеосабақ соңына дейін қаралды");
           finishLesson(c, cc, i);
         };
         sync();
@@ -8052,7 +8060,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
               if (!ok) return;
             }
             T.done = true;
-            if (x.state !== "done") earnCoins(10, "Сабақ тесті тапсырылды");
+            if (x.state !== "done") awardOnce(`t:${c.id}:${x.title || i}`, 10, "Сабақ тесті тапсырылды");
             paintStack();
           });
         $("#tqBack") &&
