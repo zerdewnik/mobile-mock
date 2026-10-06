@@ -133,8 +133,21 @@
     $("#overlay").classList.remove("open");
     $("#overlay").innerHTML = "";
   }
-  function openSheet(html, { tall } = {}) {
+  function openSheet(html, { tall, keepScroll = true } = {}) {
     const overlay = $("#overlay");
+    const cur = overlay.classList.contains("open") && overlay.querySelector(".sheet");
+    if (cur) {
+      // Парақша ашық тұрса — анимациясыз, орнында мазмұнын ауыстыру (батырма басқанда секірмейді)
+      const top = cur.scrollTop, body = cur.querySelector(".tf-body")?.scrollTop || 0;
+      cur.className = `sheet still ${tall ? "tall" : ""}`;
+      cur.innerHTML = html;
+      if (keepScroll) {
+        cur.scrollTop = top;
+        const b = cur.querySelector(".tf-body");
+        if (b) b.scrollTop = body;
+      }
+      return;
+    }
     overlay.innerHTML = `<div class="sheet ${tall ? "tall" : ""}">${html}</div>`;
     overlay.classList.add("open");
   }
@@ -2185,8 +2198,8 @@
     else if (T.status === "cancelled") line = `${icon("block", "material-icons-outlined")}Куратор тоқтатты · ${fmtDT(T.start)}`;
     else line = `${icon("emoji_events", "material-icons-outlined")}Чемпион: ${T.champion?.me ? "Сен" : T.champion?.name} · ${fmtDT(T.start)}`;
     return `
-      <button type="button" class="t3-card" data-tour="${T.id}">
-        <img class="t3-ico ${T.status === "cancelled" ? "off" : ""}" src="assets/tournament/belt_icon.png" alt="" />
+      <button type="button" class="t3-card ${T.banners?.length ? "has-ban" : ""}" data-tour="${T.id}">
+        ${T.banners?.length ? `<span class="t3-ban ${T.status === "cancelled" ? "off" : ""}" style="background-image:url(${T.banners[0]})"></span>` : `<img class="t3-ico ${T.status === "cancelled" ? "off" : ""}" src="assets/tournament/belt_icon.png" alt="" />`}
         <div class="t3-body">
           <div class="t3-top"><span class="t3-badge ${st[0]}">${st[1]}</span>${isReg(T) && T.status === "registration" ? `<span class="t3-badge ok">${icon("check")}Тіркелдің</span>` : ""}</div>
           <div class="t3-title">${T.title}</div>
@@ -2536,7 +2549,10 @@
           <div class="tf-pv-r"><span>Жұптастыру</span><b>${f.seeding === "rating" ? "рейтинг" : "кездейсоқ"}${f.checkin ? " · check-in" : ""}</b></div>
         </div>`;
     };
+    let lastStep = 0;
     const draw = () => {
+      const stepChanged = lastStep !== f.step;
+      lastStep = f.step;
       openSheet(
         `
         <div class="sheet-handle"></div>
@@ -2547,7 +2563,7 @@
           ${f.step ? `<button type="button" class="btn btn-ghost" id="tfPrev">Артқа</button>` : `<button type="button" class="btn btn-ghost" id="tfClose2">Болдырмау</button>`}
           <button type="button" class="btn btn-primary" id="tfNext">${f.step === 3 ? "Жариялау" : "Әрі қарай"}</button>
         </div>`,
-        { tall: true }
+        { tall: true, keepScroll: !stepChanged }
       );
       const keep = () => {
         if ($("#tfTitle")) f.title = $("#tfTitle").value;

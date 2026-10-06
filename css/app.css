@@ -4394,3 +4394,12 @@ button.so-row { cursor: pointer; }
 /* Хабарламалар: оқылмағаны */
 .push-row.unread { background: color-mix(in srgb, var(--primary) 10%, transparent); border-radius: 14px; }
 .push-row.unread .push-title::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #E2574C; vertical-align: middle; }
+/* Парақша мазмұны ауысқанда анимация жоқ */
+.sheet.still { animation: none; }
+.sheet:has(.tf-steps) *, .sheet:has(.tf-steps) *:active { transition: none !important; }
+.sheet:has(.tf-steps) .tf-fmt3:active, .sheet:has(.tf-steps) .ent-chip:active, .sheet:has(.tf-steps) .tf-pz:active, .sheet:has(.tf-steps) .tf-check:active { transform: none; }
+/* Турнир карточкасы: баннер қойылса — белбеудің орнына баннер */
+.t3-card.has-ban { flex-wrap: wrap; padding-top: 10px; }
+.t3-ban { flex: 0 0 100%; height: 112px; border-radius: 12px; background-size: cover; background-position: center; box-shadow: inset 0 0 0 1px rgba(255,255,255,.06); }
+.t3-ban.off { filter: grayscale(1) opacity(.5); }
+.t3-card.has-ban .t3-body { flex: 1; min-width: 0; }
