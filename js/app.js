@@ -2180,7 +2180,7 @@
     }
     cols.push(`<div class="br-col champ-col"><div class="br-h">Чемпион</div><div class="br-body" style="height:${Math.max(160, (T.size / 2) * 92)}px"><div class="br-pair"><div class="br-champ ${T.champion ? "" : "empty"}">
       <span class="br-crown">${icon("workspace_premium")}</span>
-      ${T.champion ? `<span class="br-cav" style="background:${T.champion.color}">${T.champion.initials}</span>` : `<span class="br-cav q">?</span>`}
+      ${T.champion ? (T.champion.photo ? `<span class="br-cav" style="background:#2a2a30 url(${T.champion.photo}) center/cover"></span>` : `<span class="br-cav" style="background:${T.champion.color}">${T.champion.initials}</span>`) : `<span class="br-cav q">?</span>`}
       <b>${T.champion ? firstName(T.champion) : "Чемпион"}</b>
       <small>${T.champion ? "ЧЕМПИОН" : "анықталмады"}</small>
       <img src="assets/tournament/belt.png" alt="" />
@@ -7348,7 +7348,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const champ = T.filter((t) => t.status === "finished" && t.champion).map(
       (t) => `<button type="button" class="banner-slide cb-slide" data-btour="${t.id}">
         <span class="cb-copy"><small>ЧЕМПИОН · ${t.title}</small><b>${t.champion.me ? "Сен!" : t.champion.name}</b><em>${COURSE_TITLE[t.courseId]}</em></span>
-        <span class="cb-av" style="background:${t.champion.color}">${t.champion.initials}</span>
+        ${t.champion.photo ? `<span class="cb-av" style="background:#2a2a30 url(${t.champion.photo}) center/cover"></span>` : `<span class="cb-av" style="background:${t.champion.color}">${t.champion.initials}</span>`}
         <img src="assets/tournament/belt.png" alt="" />
       </button>`
     );

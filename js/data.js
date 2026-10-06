@@ -535,4 +535,9 @@ window.MOCK = {
     const s = c ? g.students.find((x) => x.id === c.id) : g.students[Math.min(g.students.length - 1, 1 + (gi % 3))];
     g.lastChampion = { id: s.id, score: c ? c.score : 88 + (gi % 9), week: "21–27 сентября" };
   });
+  /* Макет: чемпиондардың профиль фотосы (өткен апта чемпионы және «Қыркүйек кубогы» чемпионы) */
+  const vik = window.MOCK.groups.find((g) => g.id === 9);
+  if (vik) vik.students.forEach((x) => {
+    if (x.id === vik.lastChampion.id || /^динара/i.test(x.name)) x.photo = "assets/avatar/me.jpg";
+  });
 })();
