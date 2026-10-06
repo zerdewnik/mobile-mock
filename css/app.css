@@ -4391,3 +4391,6 @@ button.so-row { cursor: pointer; }
 @keyframes svPulse { 50% { box-shadow: 0 0 0 4px rgba(226,87,76,.25); } }
 .tf-from b { white-space: nowrap; }
 .tf-from span { flex: 1; text-align: right; }
+/* Хабарламалар: оқылмағаны */
+.push-row.unread { background: color-mix(in srgb, var(--primary) 10%, transparent); border-radius: 14px; }
+.push-row.unread .push-title::after { content: ""; display: inline-block; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%; background: #E2574C; vertical-align: middle; }

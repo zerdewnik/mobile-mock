@@ -2648,7 +2648,13 @@
           status: "registration",
         });
         closeSheet();
-        toast("Турнир жарияланды — оқушыларға хабарлама кетті");
+        const T = tournaments()[0];
+        const reach = f.aud === "all" ? MOCK.groups : MOCK.groups.filter((g) => f.groups.has(g.id));
+        const fmtD = (v) => { const d = new Date(v); return `${d.getDate()} ${KZ_MON_SHORT[d.getMonth()]} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+        if (reach.some((g) => g.id === MOCK.groups[0].id))
+          notify({ type: "tour", title: `Жаңа турнир: ${T.title}`, body: `${COURSE_TITLE[T.courseId]} · ${T_FORMATS[T.format].name}. Тіркелу ${fmtD(T.regTo)} дейін, басталуы ${fmtD(T.start)}. Жүлде — ${T.prize} I4U монета`, go: { tour: T.id } });
+        MOCK.pushes.unshift({ title: `Жаңа турнир: ${T.title}`, time: "Қазір", type: "Авто · Турнир", body: `Тіркелу ${fmtD(T.regTo)} дейін`, audience: f.aud === "all" ? "Барлық оқушылар" : reach.map((g) => g.name).join(", "), stats: `${reach.reduce((t, g) => t + g.studentsCount, 0)} / 0` });
+        toast(`Турнир жарияланды — ${reach.reduce((t, g) => t + g.studentsCount, 0)} оқушыға хабарлама кетті`);
         paintStack();
       };
     };
@@ -3241,6 +3247,9 @@
         if (g.id === MOCK.groups[0].id) MOCK.war = W;
         else MOCK.extraWars = [...(MOCK.extraWars || []).filter((w) => w.us.group.id !== g.id), W];
         closeSheet();
+        if ([g.id, f.found.id].includes(MOCK.groups[0].id))
+          notify({ type: "war", title: `Топтар шайқасы: ${g.name} vs ${f.found.name}`, body: `Дайындық күні басталды (${f.prep} сағ). Шайқас күні әр қатысушыға 2 шабуыл беріледі`, go: { war: true } });
+        MOCK.pushes.unshift({ title: `Топтар шайқасы: ${g.name} vs ${f.found.name}`, time: "Қазір", type: "Авто · Шайқас", body: `${f.size}×${f.size}, дайындық ${f.prep} сағ`, audience: `${g.name}, ${f.found.name}`, stats: `${g.studentsCount + f.found.studentsCount} / 0` });
         toast("Шайқас жарияланды — екі топқа хабарлама кетті");
         if (state.navStack.length) paintStack();
         openWar({ staff: true, W });
@@ -3511,9 +3520,31 @@
       $("#dvGo").onclick = () => {
         const opp = g.students.find((x) => x.id === st.who);
         const c = MOCK.myCourses.find((x) => x.id === st.sub);
+        const B = battleState();
         closeSheet();
-        toast(`${opp.name.split(" ")[0]} шақыруды қабылдады!`);
-        setTimeout(() => startDuel({ opp, subject: T_SUBJ[c.id], subjectTitle: c.title, onDone: battleDone }), 500);
+        // Кезекпен: шақырушы өз бөлігін қазір ойнайды → досына push «X сені батлға шақырды» (24 сағ) → дос ойнаған соң екеуіне нәтиже
+        toast(`Шақыру жіберілді — ${firstName(opp)} хабарлама алды. Енді өз раундыңды ойна`);
+        setTimeout(
+          () =>
+            startDuel({
+              opp,
+              subject: T_SUBJ[c.id],
+              subjectTitle: c.title,
+              onDone: (_, my) => {
+                const inv = { opp, subjectTitle: c.title, my, left: "24 сағ" };
+                B.outgoing.unshift(inv);
+                setTimeout(() => {
+                  B.outgoing = B.outgoing.filter((x) => x !== inv);
+                  const op = Math.round(6 + rnd(opp.id, my, 3) * 16);
+                  const win = my > op || (my === op && rnd(opp.id, 9) > 0.5);
+                  battleDone(win);
+                  notify({ type: "battle", title: `${firstName(opp)} шақыруыңа жауап берді`, body: `${c.title}: сен ${my} : ${op} ${opp.name}. ${win ? "Жеңіс! +15 рейтинг" : "Жеңіліс. Реванш жасап көр"}`, go: { service: "battle", title: "Батл" } });
+                  if (state.navStack.length) paintStack();
+                }, 8000);
+              },
+            }),
+          600
+        );
       };
     };
     draw();
@@ -6226,16 +6257,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     );
   }
 
-  /** Турниры / шайқас плиткаларындағы тірі белгі: белсенді кубок саны, шайқас күні — LIVE */
-  function hotBadge(kind) {
-    if (kind === "cup") {
-      const n = tournaments().filter((t) => t.status === "registration" || t.status === "running").length;
-      return n ? `<em class="sv-badge">${n}</em>` : "";
-    }
-    if (kind === "war") {
-      const live = state.mode === "staff" ? visibleGroups().some((g) => warOf(g)?.status === "battle") : war()?.status === "battle";
-      return live ? `<em class="sv-badge live">LIVE</em>` : "";
-    }
+  /** Ерекше плиткаларда белгі жоқ (2026-10-06: LIVE және сан алынды) */
+  function hotBadge() {
     return "";
   }
 
@@ -7090,14 +7113,64 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       </div>`;
   }
 
+  /* —— Оқушы хабарламалары ——
+     Автоматты: жаңа турнир (топқа/барлығына), тіркелу аяқталуға 2 сағ, check-in (басталардан 30 мин), кезең басталды;
+     батл шақыруы келді, досың жауап берді (нәтиже), шақыру мерзімі бітуге 2 сағ;
+     топтар шайқасы жарияланды, шайқас күні басталды, өз шабуылың қалды */
+  const NOTIF_TYPES = {
+    tour: { img: "assets/tournament/cup_line.png", label: "Турниры" },
+    battle: { img: "assets/tournament/battle_line.png", label: "Батл шақырулары мен нәтижелері" },
+    war: { img: "assets/tournament/clash_line.png", label: "Топтар шайқасы" },
+    study: { img: "assets/v2/notification.png", label: "Сабақ, эфир, конспект" },
+  };
+  function notifPrefs() {
+    return (MOCK.notifPrefs ||= { tour: true, battle: true, war: true, study: true });
+  }
+  /** Оқушыға хабарлама (макетте — осы құрылғыдағы оқушы). Нақты қосымшада — сервер FCM push + қосымша ішіндегі тізім */
+  function notify({ type = "study", title, body, go }) {
+    if (!notifPrefs()[type]) return;
+    MOCK.studentNotifs.unshift({ id: nextId(), type, when: "Қазір", title, body, go, read: false });
+    const bell = $("#studentBell");
+    if (bell) {
+      const n = MOCK.studentNotifs.filter((x) => !x.read).length;
+      bell.querySelector("i")?.remove();
+      bell.insertAdjacentHTML("beforeend", `<i>${n}</i>`);
+    }
+  }
+  function openNotif(n) {
+    const g = n.go || {};
+    state.navStack = [];
+    if (g.tour) {
+      const T = tournaments().find((t) => t.id === g.tour);
+      if (T) return openTournament(T);
+    }
+    if (g.service) return openService(g.service, g.title || "");
+    if (g.war) return openWar();
+    pushScreen(n.title, () => `<div class="list-pad"><div class="push-row"><img src="${NOTIF_TYPES[n.type || "study"].img}" alt="" /><span class="push-line"></span><span><span class="push-when">${n.when}</span><span class="push-title">${n.title}</span><span class="push-body">${n.body}</span></span></div></div>`);
+  }
+  function openNotifPrefs() {
+    const P = notifPrefs();
+    const draw = () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ex-title">Хабарлама баптаулары</div>
+        ${Object.entries(NOTIF_TYPES).map(([k, x]) => `<div class="nf-toggle-row"><img src="${x.img}" alt="" style="width:24px;height:24px" /><div><b>${x.label}</b></div><button type="button" class="toggle ${P[k] ? "on" : ""}" data-np="${k}"></button></div>`).join("")}
+        <div class="tf-sum">${icon("info", "material-icons-outlined")}Өшірілген түрлер телефонға push болып келмейді және тізімге түспейді</div>
+        <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="npClose" style="width:100%">Дайын</button></div>`);
+      $("#npClose").onclick = closeSheet;
+      $$("[data-np]").forEach((b) => (b.onclick = () => ((P[b.dataset.np] = !P[b.dataset.np]), draw())));
+    };
+    draw();
+  }
+
   function renderStudentNotifs() {
     return `
       <div class="list-pad">
         ${MOCK.studentNotifs
           .map(
             (n) => `
-          <button type="button" class="push-row" data-push="${n.id}">
-            <img src="assets/v2/notification.png" alt="" />
+          <button type="button" class="push-row ${n.read === false ? "unread" : ""}" data-push="${n.id}">
+            <img src="${NOTIF_TYPES[n.type || "study"].img}" alt="" />
             <span class="push-line"></span>
             <span>
               <span class="push-when">${n.when}</span>
@@ -7623,24 +7696,21 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       render();
     });
     $("#studentBell")?.addEventListener("click", () => {
-      MOCK.studentNotifs.forEach((n) => (n.read = true));
       state.navStack = [];
       pushScreen("Уведомления", renderStudentNotifs, () => {
+        MOCK.studentNotifs.forEach((n) => (n.read = true));
+        $("#npOpen")?.addEventListener("click", openNotifPrefs);
         $$("#screenOverlay [data-push]").forEach((btn) => {
-          btn.onclick = () => {
-            const n = MOCK.studentNotifs.find((x) => x.id === Number(btn.dataset.push));
-            pushScreen(n.title, () => `<div class="list-pad"><div class="push-row"><img src="assets/v2/notification.png" alt="" /><span class="push-line"></span><span><span class="push-when">${n.when}</span><span class="push-title">${n.title}</span><span class="push-body">${n.body}</span></span></div></div>`);
-          };
+          btn.onclick = () => openNotif(MOCK.studentNotifs.find((x) => x.id === Number(btn.dataset.push)));
         });
-      });
+      }, { right: `<button type="button" class="appbar-icon-btn" id="npOpen" title="Баптаулар">${icon("tune")}</button>` });
       $("#appbar").innerHTML = appbarHtml();
       bindStudentContent();
     });
     $$("[data-push]").forEach((btn) => {
       btn.onclick = () => {
         const n = MOCK.studentNotifs.find((x) => x.id === Number(btn.dataset.push));
-        if (!n) return;
-        openInner(n.title, `<div class="list-pad"><div class="push-row"><img src="assets/v2/notification.png" alt="" /><span class="push-line"></span><span><span class="push-when">${n.when}</span><span class="push-title">${n.title}</span><span class="push-body">${n.body}</span></span></div></div>`);
+        if (n) openNotif(n);
       };
     });
     $$("[data-course-id]").forEach((btn) => {
