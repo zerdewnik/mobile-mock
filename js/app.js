@@ -3312,11 +3312,18 @@
     frame: { name: "Жиектер", icon: "account_circle" },
     title: { name: "Атақтар", icon: "military_tech" },
     theme: { name: "Тақырып", icon: "palette" },
+    mafia: { name: "Мафия", icon: "theater_comedy" },
     bundle: { name: "Жиынтық", icon: "redeem" },
     real: { name: "Сыйлық", icon: "card_giftcard" },
     inv: { name: "Қойма", icon: "inventory_2" },
   };
   const STUDENT_SHOP = [
+    { id: "m_host", cat: "mafia", rar: "epic", name: "Жүргізуші билеті", desc: "Мафия кешін өзің ашып, жүргізесің", price: 400, icon: "confirmation_number", color: "#E2574C", tag: "new", why: "Оқушы мафия кешін тек осы билетпен аша алады: сен жүргізуші боласың — тіркелуді ашасың, фазаларды ауыстырасың, рөлдерді көресің.", use: ["Ойындар → Мафия → «Кеш ашу»", "Атауы, уақыты, орын санын толтыр", "«Тіркелуді ашу» басқанда билет жұмсалады"], spec: { act: "1 кеш", where: "Ойындар → Мафия", limit: "Кеш ашылғанда жұмсалады" } },
+    { id: "m_vest", cat: "mafia", rar: "epic", name: "Бронежилет", desc: "Түнгі шабуылдан бір рет аман қаласың", price: 300, icon: "shield", color: "#5CB36D", why: "Мафия түнде сені таңдаса — бронежилет сақтап қалады, таңертең бәрі «шабуыл болды, бірақ ешкім өлмеді» дейді.", use: ["Ойынға кірерде «Карточкалар» ішінен таңда", "Түнде шабуыл болса өздігінен іске қосылады"], spec: { act: "1 түн", where: "Мафия ойыны", limit: "Бір ойынға 1 карточка" } },
+    { id: "m_mask", cat: "mafia", rar: "rare", name: "Бетперде", desc: "Комиссар тексерсе — «мафия емес» көрінеді", price: 250, icon: "masks", color: "#B07CFF", why: "Мафия болсаң — комиссардың тексеруінен бір рет жасырынасың.", use: ["Ойынға кірерде таңда", "Комиссар сені тексергенде өздігінен іске қосылады"], spec: { act: "1 тексеру", where: "Мафия ойыны", limit: "Бір ойынға 1 карточка" } },
+    { id: "m_alibi", cat: "mafia", rar: "legend", name: "Алиби", desc: "Бір дауыс беруде саған берілген дауыс есептелмейді", price: 450, icon: "gavel", color: "#F2C230", why: "Күндіз бәрі саған қарсы дауыс берсе — алиби сені бір рет сақтайды, дауыстар қайта есептеледі.", use: ["Ойынға кірерде таңда", "Сені шығаратын дауыс болса өздігінен іске қосылады"], spec: { act: "1 дауыс беру", where: "Мафия ойыны", limit: "Бір ойынға 1 карточка" } },
+    { id: "m_role_maf", cat: "mafia", rar: "rare", name: "Рөл картасы: Мафия", desc: "Мафия болу мүмкіндігі 3 есе", price: 150, icon: "theater_comedy", color: "#E2574C", why: "Мафия болып ойнағың келсе — келесі ойында мафия рөлі түсу мүмкіндігі артады.", use: ["Ойынға кірерде таңда", "Рөлдер таратылғанда есептеледі"], spec: { act: "1 ойын", where: "Мафия ойыны", limit: "Бір ойынға 1 рөл картасы" } },
+    { id: "m_role_det", cat: "mafia", rar: "rare", name: "Рөл картасы: Комиссар", desc: "Комиссар болу мүмкіндігі 3 есе", price: 150, icon: "search", color: "#4F9BFF", why: "Комиссар болып мафияны іздегің келсе.", use: ["Ойынға кірерде таңда", "Рөлдер таратылғанда есептеледі"], spec: { act: "1 ойын", where: "Мафия ойыны", limit: "Бір ойынға 1 рөл картасы" } },
     { id: "hint5", cat: "boost", rar: "common", name: "Кеңес ×5", desc: "Тестте бір қате нұсқаны алып тастайды", price: 150, icon: "lightbulb", color: "#FFD54F", how: ["Сабақ тесті мен тренажёрда", "ҰБТ сынағы мен апталық сынақта қолданылмайды"] },
     { id: "time", cat: "boost", rar: "common", name: "+10 секунд ×3", desc: "Батлдағы сұраққа қосымша уақыт", price: 120, icon: "more_time", color: "#4F9BFF", how: ["Батл кезінде сағат белгісін бас", "Турнирде қолданылмайды"] },
     { id: "freeze", cat: "boost", rar: "rare", name: "Серияны қатыру", desc: "Бір күн кірмесең де серия үзілмейді", price: 200, icon: "ac_unit", color: "#7FD3E8", how: ["Кірмеген күні өздігінен қолданылады", "Ең көбі 2 дана сақталады"], max: 2 },
@@ -3489,7 +3496,7 @@
   }
   const isStyle = (x) => !!x.slot;
   const priceOf = (x) => (dailyDeal().id === x.id ? dailyDeal().price : x.price);
-  const ownedOf = (x) => (x.cat === "boost" ? wallet().counts[x.id] || 0 : isStyle(x) && wallet().owned.includes(x.id) ? 1 : 0);
+  const ownedOf = (x) => (x.cat === "boost" || x.cat === "mafia" ? wallet().counts[x.id] || 0 : isStyle(x) && wallet().owned.includes(x.id) ? 1 : 0);
   const discountOf = (x) => (dailyDeal().id === x.id ? 30 : x.cat === "bundle" ? Math.round((1 - x.price / bundleFull(x)) * 100) : 0);
   /** Сатып алуға бола ма — себебі */
   function buyState(x) {
@@ -3505,9 +3512,9 @@
   /** Free Fire карточкасы: сиректік фоны, белгілер, баға жолағы */
   function ffCard(x) {
     const S = buyState(x), n = ownedOf(x), p = priceOf(x), R = RARITY[x.rar], off = discountOf(x);
-    return `<button type="button" class="ff-card ${S.why === "own" ? "own" : ""} ${S.why === "lvl" ? "lock" : ""}" style="--r:${R.c}" data-shopitem="${x.id}">
+    return `<button type="button" class="ff-card ${x.cat === "mafia" ? "cardart" : ""} ${S.why === "own" ? "own" : ""} ${S.why === "lvl" ? "lock" : ""}" style="--r:${R.c}" data-shopitem="${x.id}">
       ${off ? `<em class="ff-tag off">−${off}%</em>` : x.tag === "new" ? `<em class="ff-tag new">ЖАҢА</em>` : x.tag === "limited" ? `<em class="ff-tag lim">${icon("schedule", "material-icons-outlined")}${x.until}</em>` : ""}
-      ${x.cat === "boost" && n ? `<em class="ff-n">×${n}</em>` : ""}
+      ${(x.cat === "boost" || x.cat === "mafia") && n ? `<em class="ff-n">×${n}</em>` : ""}
       ${x.cat === "real" ? `<em class="ff-n st ${x.stock <= 5 ? "low" : ""}">${x.stock}</em>` : ""}
       <span class="ff-art">${medal(x)}</span>
       <span class="ff-rar">${R.name}</span>
@@ -3547,12 +3554,14 @@
         <div class="ff-grid">${CAT().filter((x) => x.cat === "bundle").map(ffCard).join("")}</div>`;
     } else if (cat === "inv") {
       const boosts = inv.filter((x) => x.cat === "boost"), styles = inv.filter(isStyle);
+
       main = `
         ${w.x2Until ? `<div class="sh-active">${icon("bolt")}<span><b>×2 монета белсенді</b><small>${w.x2Until} дейін</small></span></div>` : ""}
         ${(w.active || []).map((a) => `<div class="sh-active">${icon("bolt")}<span><b>${a.name} · ${a.group}</b><small>белсенді · ${a.until}</small></span></div>`).join("")}
         ${w.bonusPool ? `<div class="sh-active">${icon("redeem")}<span><b>Бонус қоры: ${w.bonusPool} монета</b><small>Магазинді басқару → Монеталар</small></span></div>` : ""}
         <div class="ff-h" style="margin-top:0">${icon("bolt")}Күшейткіштер</div>
         ${boosts.length ? boosts.map((x) => `<div class="sh-row">${medal(x, "sm")}<span><b>${x.name} <i>×${ownedOf(x)}</i></b><small>${x.how?.[0] || x.use?.[0] || x.desc}</small></span>${x.id === "x2" || x.group || x.id === "g_bonus" ? `<button type="button" class="sh-use" data-shopuse="${x.id}">Қосу</button>` : `<span class="sh-auto">${x.cat === "boost" && isStaffShop() ? "турнир/жаңалықта" : "өздігінен"}</span>`}</div>`).join("") : `<div class="sh-empty">Күшейткіш жоқ</div>`}
+        ${isStaffShop() ? "" : `<div class="ff-h">${icon("theater_comedy")}Мафия карточкалары</div>${inv.filter((x) => x.cat === "mafia").map((x) => `<div class="sh-row">${medal(x, "sm")}<span><b>${x.name} <i>×${ownedOf(x)}</i></b><small>${x.desc}</small></span><span class="sh-auto">ойында</span></div>`).join("") || `<div class="sh-empty">Мафия карточкасы жоқ</div>`}`}
         <div class="ff-h">${icon("checkroom")}Безендіру</div>
         ${styles.length ? styles.map((x) => { const on = w.equip[x.slot] === x.id; return `<div class="sh-row" style="--r:${RARITY[x.rar].c}">${medal(x, "sm")}<span><b>${x.name}</b><small>${{ frame: "Аватар жиегі", title: "Атақ", theme: "Тақырып", emblem: "Топ эмблемасы" }[x.slot]} · <span style="color:${RARITY[x.rar].c}">${RARITY[x.rar].name}</span></small></span><button type="button" class="sh-use ${on ? "on" : ""}" data-shopequip="${x.id}">${on ? `${icon("check")}Киюлі` : "Кию"}</button></div>`; }).join("") : `<div class="sh-empty">Әзірге жоқ</div>`}
         <div class="ff-h">${icon("card_giftcard")}Тапсырыстарым</div>
@@ -3775,6 +3784,7 @@
     bundle: { type: "Жиынтық", why: "Бірнеше затты бөлек алғаннан арзан.", use: ["Сатып ал — барлық заттар Қоймаға түседі", "Әр затты өз ережесімен қолдан"], spec: { act: "Ішіндегі заттарға байланысты", where: "—", limit: "Бір оқушыға 1 рет" } },
     real: { type: "Шынайы сыйлық", why: "Монетаңды нақты I4U сыйлығына айырбастайсың.", use: ["Сатып ал — тапсырыс жасалады", "Куратор дайындайды, саған хабарлама келеді", "Офистен (Абай 52, 2-қабат) алып кет"], spec: { act: "Бір реттік", where: "I4U офисі", limit: "Айына 1 дана" } },
     boost: { type: "Күшейткіш" },
+    mafia: { type: "Мафия карточкасы" },
   };
   function itemInfo(x) {
     const c = CAT_INFO[x.cat] || {}, i = ITEM_INFO[x.id] || {};
@@ -3856,7 +3866,7 @@
           if (!ok) return;
           w.coins -= p;
           const give = (it) => {
-            if (it.cat === "boost") w.counts[it.id] = (w.counts[it.id] || 0) + 1;
+            if (it.cat === "boost" || it.cat === "mafia") w.counts[it.id] = (w.counts[it.id] || 0) + 1;
             else if (isStyle(it) && !w.owned.includes(it.id)) (w.owned.push(it.id), (w.equip[it.slot] = it.id));
           };
           if (x.items) x.items.forEach((id) => give(CAT().find((i) => i.id === id)));
@@ -3987,7 +3997,7 @@
     else toast("Бүгінгі ойын монетасы лимитіне жеттің (3 жеңіс)");
   }
   const GAMES = [
-    { id: "bc", name: "Бұқа мен сиыр", icon: "pin", color: "#F2A93B", mode: "Ботпен", desc: "Боттың 4 таңбалы құпия санын одан бұрын тап" },
+    { id: "bc", name: "Бұқа мен сиыр", icon: "pin", color: "#F2A93B", mode: "Ботпен", desc: "Бот жасырған санды бұқа мен сиыр арқылы тап" },
     { id: "mafia", name: "Мафия", icon: "theater_comedy", color: "#E2574C", mode: "Топпен · жүргізуші", desc: "Тіркел, рөліңді ал: мафия, дәрігер, комиссар, тұрғын" },
     { id: "hang", name: "Дар ағашы", icon: "spellcheck", color: "#4F9BFF", mode: "Достармен", desc: "Досыңа сөз жібер не оның сөзін әріптеп тап" },
   ];
@@ -4016,93 +4026,78 @@
      Екеуі де 4 әр түрлі цифрдан құпия сан ойлайды. Кезекпен болжайды:
      🐂 бұқа — цифр да, орны да дұрыс; 🐄 сиыр — цифр бар, орны басқа. Бірінші 4 бұқа тапқан жеңеді.
      Бот: жеңіл — кейде кездейсоқ болжайды; қиын — әр жолы барлық жауапқа сай келетін нұсқаны таңдайды */
-  const BC_ALL = (() => {
-    const out = [];
-    for (let n = 0; n < 10000; n++) {
-      const s = String(n).padStart(4, "0");
-      if (new Set(s).size === 4) out.push(s);
-    }
-    return out;
-  })();
-  const bcScore = (secret, g) => {
-    let b = 0, c = 0;
-    for (let i = 0; i < 4; i++) g[i] === secret[i] ? b++ : secret.includes(g[i]) && c++;
-    return { b, c };
-  };
   function openBullsCows() {
-    const B = { diff: "hard", mine: "", input: "", phase: "setup", my: [], bot: [], cands: [...BC_ALL], botSecret: BC_ALL[Math.floor(Math.random() * BC_ALL.length)], winner: null, show: false, busy: false };
-    const pad4 = (s) => `<div class="bc-in">${[0, 1, 2, 3].map((i) => `<span class="${s[i] ? "on" : ""}">${s[i] ?? ""}</span>`).join("")}</div>`;
-    const keypad = (s, okLabel) => `<div class="bc-keys">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "ok"]
-      .map((k) => (k === "del" ? `<button type="button" data-bck="del">${icon("backspace", "material-icons-outlined")}</button>` : k === "ok" ? `<button type="button" class="ok" data-bck="ok" ${s.length === 4 ? "" : "disabled"}>${okLabel}</button>` : `<button type="button" data-bck="${k}" ${s.includes(k) || s.length === 4 ? "disabled" : ""}>${k}</button>`))
-      .join("")}</div>`;
-    const row = (r) => `<div class="bc-row ${r.b === 4 ? "win" : ""}"><b>${r.g}</b><span class="bc-res"><i class="bb">${r.b}</i>бұқа <i class="cc">${r.c}</i>сиыр</span><span class="bc-dots">${"<u class=b></u>".repeat(r.b)}${"<u class=c></u>".repeat(r.c)}${"<u></u>".repeat(4 - r.b - r.c)}</span></div>`;
-    const botTurn = () => {
-      const pool = B.cands.length ? B.cands : BC_ALL;
-      const g = B.diff === "easy" && Math.random() < 0.45 ? BC_ALL[Math.floor(Math.random() * BC_ALL.length)] : pool[Math.floor(Math.random() * pool.length)];
-      const r = { g, ...bcScore(B.mine, g) };
-      B.bot.unshift(r);
-      B.cands = B.cands.filter((x) => { const s = bcScore(x, g); return s.b === r.b && s.c === r.c; });
-      if (r.b === 4) (B.phase = "end"), (B.winner = "bot"), gamesState().bc.losses++;
-      B.busy = false;
-      paintStack();
-    };
+    // Тек бот сан жасырады; сен табасың. Жеңіл — 3 цифр / 8 мүмкіндік, Қалыпты — 4 цифр / 10 мүмкіндік
+    const LV = { easy: { n: 3, max: 8, name: "Жеңіл · 3 цифр" }, norm: { n: 4, max: 10, name: "Қалыпты · 4 цифр" } };
+    const pickSecret = (n) => { const d = "0123456789".split("").sort(() => Math.random() - 0.5); return d.slice(0, n).join(""); };
+    const B = { lv: "norm", secret: pickSecret(4), input: "", rows: [], end: null, shake: false, fresh: -1 };
+    const L = () => LV[B.lv];
+    const score = (g) => { let b = 0, c = 0; for (let i = 0; i < g.length; i++) g[i] === B.secret[i] ? b++ : B.secret.includes(g[i]) && c++; return { b, c }; };
     pushScreen(
       "Бұқа мен сиыр",
       () => {
-        if (B.phase === "setup")
-          return `<div class="list-pad gm">
-            <div class="gm-h">${icon("lock", "material-icons-outlined")}Өз құпия саныңды ойла</div>
-            <div class="gm-sub">4 цифр, бәрі әр түрлі. Бот оны табуға тырысады — сен оның санын бұрын тап!</div>
-            ${pad4(B.input)}
-            ${keypad(B.input, "Бастау")}
-            <div class="ent-chips" style="justify-content:center;margin-top:14px">${[["easy", "Жеңіл бот"], ["hard", "Қиын бот"]].map(([k, l]) => `<button type="button" class="ent-chip ${B.diff === k ? "on" : ""}" style="--c:var(--primary)" data-bcd="${k}">${l}</button>`).join("")}<button type="button" class="ent-chip" style="--c:var(--primary)" id="bcRand">${icon("casino", "material-icons-outlined")}Кездейсоқ</button></div>
-          </div>`;
-        const end = B.phase === "end";
-        return `<div class="list-pad gm">
-          ${end ? `<div class="bc-end ${B.winner}">${B.winner === "me" ? "Жеңіс! 🎉" : "Бот жеңді 🤖"}<small>Боттың саны: <b>${B.botSecret}</b> · сенің болжамың: ${B.my.length}, боттың: ${B.bot.length}</small></div>` : `<div class="bc-turn">${B.busy ? `${icon("smart_toy", "material-icons-outlined")}Бот ойлануда…` : `${icon("touch_app", "material-icons-outlined")}Сенің кезегің — боттың санын болжа`}</div>`}
-          <div class="bc-cols">
-            <div><div class="bc-ch">Сен → бот <small>${B.my.length}</small></div>${B.my.map(row).join("") || `<div class="sh-empty">Әзірге жоқ</div>`}</div>
-            <div><div class="bc-ch">Бот → сен <small>${B.bot.length}</small></div>${B.bot.map(row).join("") || `<div class="sh-empty">Әзірге жоқ</div>`}</div>
+        const n = L().n, left = L().max - B.rows.length;
+        return `<div class="list-pad gm bc2">
+          <div class="ent-chips" style="justify-content:center">${Object.entries(LV).map(([k, v]) => `<button type="button" class="ent-chip ${B.lv === k ? "on" : ""}" style="--c:#F2A93B" data-bclv="${k}" ${B.rows.length && !B.end ? "disabled" : ""}>${v.name}</button>`).join("")}</div>
+          <div class="bc-secret ${B.end ? "open " + B.end : ""}">
+            <span class="bc-bot">${icon("smart_toy", "material-icons-outlined")}</span>
+            <div class="bc-cards">${[...B.secret].map((d, i) => `<span class="bc-card" style="--d:${i * 0.12}s"><i class="f">?</i><i class="b">${d}</i></span>`).join("")}</div>
+            <small>${B.end === "win" ? `Таптың! ${B.rows.length} әрекетпен 🎉` : B.end === "lose" ? "Мүмкіндік бітті — бот жеңді" : `Бот ${n} әр түрлі цифр жасырды · ${left} мүмкіндік қалды`}</small>
           </div>
-          <button type="button" class="bc-mine" id="bcShow">${icon(B.show ? "visibility" : "visibility_off", "material-icons-outlined")}Менің саным: <b>${B.show ? B.mine : "••••"}</b></button>
-          ${end ? `<button type="button" class="ef-submit" id="bcAgain">Қайта ойнау</button>` : `${pad4(B.input)}${keypad(B.input, "Тексеру")}`}
+          <div class="bc-table">
+            <div class="bc-tr th"><span>#</span><span>Сенің саның</span><span><u class="b"></u>Бұқа</span><span><u class="c"></u>Сиыр</span></div>
+            ${B.rows.map((r, i) => `<div class="bc-tr ${i === B.fresh ? "new" : ""} ${r.b === n ? "win" : ""}"><span>${B.rows.length - i}</span><span class="g">${[...r.g].map((d) => `<b>${d}</b>`).join("")}</span><span><em class="bb" style="--d:.25s">${r.b}</em></span><span><em class="cc" style="--d:.4s">${r.c}</em></span></div>`).join("") || `<div class="bc-empty">${icon("keyboard", "material-icons-outlined")}Төменнен ${n} әр түрлі цифр жазып, «Тексеру» бас</div>`}
+          </div>
+          <div class="bc-legend"><span><u class="b"></u>Бұқа — цифр да, орны да дұрыс</span><span><u class="c"></u>Сиыр — цифр бар, орны басқа</span></div>
         </div>`;
       },
       () => {
-        $$("[data-bcd]").forEach((b) => (b.onclick = () => ((B.diff = b.dataset.bcd), paintStack())));
-        $("#bcRand")?.addEventListener("click", () => ((B.input = BC_ALL[Math.floor(Math.random() * BC_ALL.length)]), paintStack()));
-        $("#bcShow")?.addEventListener("click", () => ((B.show = !B.show), paintStack()));
-        $("#bcAgain")?.addEventListener("click", () => (state.navStack.pop(), openBullsCows()));
+        B.fresh = -1;
+        $$("[data-bclv]").forEach((b) => (b.onclick = () => { B.lv = b.dataset.bclv; B.secret = pickSecret(L().n); B.rows = []; B.input = ""; B.end = null; paintStack(); }));
+        $("#bcAgain")?.addEventListener("click", () => { B.secret = pickSecret(L().n); B.rows = []; B.input = ""; B.end = null; paintStack(); });
         $$("[data-bck]").forEach((b) => (b.onclick = () => {
-          const k = b.dataset.bck;
-          if (B.busy) return;
+          const k = b.dataset.bck, n = L().n;
+          if (B.end) return;
           if (k === "del") B.input = B.input.slice(0, -1);
-          else if (k !== "ok") B.input += k;
-          else if (B.phase === "setup") (B.mine = B.input), (B.input = ""), (B.phase = "play");
+          else if (k !== "ok") { if (B.input.length < n && !B.input.includes(k)) B.input += k; }
           else {
-            const r = { g: B.input, ...bcScore(B.botSecret, B.input) };
-            B.my.unshift(r);
+            const r = { g: B.input, ...score(B.input) };
+            B.rows.unshift(r);
+            B.fresh = 0;
             B.input = "";
-            if (r.b === 4) {
-              B.phase = "end";
-              B.winner = "me";
+            if (r.b === n) {
+              B.end = "win";
               gamesState().bc.wins++;
               paintStack();
-              return gameCoins("bc", 10, "Бұқа мен сиырда ботты жеңдің!");
+              B.fresh = -1;
+              return setTimeout(() => gameCoins("bc", 10, "Бұқа мен сиырда санды таптың!"), 900);
             }
-            B.busy = true;
-            setTimeout(botTurn, 900);
+            if (B.rows.length >= L().max) { B.end = "lose"; gamesState().bc.losses++; }
+            paintStack();
+            B.fresh = -1;
+            return;
           }
           paintStack();
         }));
       },
-      { right: `<button type="button" class="appbar-icon-btn" id="bcRules">${icon("info", "material-icons-outlined")}</button>`, screenCls: "gm-screen" }
+      {
+        right: `<button type="button" class="appbar-icon-btn" id="bcRules">${icon("info", "material-icons-outlined")}</button>`,
+        screenCls: "gm-screen",
+        footer: () => {
+          const n = L().n;
+          if (B.end) return `<div class="sticky-foot"><button type="button" class="ef-submit" style="margin:0" id="bcAgain">${icon("replay")}Жаңа ойын</button></div>`;
+          return `<div class="sticky-foot bc-foot">
+            <div class="bc-in">${Array.from({ length: n }, (_, i) => `<span class="${B.input[i] ? "on" : ""}">${B.input[i] ?? ""}</span>`).join("")}</div>
+            <div class="bc-keys">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "ok"].map((k) => (k === "del" ? `<button type="button" data-bck="del">${icon("backspace", "material-icons-outlined")}</button>` : k === "ok" ? `<button type="button" class="ok" data-bck="ok" ${B.input.length === n ? "" : "disabled"}>Тексеру</button>` : `<button type="button" data-bck="${k}" ${B.input.includes(k) || B.input.length === n ? "disabled" : ""}>${k}</button>`)).join("")}</div>
+          </div>`;
+        },
+      }
     );
     $("#bcRules")?.addEventListener("click", () => gameRules("bc"));
   }
   function gameRules(id) {
     const R = {
-      bc: ["Бұқа мен сиыр", ["Сен де, бот та 4 әр түрлі цифрдан құпия сан ойлайсыңдар", "Кезекпен бір-біріңнің санын болжайсыңдар", "🐂 Бұқа — цифр да, орны да дұрыс", "🐄 Сиыр — цифр бар, бірақ орны басқа", "Мысал: құпия 1234, болжам 1325 → 1 бұқа (1), 2 сиыр (3, 2)", "Бірінші болып 4 бұқа тапқан жеңеді", "Жеңіске +10 монета (күніне 3 рет)"]],
+      bc: ["Бұқа мен сиыр", ["Бот әр түрлі цифрлардан құпия сан жасырады (Жеңіл — 3 цифр, Қалыпты — 4 цифр)", "Сен сан жазасың, бот жауап береді:", "🟢 Бұқа — цифр да, орны да дұрыс", "🟡 Сиыр — цифр бар, бірақ орны басқа", "Мысал: құпия 1234, болжам 1325 → 1 бұқа (1), 2 сиыр (3, 2)", "Мүмкіндік: Жеңіл — 8, Қалыпты — 10. Таптың — жеңдің!", "Жеңіске +10 монета (күніне 3 рет)"]],
       mafia: ["Мафия", ["Жүргізуші (куратор не оқушы) кеш ашады, оқушылар тіркеледі: 6–12 адам", "Рөлдер жасырын таратылады: мафия (6–7 адамда 1, 8–9-да 2, 10+ — 3), дәрігер, комиссар, қалғаны тұрғын", "🌙 Түн: мафия біреуді таңдайды, дәрігер біреуді емдейді, комиссар біреуді тексереді", "☀️ Күн: жүргізуші түнгі нәтижені айтады, талқылау (1–3 мин), кейін дауыс беру", "Ең көп дауыс алған ойыннан шығады, рөлі ашылады; тең болса — ешкім шықпайды", "Мафия жойылса — тұрғындар жеңеді; мафия саны қалғандарға тең болса — мафия жеңеді", "Жеңген команда +20 монета"]],
       hang: ["Дар ағашы", ["Досыңа не тобыңа сөз жібересің (3–14 әріп, санат + кеңес)", "Ол сөзді әріптеп табады: қазақ әліпбиі, 42 әріп", "Қате әріп сайын суреттің бір бөлігі салынады — 7 қатеге дейін", "Сөзді тапса — +5 монета, жіберушіге нәтиже хабарламасы", "Куратор бүкіл топқа сөз жұмбағын жібере алады"]],
     }[id];
@@ -4224,6 +4219,17 @@
     civ: { name: "Тұрғын", icon: "person", color: "#B8C2CC", act: "Күндіз талқылап, мафияны тап", team: "town" },
   };
   const mfMafiaCount = (n) => (n >= 10 ? 3 : n >= 8 ? 2 : 1);
+  /** Дөңгелек үстел: ойыншылар шеңбер бойымен отырады (онлайн мафия үлгісі) */
+  function mfTable({ seats, center, night = false, enter = false, cls = "" }) {
+    const n = seats.length;
+    return `<div class="mf-tbl ${night ? "night" : ""} ${enter ? "enter" : ""} ${cls}">
+      <div class="mf-felt"><div class="mf-center">${center}</div></div>
+      ${seats.map((x, i) => {
+        const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
+        return `<div class="mf-seat ${x.cls || ""}" style="left:${50 + 41 * Math.cos(a)}%;top:${50 + 41 * Math.sin(a)}%;--i:${i}">${x.html}</div>`;
+      }).join("")}
+    </div>`;
+  }
   function openMafiaLobby() {
     pushScreen(
       "Мафия",
@@ -4242,12 +4248,21 @@
           </button>`;
         };
         return `<div class="list-pad gm">
-          <button type="button" class="ef-submit" id="mfNew" style="margin-top:0">${icon("add")}Мафия кешін ашу (сен жүргізесің)</button>
+          <button type="button" class="ef-submit" id="mfNew" style="margin-top:0">${icon(state.mode === "staff" || (wallet().counts.m_host || 0) ? "add" : "lock")}Мафия кешін ашу${state.mode === "staff" ? " (сен жүргізесің)" : ` · билет ×${wallet().counts.m_host || 0}`}</button>
           ${["live", "reg", "ended"].map((st) => { const L = G.mafia.filter((r) => r.status === st); return L.length ? `<div class="t3-sec">${{ live: "Қазір", reg: "Тіркелу", ended: "Өткен кештер" }[st]}</div>${L.map(card).join("")}` : ""; }).join("")}
         </div>`;
       },
       () => {
-        $("#mfNew").onclick = openMafiaForm;
+        $("#mfNew").onclick = () => {
+          if (state.mode === "staff" || (wallet().counts.m_host || 0) > 0) return openMafiaForm();
+          // Оқушы кешті тек «Жүргізуші билетімен» ашады — ол дүкенде сатылады
+          openSheet(`
+            <div class="sheet-handle"></div>
+            <div class="sh-detail">${medal(STUDENT_SHOP.find((x) => x.id === "m_host"), "lg")}<b>Жүргізуші билеті керек</b><small>Мафия кешін куратор ашады. Өзің ашып жүргізгің келсе — дүкеннен «Жүргізуші билетін» ал (400 монета).</small></div>
+            <div class="sheet-actions btn-row"><button type="button" class="btn btn-ghost" id="mtClose">Жабу</button><button type="button" class="btn btn-primary" id="mtShop">Дүкенге өту</button></div>`);
+          $("#mtClose").onclick = closeSheet;
+          $("#mtShop").onclick = () => (closeSheet(), (state.shopCat = "mafia"), openService("shop", "Магазин"));
+        };
         $$("[data-mfroom]").forEach((b) => (b.onclick = () => openMafiaRoom(gamesState().mafia.find((r) => r.id === +b.dataset.mfroom))));
       },
       { right: `<button type="button" class="appbar-icon-btn" id="mfRules">${icon("info", "material-icons-outlined")}</button>` }
@@ -4282,6 +4297,7 @@
         if (!f.title.trim() || !f.groups.size) return toast("Атауы мен топты толтырыңыз", "err");
         const d = new Date(f.when);
         const r = { id: nextId(), title: f.title.trim(), host: { name: myName(), staff }, when: `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`, groups: [...f.groups], max: f.max, min: 6, talk: f.talk, players: [], status: "reg" };
+        if (state.mode !== "staff") (wallet().counts.m_host -= 1) || delete wallet().counts.m_host;
         gamesState().mafia.unshift(r);
         if (r.groups.includes(MOCK.groups[0].id)) notify({ type: "game", title: `Мафия кеші: ${r.title}`, body: `${r.when} · жүргізуші ${r.host.name}. Тіркелу ашық — ${r.max} орын`, go: { service: "games" } });
         closeSheet();
@@ -4302,12 +4318,28 @@
           <div class="mf-hero"><span class="sh-med lg" style="--c:#E2574C">${icon("theater_comedy")}</span><div><b>${r.title}</b><small>${r.when} · жүргізуші: ${r.host.name}</small><small>Талқылау ${r.talk} мин · ${r.players.length}/${r.max} тіркелді</small></div></div>
           <div class="t3-sec">Рөлдер (${n} адамға)</div>
           <div class="mf-roles">${Object.entries(MF_ROLES).map(([k, x]) => `<span style="--c:${x.color}">${icon(x.icon)}<b>${k === "mafia" ? mfMafiaCount(n) : k === "civ" ? n - mfMafiaCount(n) - 2 : 1}</b><small>${x.name}</small></span>`).join("")}</div>
-          <div class="t3-sec">Тіркелгендер · ${r.players.length}</div>
-          <div class="mf-list">${r.players.map((p) => `<span>${avatarHtml(p)}<small>${firstName(p)}</small></span>`).join("") || `<div class="sh-empty">Әзірге ешкім жоқ</div>`}</div>
+          <div class="t3-sec">${r.status === "reg" ? "Үстел басына жиналуда" : "Ойыншылар"} · ${r.players.length}/${r.max}</div>
+          ${mfTable({ seats: Array.from({ length: r.max }, (_, i) => { const p = r.players[i]; return p ? { cls: `on ${p.me ? "me" : ""}`, html: `${avatarHtml(p)}<i class="mf-on"></i><small>${p.me ? "Сен" : p.name.split(" ")[0]}</small>` } : { cls: "empty", html: `<span class="mf-empty">${icon("person_add_alt", "material-icons-outlined")}</span><small>бос</small>` }; }), center: `<b>${r.players.length}/${r.max}</b><small>${r.status === "reg" ? `кемінде ${r.min}` : r.status === "live" ? "ойын жүріп жатыр" : "аяқталды"}</small>`, enter: true, cls: "lobby" })}
+          ${reg && r.status !== "ended" && state.mode !== "staff" ? (() => {
+            const cards = STUDENT_SHOP.filter((x) => x.cat === "mafia" && x.id !== "m_host");
+            r.myCards ||= new Set();
+            return `<div class="t3-sec">Ойынға карточкалар <small style="text-transform:none;font-weight:500">· әр түрінен 1</small></div>
+              <div class="mf-cards">${cards.map((x) => { const n = wallet().counts[x.id] || 0, on = r.myCards.has(x.id); return `<button type="button" class="mf-cc ${on ? "on" : ""} ${n ? "" : "none"}" style="--c:${x.color}" data-mfcard="${x.id}">${icon(x.icon)}<b>${x.name.replace("Рөл картасы: ", "Рөл: ")}</b><small>${n ? `×${n}` : "дүкенде"}</small></button>`; }).join("")}</div>`;
+          })() : ""}
           ${r.status === "ended" ? `<div class="bc-end me">${r.result}</div>` : ""}
         </div>`;
       },
       () => {
+        $$("[data-mfcard]").forEach((b) => (b.onclick = () => {
+          const id = b.dataset.mfcard;
+          if (!(wallet().counts[id] || 0)) return (state.shopCat = "mafia"), openService("shop", "Магазин");
+          if (r.myCards.has(id)) r.myCards.delete(id);
+          else {
+            if (id.startsWith("m_role")) [...r.myCards].filter((k) => k.startsWith("m_role")).forEach((k) => r.myCards.delete(k));
+            r.myCards.add(id);
+          }
+          paintStack();
+        }));
         $("#mfReg")?.addEventListener("click", () => {
           const i = r.players.findIndex((p) => p.me);
           if (i >= 0) (r.players.splice(i, 1), toast("Тіркелуден шықтың"));
@@ -4342,7 +4374,17 @@
     const order = [...r.players].sort((a, b) => rnd(a.id, r.id, 7) - rnd(b.id, r.id, 7));
     const m = mfMafiaCount(order.length);
     const roles = order.map((_, i) => (i < m ? "mafia" : i === m ? "doctor" : i === m + 1 ? "detective" : "civ"));
-    r.game = { day: 1, phase: "roles", players: order.map((p, i) => ({ ...p, role: roles[i], alive: true })), log: [], pick: null, last: null, check: null, winner: null };
+    // Таңдалған карточкалар ойын басталғанда жұмсалады
+    const cards = new Set(state.mode === "staff" ? [] : [...(r.myCards || [])].filter((id) => (wallet().counts[id] || 0) > 0));
+    cards.forEach((id) => (wallet().counts[id] -= 1) || delete wallet().counts[id]);
+    // Рөл картасы: мүмкіндік 3 есе (макетте 75%)
+    const meIdx = order.findIndex((p) => p.me);
+    const want = cards.has("m_role_maf") ? "mafia" : cards.has("m_role_det") ? "detective" : null;
+    if (meIdx >= 0 && want && roles[meIdx] !== want && Math.random() < 0.75) {
+      const j = roles.indexOf(want);
+      [roles[meIdx], roles[j]] = [roles[j], roles[meIdx]];
+    }
+    r.game = { day: 1, phase: "roles", players: order.map((p, i) => ({ ...p, role: roles[i], alive: true })), log: [], pick: null, last: null, check: null, winner: null, cards, votes: null, entered: false };
     return r.game;
   }
   function openMafiaGame(r, asHost) {
@@ -4373,6 +4415,15 @@
       const det = alive().find((p) => p.role === "detective");
       if (det?.me && myAct) S.check = { name: S.players.find((p) => p.id === myAct).name, mafia: S.players.find((p) => p.id === myAct).role === "mafia" };
       const v = S.players.find((p) => p.id === kill);
+      if (det && !det.me && me?.role === "mafia" && S.cards.has("m_mask") && Math.random() < 0.5) (S.cards.delete("m_mask"), S.log.unshift("🎭 Комиссар сені тексерді — бетперде «мафия емес» деп көрсетті (тек саған көрінеді)"));
+      if (v.me && S.cards.has("m_vest") && kill !== save) {
+        S.cards.delete("m_vest");
+        S.last = { saved: true, text: "Түнде мафия шабуыл жасады, бірақ бронежилет сақтап қалды 🦺" };
+        S.log.unshift(`${S.day}-түн: ${S.last.text}`);
+        S.pick = null;
+        S.phase = "morning";
+        return;
+      }
       if (kill === save) S.last = { saved: true, text: "Түнде мафия біреуге шабуыл жасады, бірақ дәрігер құтқарып қалды 💉" };
       else (v.alive = false), (S.last = { text: `Түнде ${v.name} ойыннан шықты. Ол — ${MF_ROLES[v.role].name} еді` });
       S.log.unshift(`${S.day}-түн: ${S.last.text}`);
@@ -4387,6 +4438,10 @@
         const t = p.me && S.pick ? S.pick : randOf(alive().filter((x) => x.id !== p.id && (p.role !== "mafia" || x.role !== "mafia"))).id;
         votes[t] = (votes[t] || 0) + 1;
       });
+      const meV = alive().find((p) => p.me);
+      let alibi = false;
+      if (meV && S.cards.has("m_alibi") && Object.entries(votes).sort((a, b) => b[1] - a[1])[0]?.[0] == meV.id) (S.cards.delete("m_alibi"), delete votes[meV.id], (alibi = true));
+      S.votes = { ...votes };
       const top = Object.entries(votes).sort((a, b) => b[1] - a[1]);
       if (top.length > 1 && top[0][1] === top[1][1]) S.last = { text: `Дауыс тең бөлінді (${top[0][1]}:${top[1][1]}) — бүгін ешкім шықпайды` };
       else {
@@ -4394,6 +4449,7 @@
         v.alive = false;
         S.last = { text: `${v.name} ${top[0][1]} дауыспен шығарылды. Ол — ${MF_ROLES[v.role].name} еді` };
       }
+      if (alibi) S.last.text = `⚖️ Алиби! Саған берілген дауыстар есептелмеді. ${S.last.text}`;
       S.log.unshift(`${S.day}-күн: ${S.last.text}`);
       S.pick = null;
       S.phase = "verdict";
@@ -4405,16 +4461,23 @@
         const me = meP();
         const night = S.phase === "night";
         const canPick = (S.phase === "night" && me?.alive && me.role !== "civ") || (S.phase === "vote" && me?.alive);
-        const grid = `<div class="mf-grid">${S.players.map((p) => {
-          const showRole = asHost || !p.alive || S.phase === "end" || (me?.role === "mafia" && p.role === "mafia") || p.me;
-          const sel = S.pick === p.id;
-          const pickable = canPick && p.alive && !p.me && !(S.phase === "night" && me.role === "mafia" && p.role === "mafia");
-          return `<button type="button" class="mf-p ${p.alive ? "" : "dead"} ${sel ? "sel" : ""}" ${pickable || (canPick && p.me && me.role === "doctor" && night) ? `data-mfp="${p.id}"` : "disabled"}>
-            ${avatarHtml(p)}${!p.alive ? `<i class="mf-x">${icon("close")}</i>` : ""}
-            <small>${p.me && !asHost ? "Сен" : p.name.split(" ")[0]}</small>
-            ${showRole ? `<em style="--c:${MF_ROLES[p.role].color}">${MF_ROLES[p.role].name}</em>` : ""}
-          </button>`;
-        }).join("")}</div>`;
+        const centerTxt = { roles: ["🎭", "Рөлдер таратылды"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", "Таң атты"], talk: ["💬", "Талқылау"], vote: ["🗳", "Дауыс беру"], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Тұрғындар жеңді" : "Мафия жеңді"] }[S.phase];
+        const talkers = S.phase === "talk" ? alive().filter((p) => !p.me).slice(0, 2).map((p) => p.id) : [];
+        const grid = mfTable({
+          night,
+          enter: !S.entered,
+          center: `<span class="mf-ce">${centerTxt[0]}</span><b>${centerTxt[1]}</b><small>${alive().length} тірі · ${S.players.filter((p) => p.role === "mafia" && p.alive).length && (asHost || S.phase === "end") ? `${S.players.filter((p) => p.role === "mafia" && p.alive).length} мафия` : `${S.day}-раунд`}</small>`,
+          seats: S.players.map((p) => {
+            const showRole = asHost || !p.alive || S.phase === "end" || (me?.role === "mafia" && p.role === "mafia") || p.me;
+            const sel = S.pick === p.id;
+            const pickable = canPick && p.alive && (!p.me || (night && me.role === "doctor")) && !(night && me.role === "mafia" && p.role === "mafia");
+            const v = S.phase === "verdict" && S.votes?.[p.id];
+            return {
+              cls: `${p.alive ? "on" : "dead"} ${p.me ? "me" : ""} ${sel ? (night ? "sel night" : "sel") : ""} ${talkers.includes(p.id) ? "talk" : ""} ${night && !p.me ? "sleep" : ""}`,
+              html: `<button type="button" class="mf-sb" ${pickable ? `data-mfp="${p.id}"` : "disabled"}>${avatarHtml(p)}${!p.alive ? `<i class="mf-x">${icon("close")}</i>` : ""}${v ? `<i class="mf-v">${v}</i>` : ""}</button><small>${p.me && !asHost ? "Сен" : p.name.split(" ")[0]}</small>${showRole ? `<em style="--c:${MF_ROLES[p.role].color}">${MF_ROLES[p.role].name}</em>` : ""}`,
+            };
+          }),
+        });
         const banner = { roles: ["🎭", "Рөлдер таратылды"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", `${S.day}-таң`], talk: ["💬", `${S.day}-күн · талқылау`], vote: ["🗳", `${S.day}-күн · дауыс беру`], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Бейбіт тұрғындар жеңді!" : "Мафия жеңді!"] }[S.phase];
         let action = "";
         if (asHost) {
@@ -4437,6 +4500,7 @@
         </div>`;
       },
       () => {
+        S.entered = true;
         const auto = (fn, ms = 1600) => setTimeout(() => { if (state.navStack.length && !asHost) (fn(), paintStack()); }, ms);
         $("#mfFlip")?.addEventListener("click", () => {
           if (S.flip) return;
