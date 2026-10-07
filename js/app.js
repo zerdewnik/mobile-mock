@@ -3952,6 +3952,525 @@
     }));
   }
 
+  /* ============================================================
+     ОЙЫНДАР: Бұқа мен сиыр (ботпен) · Мафия (топпен, тіркелу, жүргізуші) · Дар ағашы (достармен)
+     ============================================================ */
+  function gamesState() {
+    if (!MOCK.games) {
+      const st = MOCK.groups[0].students;
+      const me = TOUR_ME();
+      MOCK.games = {
+        bc: { wins: 0, losses: 0, today: 0 },
+        hang: {
+          incoming: [
+            { id: 1, from: st[1], word: "ТАРИХ", hint: "Өткен оқиғаларды зерттейтін ғылым", cat: "Тарих" },
+            { id: 2, from: st[4], word: "ФОТОСИНТЕЗ", hint: "Өсімдік жарықпен қорек жасайды", cat: "Биология" },
+          ],
+          sent: [{ to: st[2].name, word: "ХАНДЫҚ", status: "шешті · 2 қате" }],
+          today: 0,
+        },
+        mafia: [
+          { id: 1, title: "Жұма кешкі мафия", host: { name: "Диана I4U", staff: true }, when: "Бүгін 19:00", groups: [MOCK.groups[0].id], max: 10, min: 6, talk: 2, players: [me, ...st.slice(0, 8)], status: "live" },
+          { id: 2, title: "Сенбі мафиясы", host: { name: st[2].name, staff: false }, when: "Сенбі 18:00", groups: [MOCK.groups[0].id], max: 12, min: 6, talk: 2, players: st.slice(3, 7), status: "reg" },
+          { id: 3, title: "Қыркүйек мафиясы", host: { name: "Диана I4U", staff: true }, when: "27.09 19:00", groups: [MOCK.groups[0].id], max: 10, min: 6, talk: 2, players: st.slice(0, 9), status: "ended", result: "Бейбіт тұрғындар жеңді" },
+        ],
+      };
+    }
+    return MOCK.games;
+  }
+  /** Күніне 3 жеңіске дейін монета (ойын оқудан маңызды болмасын) */
+  function gameCoins(key, n, why) {
+    const G = gamesState();
+    G.daily ||= {};
+    G.daily[key] = (G.daily[key] || 0) + 1;
+    if (G.daily[key] <= 3) earnCoins(n, why);
+    else toast("Бүгінгі ойын монетасы лимитіне жеттің (3 жеңіс)");
+  }
+  const GAMES = [
+    { id: "bc", name: "Бұқа мен сиыр", icon: "pin", color: "#F2A93B", mode: "Ботпен", desc: "Боттың 4 таңбалы құпия санын одан бұрын тап" },
+    { id: "mafia", name: "Мафия", icon: "theater_comedy", color: "#E2574C", mode: "Топпен · жүргізуші", desc: "Тіркел, рөліңді ал: мафия, дәрігер, комиссар, тұрғын" },
+    { id: "hang", name: "Дар ағашы", icon: "spellcheck", color: "#4F9BFF", mode: "Достармен", desc: "Досыңа сөз жібер не оның сөзін әріптеп тап" },
+  ];
+  function openGames() {
+    pushScreen(
+      "Ойындар",
+      () => {
+        const G = gamesState();
+        const live = G.mafia.filter((r) => r.status !== "ended");
+        return `<div class="list-pad gm">
+          ${GAMES.map((g) => `
+            <button type="button" class="gm-card" style="--c:${g.color}" data-game="${g.id}">
+              <span class="sh-med" style="--c:${g.color}">${icon(g.icon)}</span>
+              <span class="gm-c"><em>${g.mode}</em><b>${g.name}</b><small>${g.desc}</small>
+                <i>${g.id === "bc" ? `Жеңіс ${G.bc.wins} · Жеңіліс ${G.bc.losses}` : g.id === "mafia" ? `${live.length} кеш · тіркелу ашық` : `${G.hang.incoming.length} сөз сені күтіп тұр`}</i></span>
+              ${icon("chevron_right")}
+            </button>`).join("")}
+          <div class="t3-note">${icon("savings", "material-icons-outlined")}<span>Жеңіске монета: Бұқа мен сиыр +10 · Дар ағашы +5 · Мафияда команда жеңсе +20. Әр ойыннан күніне ең көбі 3 рет.</span></div>
+        </div>`;
+      },
+      () => $$("[data-game]").forEach((b) => (b.onclick = () => ({ bc: openBullsCows, mafia: openMafiaLobby, hang: openHangHub })[b.dataset.game]()))
+    );
+  }
+
+  /* —— Бұқа мен сиыр ——
+     Екеуі де 4 әр түрлі цифрдан құпия сан ойлайды. Кезекпен болжайды:
+     🐂 бұқа — цифр да, орны да дұрыс; 🐄 сиыр — цифр бар, орны басқа. Бірінші 4 бұқа тапқан жеңеді.
+     Бот: жеңіл — кейде кездейсоқ болжайды; қиын — әр жолы барлық жауапқа сай келетін нұсқаны таңдайды */
+  const BC_ALL = (() => {
+    const out = [];
+    for (let n = 0; n < 10000; n++) {
+      const s = String(n).padStart(4, "0");
+      if (new Set(s).size === 4) out.push(s);
+    }
+    return out;
+  })();
+  const bcScore = (secret, g) => {
+    let b = 0, c = 0;
+    for (let i = 0; i < 4; i++) g[i] === secret[i] ? b++ : secret.includes(g[i]) && c++;
+    return { b, c };
+  };
+  function openBullsCows() {
+    const B = { diff: "hard", mine: "", input: "", phase: "setup", my: [], bot: [], cands: [...BC_ALL], botSecret: BC_ALL[Math.floor(Math.random() * BC_ALL.length)], winner: null, show: false, busy: false };
+    const pad4 = (s) => `<div class="bc-in">${[0, 1, 2, 3].map((i) => `<span class="${s[i] ? "on" : ""}">${s[i] ?? ""}</span>`).join("")}</div>`;
+    const keypad = (s, okLabel) => `<div class="bc-keys">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "ok"]
+      .map((k) => (k === "del" ? `<button type="button" data-bck="del">${icon("backspace", "material-icons-outlined")}</button>` : k === "ok" ? `<button type="button" class="ok" data-bck="ok" ${s.length === 4 ? "" : "disabled"}>${okLabel}</button>` : `<button type="button" data-bck="${k}" ${s.includes(k) || s.length === 4 ? "disabled" : ""}>${k}</button>`))
+      .join("")}</div>`;
+    const row = (r) => `<div class="bc-row ${r.b === 4 ? "win" : ""}"><b>${r.g}</b><span class="bc-res"><i class="bb">${r.b}</i>бұқа <i class="cc">${r.c}</i>сиыр</span><span class="bc-dots">${"<u class=b></u>".repeat(r.b)}${"<u class=c></u>".repeat(r.c)}${"<u></u>".repeat(4 - r.b - r.c)}</span></div>`;
+    const botTurn = () => {
+      const pool = B.cands.length ? B.cands : BC_ALL;
+      const g = B.diff === "easy" && Math.random() < 0.45 ? BC_ALL[Math.floor(Math.random() * BC_ALL.length)] : pool[Math.floor(Math.random() * pool.length)];
+      const r = { g, ...bcScore(B.mine, g) };
+      B.bot.unshift(r);
+      B.cands = B.cands.filter((x) => { const s = bcScore(x, g); return s.b === r.b && s.c === r.c; });
+      if (r.b === 4) (B.phase = "end"), (B.winner = "bot"), gamesState().bc.losses++;
+      B.busy = false;
+      paintStack();
+    };
+    pushScreen(
+      "Бұқа мен сиыр",
+      () => {
+        if (B.phase === "setup")
+          return `<div class="list-pad gm">
+            <div class="gm-h">${icon("lock", "material-icons-outlined")}Өз құпия саныңды ойла</div>
+            <div class="gm-sub">4 цифр, бәрі әр түрлі. Бот оны табуға тырысады — сен оның санын бұрын тап!</div>
+            ${pad4(B.input)}
+            ${keypad(B.input, "Бастау")}
+            <div class="ent-chips" style="justify-content:center;margin-top:14px">${[["easy", "Жеңіл бот"], ["hard", "Қиын бот"]].map(([k, l]) => `<button type="button" class="ent-chip ${B.diff === k ? "on" : ""}" style="--c:var(--primary)" data-bcd="${k}">${l}</button>`).join("")}<button type="button" class="ent-chip" style="--c:var(--primary)" id="bcRand">${icon("casino", "material-icons-outlined")}Кездейсоқ</button></div>
+          </div>`;
+        const end = B.phase === "end";
+        return `<div class="list-pad gm">
+          ${end ? `<div class="bc-end ${B.winner}">${B.winner === "me" ? "Жеңіс! 🎉" : "Бот жеңді 🤖"}<small>Боттың саны: <b>${B.botSecret}</b> · сенің болжамың: ${B.my.length}, боттың: ${B.bot.length}</small></div>` : `<div class="bc-turn">${B.busy ? `${icon("smart_toy", "material-icons-outlined")}Бот ойлануда…` : `${icon("touch_app", "material-icons-outlined")}Сенің кезегің — боттың санын болжа`}</div>`}
+          <div class="bc-cols">
+            <div><div class="bc-ch">Сен → бот <small>${B.my.length}</small></div>${B.my.map(row).join("") || `<div class="sh-empty">Әзірге жоқ</div>`}</div>
+            <div><div class="bc-ch">Бот → сен <small>${B.bot.length}</small></div>${B.bot.map(row).join("") || `<div class="sh-empty">Әзірге жоқ</div>`}</div>
+          </div>
+          <button type="button" class="bc-mine" id="bcShow">${icon(B.show ? "visibility" : "visibility_off", "material-icons-outlined")}Менің саным: <b>${B.show ? B.mine : "••••"}</b></button>
+          ${end ? `<button type="button" class="ef-submit" id="bcAgain">Қайта ойнау</button>` : `${pad4(B.input)}${keypad(B.input, "Тексеру")}`}
+        </div>`;
+      },
+      () => {
+        $$("[data-bcd]").forEach((b) => (b.onclick = () => ((B.diff = b.dataset.bcd), paintStack())));
+        $("#bcRand")?.addEventListener("click", () => ((B.input = BC_ALL[Math.floor(Math.random() * BC_ALL.length)]), paintStack()));
+        $("#bcShow")?.addEventListener("click", () => ((B.show = !B.show), paintStack()));
+        $("#bcAgain")?.addEventListener("click", () => (state.navStack.pop(), openBullsCows()));
+        $$("[data-bck]").forEach((b) => (b.onclick = () => {
+          const k = b.dataset.bck;
+          if (B.busy) return;
+          if (k === "del") B.input = B.input.slice(0, -1);
+          else if (k !== "ok") B.input += k;
+          else if (B.phase === "setup") (B.mine = B.input), (B.input = ""), (B.phase = "play");
+          else {
+            const r = { g: B.input, ...bcScore(B.botSecret, B.input) };
+            B.my.unshift(r);
+            B.input = "";
+            if (r.b === 4) {
+              B.phase = "end";
+              B.winner = "me";
+              gamesState().bc.wins++;
+              paintStack();
+              return gameCoins("bc", 10, "Бұқа мен сиырда ботты жеңдің!");
+            }
+            B.busy = true;
+            setTimeout(botTurn, 900);
+          }
+          paintStack();
+        }));
+      },
+      { right: `<button type="button" class="appbar-icon-btn" id="bcRules">${icon("info", "material-icons-outlined")}</button>`, screenCls: "gm-screen" }
+    );
+    $("#bcRules")?.addEventListener("click", () => gameRules("bc"));
+  }
+  function gameRules(id) {
+    const R = {
+      bc: ["Бұқа мен сиыр", ["Сен де, бот та 4 әр түрлі цифрдан құпия сан ойлайсыңдар", "Кезекпен бір-біріңнің санын болжайсыңдар", "🐂 Бұқа — цифр да, орны да дұрыс", "🐄 Сиыр — цифр бар, бірақ орны басқа", "Мысал: құпия 1234, болжам 1325 → 1 бұқа (1), 2 сиыр (3, 2)", "Бірінші болып 4 бұқа тапқан жеңеді", "Жеңіске +10 монета (күніне 3 рет)"]],
+      mafia: ["Мафия", ["Жүргізуші (куратор не оқушы) кеш ашады, оқушылар тіркеледі: 6–12 адам", "Рөлдер жасырын таратылады: мафия (6–7 адамда 1, 8–9-да 2, 10+ — 3), дәрігер, комиссар, қалғаны тұрғын", "🌙 Түн: мафия біреуді таңдайды, дәрігер біреуді емдейді, комиссар біреуді тексереді", "☀️ Күн: жүргізуші түнгі нәтижені айтады, талқылау (1–3 мин), кейін дауыс беру", "Ең көп дауыс алған ойыннан шығады, рөлі ашылады; тең болса — ешкім шықпайды", "Мафия жойылса — тұрғындар жеңеді; мафия саны қалғандарға тең болса — мафия жеңеді", "Жеңген команда +20 монета"]],
+      hang: ["Дар ағашы", ["Досыңа не тобыңа сөз жібересің (3–14 әріп, санат + кеңес)", "Ол сөзді әріптеп табады: қазақ әліпбиі, 42 әріп", "Қате әріп сайын суреттің бір бөлігі салынады — 7 қатеге дейін", "Сөзді тапса — +5 монета, жіберушіге нәтиже хабарламасы", "Куратор бүкіл топқа сөз жұмбағын жібере алады"]],
+    }[id];
+    openSheet(`<div class="sheet-handle"></div><div class="ex-title">${R[0]} — ережесі</div><div class="ex-block"><ol>${R[1].map((x) => `<li>${x}</li>`).join("")}</ol></div><div class="sheet-actions"><button type="button" class="btn btn-ghost" id="grClose" style="width:100%">Түсінікті</button></div>`);
+    $("#grClose").onclick = closeSheet;
+  }
+
+  /* —— Дар ағашы —— адамдармен: сөзді дос/куратор жібереді */
+  const KZ_ABC = "АӘБВГҒДЕЁЖЗИЙКҚЛМНҢОӨПРСТУҰҮФХҺЦЧШЩЪЫІЬЭЮЯ".split("");
+  const hangSvg = (n) => `<svg class="hg-svg" viewBox="0 0 200 180" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 170h110M50 170V14h80v22" stroke="#6c6f84" stroke-width="7"/>
+      ${n > 0 ? `<circle cx="130" cy="54" r="17" stroke="#fff" stroke-width="6"/>` : ""}
+      ${n > 1 ? `<path d="M130 71v46" stroke="#fff" stroke-width="6"/>` : ""}
+      ${n > 2 ? `<path d="M130 82l-22 20" stroke="#fff" stroke-width="6"/>` : ""}
+      ${n > 3 ? `<path d="M130 82l22 20" stroke="#fff" stroke-width="6"/>` : ""}
+      ${n > 4 ? `<path d="M130 117l-20 30" stroke="#fff" stroke-width="6"/>` : ""}
+      ${n > 5 ? `<path d="M130 117l20 30" stroke="#fff" stroke-width="6"/>` : ""}
+      ${n > 6 ? `<path d="M122 48l6 6M128 48l-6 6M132 48l6 6M138 48l-6 6" stroke="#E2574C" stroke-width="3"/>` : ""}
+    </svg>`;
+  function openHangHub() {
+    pushScreen(
+      "Дар ағашы",
+      () => {
+        const H = gamesState().hang;
+        return `<div class="list-pad gm">
+          <button type="button" class="ef-submit" id="hgSend" style="margin-top:0">${icon("send", "material-icons-outlined")}${state.mode === "staff" ? "Топқа сөз жұмбағын жіберу" : "Досыңа сөз жіберу"}</button>
+          <div class="t3-sec">Сені күтіп тұрған сөздер · ${H.incoming.length}</div>
+          ${H.incoming.length ? H.incoming.map((x) => `<button type="button" class="hg-inc" data-hgplay="${x.id}">${avatarHtml(x.from)}<span><b>${x.from.name}</b><small>${x.cat} · ${x.word.length} әріп${x.group ? " · бүкіл топқа" : ""}</small></span><em>Ойнау</em></button>`).join("") : `<div class="sh-empty">Әзірге жоқ — досыңнан сөз сұра</div>`}
+          <div class="t3-sec">Мен жіберген сөздер</div>
+          ${H.sent.length ? H.sent.map((x) => `<div class="hg-inc sent"><span class="hg-w">${x.word}</span><span><b>${x.to}</b><small>${x.status}</small></span></div>`).join("") : `<div class="sh-empty">Әзірге жоқ</div>`}
+        </div>`;
+      },
+      () => {
+        $("#hgSend").onclick = openHangSend;
+        $$("[data-hgplay]").forEach((b) => (b.onclick = () => playHang(gamesState().hang.incoming.find((x) => x.id === +b.dataset.hgplay))));
+      },
+      { right: `<button type="button" class="appbar-icon-btn" id="hgRules">${icon("info", "material-icons-outlined")}</button>` }
+    );
+    $("#hgRules")?.addEventListener("click", () => gameRules("hang"));
+  }
+  function openHangSend() {
+    const staff = state.mode === "staff";
+    const f = { to: null, word: "", hint: "", cat: "Тарих" };
+    const draw = () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>${staff ? "Топқа сөз жұмбағы" : "Досыңа сөз жіберу"}</span><button type="button" id="hsClose">${icon("close")}</button></div>
+        <div class="ef-label">${staff ? "Топ" : "Кімге"}</div>
+        <div class="ent-chips hs-to">${(staff ? visibleGroups() : MOCK.groups[0].students.slice(0, 12)).map((x) => `<button type="button" class="ent-chip ${f.to === x.id ? "on" : ""}" style="--c:var(--primary)" data-hsto="${x.id}">${staff ? x.name : firstName(x)}</button>`).join("")}</div>
+        <div class="ef-label">Сөз <i>*</i> <small class="tf-hint">· 3–14 қазақ әрпі</small></div>
+        <input class="ef-input hs-word" id="hsWord" value="${f.word}" placeholder="Мысалы: ДАЛА" maxlength="14" />
+        <div class="ef-label">Санат</div>
+        <div class="ent-chips">${["Тарих", "Биология", "География", "Ағылшын", "Жалпы"].map((c) => `<button type="button" class="ent-chip ${f.cat === c ? "on" : ""}" style="--c:var(--primary)" data-hscat="${c}">${c}</button>`).join("")}</div>
+        <div class="ef-label">Кеңес</div>
+        <input class="ef-input" id="hsHint" value="${f.hint}" placeholder="Сөзді табуға көмектесетін бір сөйлем" />
+        ${staff ? `<div class="tf-sum">${icon("emoji_events", "material-icons-outlined")}Алғашқы 3 шешкен оқушыға +5 монета</div>` : ""}
+        <button type="button" class="ef-submit" id="hsGo">Жіберу</button>`, { tall: true });
+      const keep = () => ((f.word = $("#hsWord").value), (f.hint = $("#hsHint").value));
+      $("#hsClose").onclick = closeSheet;
+      $$("[data-hsto]").forEach((b) => (b.onclick = () => (keep(), (f.to = +b.dataset.hsto), draw())));
+      $$("[data-hscat]").forEach((b) => (b.onclick = () => (keep(), (f.cat = b.dataset.hscat), draw())));
+      $("#hsWord").oninput = (e) => (e.target.value = e.target.value.toUpperCase().replace(/[^А-ЯӘҒҚҢӨҰҮҺІЁ]/g, ""));
+      $("#hsGo").onclick = () => {
+        keep();
+        const w = f.word.toUpperCase();
+        if (!f.to) return toast(staff ? "Топты таңдаңыз" : "Досыңды таңда", "err");
+        if (w.length < 3 || [...w].some((ch) => !KZ_ABC.includes(ch))) return toast("Сөз 3–14 қазақ әрпінен тұруы керек", "err");
+        const to = staff ? MOCK.groups.find((g) => g.id === f.to) : MOCK.groups[0].students.find((s) => s.id === f.to);
+        gamesState().hang.sent.unshift({ to: to.name, word: w, status: staff ? "топқа жіберілді · 0 шешті" : "шешіп жатыр…" });
+        closeSheet();
+        toast(`Жіберілді — ${staff ? `${to.name} тобына` : firstName(to)} хабарлама кетті`);
+        paintStack();
+      };
+    };
+    draw();
+  }
+  function playHang(x) {
+    const P = { got: new Set(), wrong: 0, max: 7, end: null };
+    const letters = [...new Set(x.word)];
+    pushScreen(
+      "Дар ағашы",
+      () => {
+        const masked = [...x.word].map((ch) => `<span class="${P.got.has(ch) || P.end ? "on" : ""} ${P.end === "lose" && !P.got.has(ch) ? "miss" : ""}">${P.got.has(ch) || P.end ? ch : ""}</span>`).join("");
+        return `<div class="list-pad gm">
+          <div class="hg-from">${avatarHtml(x.from)}<span><b>${x.from.name}</b><small>${x.cat} · ${x.word.length} әріп</small></span><em>${P.max - P.wrong} мүмкіндік</em></div>
+          <div class="hg-stage">${hangSvg(P.wrong)}</div>
+          <div class="hg-word">${masked}</div>
+          ${x.hint ? `<div class="hg-hint">${icon("lightbulb", "material-icons-outlined")}${x.hint}</div>` : ""}
+          ${P.end ? `<div class="bc-end ${P.end === "win" ? "me" : "bot"}">${P.end === "win" ? "Таптың! 🎉" : "Бұл жолы таппадың"}<small>${x.from.name} нәтижені хабарламадан көреді</small></div><button type="button" class="ef-submit" id="hgBack">Ойындарға оралу</button>` : `<div class="hg-keys">${KZ_ABC.map((ch) => `<button type="button" class="${P.got.has(ch) ? "ok" : ""} ${P.used?.has(ch) && !P.got.has(ch) ? "no" : ""}" data-hgk="${ch}" ${P.used?.has(ch) ? "disabled" : ""}>${ch}</button>`).join("")}</div>`}
+        </div>`;
+      },
+      () => {
+        $("#hgBack")?.addEventListener("click", () => (state.navStack.pop(), paintStack()));
+        $$("[data-hgk]").forEach((b) => (b.onclick = () => {
+          const ch = b.dataset.hgk;
+          (P.used ||= new Set()).add(ch);
+          if (x.word.includes(ch)) P.got.add(ch);
+          else P.wrong++;
+          if (letters.every((l) => P.got.has(l))) P.end = "win";
+          else if (P.wrong >= P.max) P.end = "lose";
+          if (P.end) {
+            const H = gamesState().hang;
+            H.incoming = H.incoming.filter((y) => y !== x);
+            paintStack();
+            if (P.end === "win") gameCoins("hang", 5, "Дар ағашында сөзді таптың!");
+            return;
+          }
+          paintStack();
+        }));
+      }
+    );
+  }
+
+  /* —— Мафия —— жүргізуші кеш ашады → оқушылар тіркеледі (6–12) → рөлдер → түн/күн циклы */
+  const MF_ROLES = {
+    mafia: { name: "Мафия", icon: "theater_comedy", color: "#E2574C", act: "Түнде бір адамды таңдайсыңдар", team: "mafia" },
+    doctor: { name: "Дәрігер", icon: "medical_services", color: "#5CB36D", act: "Түнде бір адамды емдейсің (өзіңді де)", team: "town" },
+    detective: { name: "Комиссар", icon: "search", color: "#4F9BFF", act: "Түнде бір адамның мафия екенін тексересің", team: "town" },
+    civ: { name: "Тұрғын", icon: "person", color: "#B8C2CC", act: "Күндіз талқылап, мафияны тап", team: "town" },
+  };
+  const mfMafiaCount = (n) => (n >= 10 ? 3 : n >= 8 ? 2 : 1);
+  function openMafiaLobby() {
+    pushScreen(
+      "Мафия",
+      () => {
+        const G = gamesState();
+        const me = TOUR_ME();
+        const card = (r) => {
+          const reg = r.players.some((p) => p.me);
+          const host = r.host.name === myName() && (state.mode === "staff" ? r.host.staff : !r.host.staff);
+          return `<button type="button" class="mf-room ${r.status}" data-mfroom="${r.id}">
+            <div class="mf-top"><span class="mf-st ${r.status}">${{ reg: "Тіркелу ашық", live: "Ойын жүріп жатыр", ended: "Аяқталды" }[r.status]}</span>${reg ? `<span class="mf-st me">Тіркелдің</span>` : ""}${host ? `<span class="mf-st host">Сен жүргізесің</span>` : ""}</div>
+            <b>${r.title}</b>
+            <small>${icon("event", "material-icons-outlined")}${r.when} · жүргізуші: ${r.host.name}${r.host.staff ? " (куратор)" : ""}</small>
+            <div class="mf-pl">${r.players.slice(0, 7).map((p) => avatarHtml(p)).join("")}${r.players.length > 7 ? `<i>+${r.players.length - 7}</i>` : ""}<span>${r.players.length}/${r.max}</span></div>
+            ${r.result ? `<small class="mf-res">${icon("emoji_events", "material-icons-outlined")}${r.result}</small>` : ""}
+          </button>`;
+        };
+        return `<div class="list-pad gm">
+          <button type="button" class="ef-submit" id="mfNew" style="margin-top:0">${icon("add")}Мафия кешін ашу (сен жүргізесің)</button>
+          ${["live", "reg", "ended"].map((st) => { const L = G.mafia.filter((r) => r.status === st); return L.length ? `<div class="t3-sec">${{ live: "Қазір", reg: "Тіркелу", ended: "Өткен кештер" }[st]}</div>${L.map(card).join("")}` : ""; }).join("")}
+        </div>`;
+      },
+      () => {
+        $("#mfNew").onclick = openMafiaForm;
+        $$("[data-mfroom]").forEach((b) => (b.onclick = () => openMafiaRoom(gamesState().mafia.find((r) => r.id === +b.dataset.mfroom))));
+      },
+      { right: `<button type="button" class="appbar-icon-btn" id="mfRules">${icon("info", "material-icons-outlined")}</button>` }
+    );
+    $("#mfRules")?.addEventListener("click", () => gameRules("mafia"));
+  }
+  function openMafiaForm() {
+    const staff = state.mode === "staff";
+    const f = { title: "", when: "2026-10-09T19:00", groups: new Set([visibleGroups()[0]?.id || MOCK.groups[0].id]), max: 10, talk: 2 };
+    const draw = () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>Мафия кеші</span><button type="button" id="mfClose">${icon("close")}</button></div>
+        <div class="ef-label">Атауы <i>*</i></div><input class="ef-input" id="mfTitle" value="${f.title}" placeholder="Мысалы: Жұма кешкі мафия" />
+        <div class="ef-label">Басталуы <i>*</i></div><input class="ef-input" type="datetime-local" id="mfWhen" value="${f.when}" />
+        <div class="ef-label">Кімдер тіркеле алады</div>
+        <div class="ent-chips">${(staff ? visibleGroups() : [MOCK.groups[0]]).map((g) => `<button type="button" class="ent-chip ${f.groups.has(g.id) ? "on" : ""}" style="--c:var(--primary)" data-mfg="${g.id}">${g.name}</button>`).join("")}</div>
+        <div class="ef-label">Ең көп қатысушы</div>
+        <div class="ent-chips">${[6, 8, 10, 12].map((n) => `<button type="button" class="ent-chip ${f.max === n ? "on" : ""}" style="--c:var(--primary)" data-mfmax="${n}">${n} адам</button>`).join("")}</div>
+        <div class="tf-sum">${icon("theater_comedy", "material-icons-outlined")}Рөлдер: мафия ${mfMafiaCount(f.max)}, дәрігер 1, комиссар 1, тұрғын ${f.max - mfMafiaCount(f.max) - 2} (толық жиналса). Кемінде 6 адам.</div>
+        <div class="ef-label">Күндізгі талқылау</div>
+        <div class="ent-chips">${[1, 2, 3].map((n) => `<button type="button" class="ent-chip ${f.talk === n ? "on" : ""}" style="--c:var(--primary)" data-mftalk="${n}">${n} мин</button>`).join("")}</div>
+        <div class="tf-sum">${icon("record_voice_over", "material-icons-outlined")}Жүргізуші — сен. Сен ойнамайсың: фазаларды ауыстырасың, рөлдерді көресің.</div>
+        <button type="button" class="ef-submit" id="mfGo">Тіркелуді ашу</button>`, { tall: true });
+      const keep = () => ((f.title = $("#mfTitle").value), (f.when = $("#mfWhen").value));
+      $("#mfClose").onclick = closeSheet;
+      $$("[data-mfg]").forEach((b) => (b.onclick = () => (keep(), f.groups.has(+b.dataset.mfg) ? f.groups.delete(+b.dataset.mfg) : f.groups.add(+b.dataset.mfg), draw())));
+      $$("[data-mfmax]").forEach((b) => (b.onclick = () => (keep(), (f.max = +b.dataset.mfmax), draw())));
+      $$("[data-mftalk]").forEach((b) => (b.onclick = () => (keep(), (f.talk = +b.dataset.mftalk), draw())));
+      $("#mfGo").onclick = () => {
+        keep();
+        if (!f.title.trim() || !f.groups.size) return toast("Атауы мен топты толтырыңыз", "err");
+        const d = new Date(f.when);
+        const r = { id: nextId(), title: f.title.trim(), host: { name: myName(), staff }, when: `${pad(d.getDate())}.${pad(d.getMonth() + 1)} ${pad(d.getHours())}:${pad(d.getMinutes())}`, groups: [...f.groups], max: f.max, min: 6, talk: f.talk, players: [], status: "reg" };
+        gamesState().mafia.unshift(r);
+        if (r.groups.includes(MOCK.groups[0].id)) notify({ type: "game", title: `Мафия кеші: ${r.title}`, body: `${r.when} · жүргізуші ${r.host.name}. Тіркелу ашық — ${r.max} орын`, go: { service: "games" } });
+        closeSheet();
+        toast("Тіркелу ашылды — топқа хабарлама кетті");
+        paintStack();
+      };
+    };
+    draw();
+  }
+  function openMafiaRoom(r) {
+    const amHost = () => r.host.name === myName() && (state.mode === "staff" ? r.host.staff : !r.host.staff);
+    pushScreen(
+      r.title,
+      () => {
+        const reg = r.players.some((p) => p.me);
+        const n = Math.max(r.players.length, 6);
+        return `<div class="list-pad gm">
+          <div class="mf-hero"><span class="sh-med lg" style="--c:#E2574C">${icon("theater_comedy")}</span><div><b>${r.title}</b><small>${r.when} · жүргізуші: ${r.host.name}</small><small>Талқылау ${r.talk} мин · ${r.players.length}/${r.max} тіркелді</small></div></div>
+          <div class="t3-sec">Рөлдер (${n} адамға)</div>
+          <div class="mf-roles">${Object.entries(MF_ROLES).map(([k, x]) => `<span style="--c:${x.color}">${icon(x.icon)}<b>${k === "mafia" ? mfMafiaCount(n) : k === "civ" ? n - mfMafiaCount(n) - 2 : 1}</b><small>${x.name}</small></span>`).join("")}</div>
+          <div class="t3-sec">Тіркелгендер · ${r.players.length}</div>
+          <div class="mf-list">${r.players.map((p) => `<span>${avatarHtml(p)}<small>${firstName(p)}</small></span>`).join("") || `<div class="sh-empty">Әзірге ешкім жоқ</div>`}</div>
+          ${r.status === "ended" ? `<div class="bc-end me">${r.result}</div>` : ""}
+        </div>`;
+      },
+      () => {
+        $("#mfReg")?.addEventListener("click", () => {
+          const i = r.players.findIndex((p) => p.me);
+          if (i >= 0) (r.players.splice(i, 1), toast("Тіркелуден шықтың"));
+          else if (r.players.length >= r.max) return toast("Орын қалмады", "err");
+          else (r.players.push(TOUR_ME()), toast("Тіркелдің! Басталарда хабарлама келеді"));
+          paintStack();
+        });
+        $("#mfPlay")?.addEventListener("click", () => openMafiaGame(r, amHost()));
+        $("#mfStart")?.addEventListener("click", () => {
+          // макет: жетпесе — топтан тіркелмегендерді «қосылды» деп толтырамыз
+          const pool = MOCK.groups.filter((g) => r.groups.includes(g.id)).flatMap((g) => g.students).filter((s) => !r.players.some((p) => p.id === s.id));
+          while (r.players.length < 6 && pool.length) r.players.push(pool.shift());
+          r.status = "live";
+          r.game = null;
+          openMafiaGame(r, true);
+        });
+      },
+      {
+        footer: () => {
+          if (r.status === "ended") return "";
+          const reg = r.players.some((p) => p.me);
+          if (amHost()) return `<div class="sticky-foot"><button type="button" class="ef-submit" style="margin:0" id="${r.status === "live" ? "mfPlay" : "mfStart"}">${r.status === "live" ? "Жүргізуді жалғастыру" : "Ойынды бастау (жүргізуші)"}</button></div>`;
+          if (r.status === "live") return reg ? `<div class="sticky-foot"><button type="button" class="ef-submit" style="margin:0" id="mfPlay">Ойынға кіру</button></div>` : `<div class="sticky-foot"><div class="tf-sum" style="justify-content:center">Ойын басталып кетті — келесі кешке тіркел</div></div>`;
+          return `<div class="sticky-foot"><button type="button" class="ef-submit ${reg ? "ghost" : ""}" style="margin:0" id="mfReg">${reg ? "Тіркелуден шығу" : "Тіркелу"}</button></div>`;
+        },
+      }
+    );
+  }
+  /** Ойын қозғалтқышы: рөлдер → түн → таң → талқылау → дауыс → үкім → … → жеңіс */
+  function mafiaEngine(r) {
+    if (r.game) return r.game;
+    const order = [...r.players].sort((a, b) => rnd(a.id, r.id, 7) - rnd(b.id, r.id, 7));
+    const m = mfMafiaCount(order.length);
+    const roles = order.map((_, i) => (i < m ? "mafia" : i === m ? "doctor" : i === m + 1 ? "detective" : "civ"));
+    r.game = { day: 1, phase: "roles", players: order.map((p, i) => ({ ...p, role: roles[i], alive: true })), log: [], pick: null, last: null, check: null, winner: null };
+    return r.game;
+  }
+  function openMafiaGame(r, asHost) {
+    const S = mafiaEngine(r);
+    const meP = () => (asHost ? null : S.players.find((p) => p.me)); // жүргізуші ойнамайды
+    const alive = () => S.players.filter((p) => p.alive);
+    const randOf = (arr) => arr[Math.floor(Math.random() * arr.length)];
+    const winCheck = () => {
+      const maf = alive().filter((p) => p.role === "mafia").length, town = alive().length - maf;
+      if (!maf) S.winner = "town";
+      else if (maf >= town) S.winner = "mafia";
+      if (S.winner) {
+        S.phase = "end";
+        r.status = "ended";
+        r.result = S.winner === "town" ? "Бейбіт тұрғындар жеңді" : "Мафия жеңді";
+        const me = meP();
+        if (me && MF_ROLES[me.role].team === S.winner) setTimeout(() => gameCoins("mafia", 20, "Мафияда командаң жеңді!"), 400);
+      }
+      return !!S.winner;
+    };
+    const resolveNight = () => {
+      const me = meP();
+      const myAct = me && me.alive && me.role !== "civ" ? S.pick : null;
+      const maf = alive().filter((p) => p.role === "mafia");
+      const kill = me?.role === "mafia" && me.alive && myAct ? myAct : randOf(alive().filter((p) => p.role !== "mafia")).id;
+      const docAlive = alive().find((p) => p.role === "doctor");
+      const save = docAlive ? (docAlive.me ? myAct : randOf(alive()).id) : null;
+      const det = alive().find((p) => p.role === "detective");
+      if (det?.me && myAct) S.check = { name: S.players.find((p) => p.id === myAct).name, mafia: S.players.find((p) => p.id === myAct).role === "mafia" };
+      const v = S.players.find((p) => p.id === kill);
+      if (kill === save) S.last = { saved: true, text: "Түнде мафия біреуге шабуыл жасады, бірақ дәрігер құтқарып қалды 💉" };
+      else (v.alive = false), (S.last = { text: `Түнде ${v.name} ойыннан шықты. Ол — ${MF_ROLES[v.role].name} еді` });
+      S.log.unshift(`${S.day}-түн: ${S.last.text}`);
+      S.pick = null;
+      S.phase = "morning";
+      winCheck();
+    };
+    const resolveVote = () => {
+      const me = meP();
+      const votes = {};
+      alive().forEach((p) => {
+        const t = p.me && S.pick ? S.pick : randOf(alive().filter((x) => x.id !== p.id && (p.role !== "mafia" || x.role !== "mafia"))).id;
+        votes[t] = (votes[t] || 0) + 1;
+      });
+      const top = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+      if (top.length > 1 && top[0][1] === top[1][1]) S.last = { text: `Дауыс тең бөлінді (${top[0][1]}:${top[1][1]}) — бүгін ешкім шықпайды` };
+      else {
+        const v = S.players.find((p) => p.id === +top[0][0]);
+        v.alive = false;
+        S.last = { text: `${v.name} ${top[0][1]} дауыспен шығарылды. Ол — ${MF_ROLES[v.role].name} еді` };
+      }
+      S.log.unshift(`${S.day}-күн: ${S.last.text}`);
+      S.pick = null;
+      S.phase = "verdict";
+      if (!winCheck()) S.day++;
+    };
+    pushScreen(
+      asHost ? `${r.title} · жүргізуші` : r.title,
+      () => {
+        const me = meP();
+        const night = S.phase === "night";
+        const canPick = (S.phase === "night" && me?.alive && me.role !== "civ") || (S.phase === "vote" && me?.alive);
+        const grid = `<div class="mf-grid">${S.players.map((p) => {
+          const showRole = asHost || !p.alive || S.phase === "end" || (me?.role === "mafia" && p.role === "mafia") || p.me;
+          const sel = S.pick === p.id;
+          const pickable = canPick && p.alive && !p.me && !(S.phase === "night" && me.role === "mafia" && p.role === "mafia");
+          return `<button type="button" class="mf-p ${p.alive ? "" : "dead"} ${sel ? "sel" : ""}" ${pickable || (canPick && p.me && me.role === "doctor" && night) ? `data-mfp="${p.id}"` : "disabled"}>
+            ${avatarHtml(p)}${!p.alive ? `<i class="mf-x">${icon("close")}</i>` : ""}
+            <small>${p.me && !asHost ? "Сен" : p.name.split(" ")[0]}</small>
+            ${showRole ? `<em style="--c:${MF_ROLES[p.role].color}">${MF_ROLES[p.role].name}</em>` : ""}
+          </button>`;
+        }).join("")}</div>`;
+        const banner = { roles: ["🎭", "Рөлдер таратылды"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", `${S.day}-таң`], talk: ["💬", `${S.day}-күн · талқылау`], vote: ["🗳", `${S.day}-күн · дауыс беру`], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Бейбіт тұрғындар жеңді!" : "Мафия жеңді!"] }[S.phase];
+        let action = "";
+        if (asHost) {
+          const next = { roles: ["Түн басталсын", "night"], night: ["Таң атты (түнді қорытындылау)", "resolveNight"], morning: ["Талқылауды бастау", "talk"], talk: ["Дауыс беруге өту", "vote"], vote: ["Дауысты санау", "resolveVote"], verdict: ["Келесі түн", "night"] }[S.phase];
+          action = S.phase === "end" ? "" : `<div class="mf-host">${icon("record_voice_over", "material-icons-outlined")}<span>${{ roles: "Рөлдерді әр оқушы өз телефонында көрді. «Қала ұйықтайды…» деп түнді баста.", night: "Мафия, дәрігер, комиссар таңдап жатыр. Барлығы таңдаған соң таңды жарияла.", morning: S.last?.text || "", talk: `Талқылау ${r.talk} мин. Әркім өз ойын айтады.`, vote: "Әркім бір адамға дауыс береді.", verdict: S.last?.text || "" }[S.phase]}</span></div><button type="button" class="ef-submit" data-mfnext="${next[1]}">${next[0]}</button>`;
+        } else if (!me) action = `<div class="tf-sum">Сен бұл ойында тіркелмегенсің — тек көресің</div>`;
+        else if (S.phase === "roles") action = `<button type="button" class="mf-card" id="mfFlip" style="--c:${MF_ROLES[me.role].color}"><span class="mf-card-in ${S.flip ? "flip" : ""}"><span class="f">${icon("help_outline")}<b>Рөліңді көру үшін бас</b><small>Ешкімге көрсетпе!</small></span><span class="b">${icon(MF_ROLES[me.role].icon)}<b>${MF_ROLES[me.role].name}</b><small>${MF_ROLES[me.role].act}</small></span></span></button>${S.flip ? `<div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Жүргізуші түнді бастауын күт…</div>` : ""}`;
+        else if (!me.alive && S.phase !== "end") action = `<div class="mf-wait dead">${icon("visibility", "material-icons-outlined")}Сен ойыннан шықтың — енді тек бақылайсың. Ешкімге айтпа!</div>`;
+        else if (S.phase === "night") action = me.role === "civ" ? `<div class="mf-wait">😴 Қала ұйықтап жатыр… Мафия, дәрігер мен комиссар таңдауда</div>` : `<div class="mf-act" style="--c:${MF_ROLES[me.role].color}">${icon(MF_ROLES[me.role].icon)}<span><b>${MF_ROLES[me.role].name}: ${me.role === "mafia" ? "кімді шығарасыңдар?" : me.role === "doctor" ? "кімді емдейсің?" : "кімді тексересің?"}</b><small>Жоғарыдан бір адамды таңда</small></span></div><button type="button" class="ef-submit" id="mfOk" ${S.pick ? "" : "disabled"}>Таңдауды растау</button>`;
+        else if (S.phase === "morning") action = `<div class="mf-news">${S.last?.text || ""}</div>${S.check ? `<div class="mf-act" style="--c:#4F9BFF">${icon("search")}<span><b>Тек саған: ${S.check.name} — ${S.check.mafia ? "МАФИЯ!" : "мафия емес"}</b><small>Күндіз мұны қалай айтатыныңды ойла</small></span></div>` : ""}<div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Жүргізуші талқылауды бастауда…</div>`;
+        else if (S.phase === "talk") action = `<div class="mf-news">💬 Талқылау: кім мафия деп ойлайсың? Дәлелдеп айт (${r.talk} мин)</div><div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Талқылаудан кейін дауыс беру</div>`;
+        else if (S.phase === "vote") action = `<div class="mf-act" style="--c:#F2A93B">${icon("how_to_vote")}<span><b>Кімді шығарамыз?</b><small>Бір адамға дауыс бер</small></span></div><button type="button" class="ef-submit" id="mfOk" ${S.pick ? "" : "disabled"}>Дауыс беру</button>`;
+        else if (S.phase === "verdict") action = `<div class="mf-news">${S.last?.text || ""}</div><div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Келесі түн жақында…</div>`;
+        else if (S.phase === "end") action = `<div class="bc-end ${me && MF_ROLES[me.role].team === S.winner ? "me" : "bot"}">${me && MF_ROLES[me.role].team === S.winner ? "Командаң жеңді! 🎉" : "Командаң жеңілді"}<small>Сенің рөлің: ${me ? MF_ROLES[me.role].name : "—"}</small></div>`;
+        return `<div class="list-pad gm mf-game ${night ? "night" : ""}">
+          <div class="mf-banner"><span>${banner[0]}</span><b>${banner[1]}</b>${asHost ? `<em>жүргізуші</em>` : me ? `<em style="--c:${MF_ROLES[me.role].color}">${S.phase === "roles" && !S.flip ? "рөлің жасырын" : MF_ROLES[me.role].name}</em>` : ""}</div>
+          ${grid}
+          ${action}
+          ${S.log.length ? `<div class="t3-sec">Ойын барысы</div>${S.log.map((l) => `<div class="mf-log">${l}</div>`).join("")}` : ""}
+        </div>`;
+      },
+      () => {
+        const auto = (fn, ms = 1600) => setTimeout(() => { if (state.navStack.length && !asHost) (fn(), paintStack()); }, ms);
+        $("#mfFlip")?.addEventListener("click", () => {
+          if (S.flip) return;
+          S.flip = true;
+          paintStack();
+          auto(() => (S.phase = "night"), 2600);
+        });
+        $$("[data-mfp]").forEach((b) => (b.onclick = () => ((S.pick = +b.dataset.mfp), paintStack())));
+        $("#mfOk")?.addEventListener("click", () => {
+          if (S.phase === "night") (resolveNight(), paintStack(), !S.winner && auto(() => (S.phase = "talk"), 2600));
+          else if (S.phase === "vote") (resolveVote(), paintStack(), !S.winner && auto(() => (S.phase = "night"), 2800));
+        });
+        // ойыншы ретінде: тұрғын не шыққан болса — жүргізуші өзі жалғастырады
+        const me = meP();
+        if (!asHost && me) {
+          if (S.phase === "night" && (me.role === "civ" || !me.alive)) auto(() => resolveNight(), 2200);
+          else if (S.phase === "talk") auto(() => (S.phase = "vote"), 3500);
+          else if (S.phase === "vote" && !me.alive) auto(() => resolveVote(), 2200);
+          else if (S.phase === "morning" && !$("#mfOk")) auto(() => (S.phase = "talk"), 3200);
+          else if (S.phase === "verdict") auto(() => (S.phase = "night"), 2800);
+        }
+        $$("[data-mfnext]").forEach((b) => (b.onclick = () => {
+          const k = b.dataset.mfnext;
+          if (k === "resolveNight") resolveNight();
+          else if (k === "resolveVote") resolveVote();
+          else S.phase = k;
+          paintStack();
+        }));
+      },
+      { screenCls: "gm-screen", right: `<button type="button" class="appbar-icon-btn" id="mfRules2">${icon("info", "material-icons-outlined")}</button>` }
+    );
+    $("#mfRules2")?.addEventListener("click", () => gameRules("mafia"));
+  }
+
   /** Макет: сыныптастың онлайн күйі (нақты қосымшада — presence, соңғы 60 с белсенділік) */
   const isOnline = (x) => rnd(x.id, 404) > 0.62;
   const lastSeen = (x) => ["10 мин бұрын", "1 сағ бұрын", "кеше", "3 сағ бұрын"][Math.floor(rnd(x.id, 405) * 4)];
@@ -4277,6 +4796,7 @@
   }
 
   function openService(id, title) {
+    if (id === "games") return (state.navStack = []), openGames();
     state.svc = { id, tab: id === "professions" ? "spec" : "ent" };
     state.entSel = [...MOCK.entPicker.selected];
     state.entOpen = true;
@@ -6937,6 +7457,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { sub: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
       { sub: "war", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
       { sub: "tours", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
+      { sub: "games", label: "Ойындар", img: "assets/tournament/games_line.png" },
     ];
     return `
       ${bannerHtml()}
@@ -7424,6 +7945,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { id: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
       { id: "battle", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
       { id: "tournament", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
+      { id: "games", label: "Ойындар", img: "assets/tournament/games_line.png" },
     ];
     return `
       ${bannerHtml()}
@@ -7787,10 +8309,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     tour: { img: "assets/tournament/cup_line.png", label: "Турниры" },
     battle: { img: "assets/tournament/battle_line.png", label: "Батл шақырулары мен нәтижелері" },
     war: { img: "assets/tournament/clash_line.png", label: "Топтар шайқасы" },
+    game: { img: "assets/tournament/games_line.png", label: "Ойындар (мафия кештері, сөз жұмбақтары)" },
     study: { img: "assets/v2/notification.png", label: "Сабақ, эфир, конспект" },
   };
   function notifPrefs() {
-    return (MOCK.notifPrefs ||= { tour: true, battle: true, war: true, study: true });
+    return (MOCK.notifPrefs ||= { tour: true, battle: true, war: true, game: true, study: true });
   }
   /** Оқушыға хабарлама (макетте — осы құрылғыдағы оқушы). Нақты қосымшада — сервер FCM push + қосымша ішіндегі тізім */
   function notify({ type = "study", title, body, go }) {
@@ -8552,6 +9075,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         if (b.dataset.staffSub === "war") {
           state.navStack = [];
           return openStaffWars();
+        }
+        if (b.dataset.staffSub === "games") {
+          state.navStack = [];
+          return openGames();
         }
         if (b.dataset.staffSub === "shop") {
           state.navStack = [];
