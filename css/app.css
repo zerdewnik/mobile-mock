@@ -5177,3 +5177,22 @@ u.b { background: #5CB36D; } u.c { background: #F2C230; }
 .ch-att, .ch-send { width: 42px; height: 42px; flex: 0 0 42px; border: 0; border-radius: 50%; display: grid; place-items: center; cursor: pointer; }
 .ch-att { background: transparent; color: #8a8d9c; }
 .ch-send { color: #fff; background: linear-gradient(180deg, #a07cff, #8B5CF6); box-shadow: 0 2px 0 #4b2f8f; }
+
+/* Рөл картасы: бір шерту → 3D айналып ашылады (2.5 айналым), 15 с тұрады, кейін жабылады */
+.mf-big.open .mf-big-in { animation: mfSpinOpen 1.4s cubic-bezier(.25,.9,.3,1) forwards; }
+@keyframes mfSpinOpen {
+  0% { transform: translateY(0) rotateY(0) scale(1); }
+  30% { transform: translateY(-40px) rotateY(360deg) scale(1.12); }
+  100% { transform: translateY(-6px) rotateY(900deg) scale(1.06); }
+}
+.mf-big.close .mf-big-in { animation: mfSpinClose .7s ease-in forwards; }
+@keyframes mfSpinClose { from { transform: translateY(-6px) rotateY(180deg) scale(1.06); } to { transform: rotateY(360deg) scale(1); } }
+.mf-big.open { animation: none; }
+.mf-big.open::after { content: ""; position: absolute; }
+.mf-big { position: relative; }
+.mf-big.open .mf-big-in .b { box-shadow: 0 0 40px color-mix(in srgb, var(--c) 70%, transparent), 0 0 90px color-mix(in srgb, var(--c) 35%, transparent); }
+.mf-timer { position: relative; width: 170px; height: 22px; border-radius: 11px; background: #26262c; overflow: hidden; }
+.mf-timer i { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: linear-gradient(90deg, #E2574C, #F2A93B); }
+.mf-timer span { position: relative; display: block; text-align: center; line-height: 22px; font-size: 12px; font-weight: 900; color: #fff; text-shadow: 0 1px 2px #000; }
+.mf-timer span::after { content: " сек"; font-weight: 600; }
+.mf-timer i { transition: width 1s linear; }

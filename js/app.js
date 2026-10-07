@@ -4655,10 +4655,10 @@
         else if (S.phase === "deal") action = `<div class="mf-wait">${icon("style", "material-icons-outlined")}Жүргізуші карталарды таратып жатыр…</div>`;
         else if (S.phase === "roles") action = S.flip ? `<div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Барлығы рөлін көрді. Жүргізуші түнді бастауда…</div>` : `<div class="mf-reveal ${S.peeked ? "seen" : ""}" style="--c:${MF_ROLES[me.role].color}">
             <div class="mf-big" id="mfPeek">
-              <span class="mf-big-in"><span class="f"><i class="mf-logo">I4U</i><b>МАФИЯ</b><small>${icon("touch_app", "material-icons-outlined")}Басып тұр — ашылады</small></span><span class="b"><span class="mf-burst"></span>${icon(MF_ROLES[me.role].icon)}<b>${MF_ROLES[me.role].name}</b><small>${MF_ROLES[me.role].act}</small></span></span>
+              <span class="mf-big-in"><span class="f"><i class="mf-logo">I4U</i><b>МАФИЯ</b><small>${icon("touch_app", "material-icons-outlined")}Бір рет бас — ашылады</small></span><span class="b"><span class="mf-burst"></span>${icon(MF_ROLES[me.role].icon)}<b>${MF_ROLES[me.role].name}</b><small>${MF_ROLES[me.role].act}</small></span></span>
             </div>
-            <div class="mf-rv-t">${S.peeked ? "Рөліңді есте сақта. Ешкімге көрсетпе!" : "Картаңды басып тұрып қара — жіберсең жабылады"}</div>
-            ${S.peeked ? `<button type="button" class="ef-submit" id="mfSeen">Рөлімді көрдім ✓</button>` : ""}
+            <div class="mf-rv-t" id="mfRvT">Картаңды бір рет бас — 15 секунд ашық тұрады, ешкімге көрсетпе!</div>
+            <div class="mf-timer" id="mfTimer" hidden><i id="mfTimerBar"></i><span id="mfTimerN">15</span></div>
           </div>`;
         else if (!me.alive && S.phase !== "end") action = `<div class="mf-wait dead">${icon("visibility", "material-icons-outlined")}Сен ойыннан шықтың — енді тек бақылайсың. Ешкімге айтпа!</div>`;
         else if (S.phase === "night") action = me.role === "civ" ? `<div class="mf-wait">😴 Қала ұйықтап жатыр… Мафия, дәрігер мен комиссар таңдауда</div>` : `<div class="mf-act" style="--c:${MF_ROLES[me.role].color}">${icon(MF_ROLES[me.role].icon)}<span><b>${MF_ROLES[me.role].name}: ${me.role === "mafia" ? "кімді шығарасыңдар?" : me.role === "doctor" ? "кімді емдейсің?" : "кімді тексересің?"}</b><small>Жоғарыдан бір адамды таңда</small></span></div><button type="button" class="ef-submit" id="mfOk" ${S.pick ? "" : "disabled"}>Таңдауды растау</button>`;
@@ -4691,14 +4691,36 @@
           S.players.forEach((_, i) => setTimeout(() => mfSfx("deal", S.sfx), 300 + i * 160));
           setTimeout(() => { if (S.sched === key) ((S.phase = "roles"), paintStack()); }, 600 + S.players.length * 160 + 700);
         }
-        // рөлді көру: басып тұрғанда ашылады
+        // рөлді көру: бір шерту → 3D айналып ашылады, 15 секунд тұрады, кейін өзі жабылады
         const pk = $("#mfPeek");
-        if (pk) {
-          const on = (e) => { e.preventDefault(); pk.classList.add("peek"); mfSfx("flip", S.sfx); };
-          const off = () => { if (!pk.classList.contains("peek")) return; pk.classList.remove("peek"); if (!S.peeked) ((S.peeked = true), paintStack()); };
-          pk.onpointerdown = on;
-          pk.onpointerup = pk.onpointerleave = pk.onpointercancel = off;
-        }
+        if (pk) pk.onclick = () => {
+          if (pk.classList.contains("open")) return;
+          pk.classList.add("open");
+          mfSfx("flip", S.sfx);
+          setTimeout(() => mfSfx("flip", S.sfx), 700);
+          const tm = $("#mfTimer"), bar = $("#mfTimerBar"), num = $("#mfTimerN");
+          tm.hidden = false;
+          $("#mfRvT").textContent = "Рөліңді есте сақта!";
+          let left = 15;
+          const iv = setInterval(() => {
+            left -= 1;
+            if (num) num.textContent = left;
+            if (bar) bar.style.width = `${(left / 15) * 100}%`;
+            if (left <= 0 || !document.body.contains(pk)) {
+              clearInterval(iv);
+              if (!document.body.contains(pk)) return;
+              pk.classList.remove("open");
+              pk.classList.add("close");
+              mfSfx("flip", S.sfx);
+              setTimeout(() => {
+                if (S.phase !== "roles") return;
+                S.peeked = S.flip = true;
+                paintStack();
+                setTimeout(() => { if (S.phase === "roles" && !asHost) ((S.phase = "night"), paintStack()); }, 2200);
+              }, 700);
+            }
+          }, 1000);
+        };
         $("#mfSeen")?.addEventListener("click", () => {
           S.flip = true;
           paintStack();
