@@ -6,6 +6,7 @@
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
     { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
+    { out: "forum", fill: "forum", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Чат" },
     { out: "how_to_reg", fill: "how_to_reg", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисление" },
   ];
   const NAV_STUDENT = [
@@ -14,7 +15,7 @@
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Зачисление"];
+  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Чат", "Зачисление"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
@@ -366,7 +367,8 @@
   }
 
   function setTab(index, { skipClose } = {}) {
-    if (state.mode === "staff" && index === 3 && state.staffRole !== "head") index = 0;
+    if (state.mode === "staff" && index === 4 && state.staffRole !== "head") index = 0;
+    if (state.mode === "student" && index > 3) index = 0;
     state.tab = index;
     state.sub = null;
     state.profileStudent = null;
@@ -3572,6 +3574,107 @@
         <div class="ff-grid">${list.map(ffCard).join("")}</div>`;
     }
     return `<div class="ff">${rail}<div class="ff-main">${main}</div></div>`;
+  }
+
+  /* —— Staff: Чат — кураторлар арасындағы хат алмасу ——
+     Ортақ «Кураторлар» арнасы (бас куратор хабарландыруы бекітулі) + жеке чаттар */
+  const meCurId = () => (isHead() ? 3 : MY_CURATOR_ID);
+  const curRole = (c) => (c.isChief ? "Бас куратор" : COURSE_TITLE[c.courseId] ? `Куратор · ${COURSE_TITLE[c.courseId]}` : "Куратор");
+  const curAv = (c) => ({ name: c.name, initials: c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(), color: ["#5B6EC2", "#E07A3D", "#8B5CF6", "#2B8073", "#B13B5D", "#4690C6"][c.id % 6] });
+  const curOnline = (c) => rnd(c.id, 909) > 0.45;
+  function staffChats() {
+    if (!MOCK.staffChats) {
+      MOCK.staffChats = {
+        group: [
+          { from: 3, text: "Әріптестер, жұма күні 18:00-де апталық отчёт ата-аналарға кетуі керек. Кешіктірмейік 🙏", t: "09:10", pin: true },
+          { from: 2, text: "Түсінікті! Менің топтарым дайын.", t: "09:24" },
+          { from: 5, text: "Сенбі мафия кешіне кім жүргізуші болады?", t: "10:02" },
+          { from: 4, text: "Мен бола аламын 🙋‍♀️", t: "10:05" },
+        ],
+        2: [{ from: 2, text: "Сәлем! Викингтер тобының апталық сынақ нәтижесін жібере аласың ба?", t: "Кеше" }, { from: "me", text: "Сәлем, бүгін кешке жіберемін", t: "Кеше", read: true }],
+        3: [{ from: 3, text: "Диана, Қыркүйек кубогы өте жақсы өтті, рақмет! Келесі айға да жоспарлайық.", t: "11:40" }],
+        5: [{ from: "me", text: "Еркебұлан, топтар шайқасына Хронос 2-ні шақырайық па?", t: "Дс", read: true }, { from: 5, text: "Иә, келістік ⚔️", t: "Дс" }],
+      };
+      MOCK.staffUnread = { group: 2, 3: 1 };
+    }
+    return MOCK.staffChats;
+  }
+  function renderStaffChat() {
+    const C = staffChats(), U = MOCK.staffUnread || {};
+    const q = (state.chatQ || "").toLowerCase();
+    const others = MOCK.curators.filter((c) => c.id !== meCurId() && c.name.toLowerCase().includes(q));
+    const last = (k) => C[k]?.[C[k].length - 1];
+    const row = (k, av, name, sub, online) => {
+      const m = last(k);
+      return `<button type="button" class="ch-row" data-chat="${k}">
+        <span class="ch-av">${av}${online ? `<i></i>` : ""}</span>
+        <span class="ch-mid"><b>${name}</b><small>${m ? `${m.from === "me" ? "Сен: " : k === "group" ? `${(MOCK.curators.find((c) => c.id === m.from)?.name || "").split(" ")[0]}: ` : ""}${m.text}` : sub}</small></span>
+        <span class="ch-end"><small>${m?.t || ""}</small>${U[k] ? `<em>${U[k]}</em>` : m?.from === "me" ? `<i class="ch-tick">${icon("done_all")}</i>` : ""}</span>
+      </button>`;
+    };
+    return `<div class="list-pad ch-list">
+      <label class="ch-search">${icon("search")}<input id="chatSearch" value="${state.chatQ || ""}" placeholder="Куратор іздеу" /></label>
+      ${q ? "" : row("group", `<span class="du-av ch-grp">${icon("groups")}</span>`, "Кураторлар", "Ортақ арна", false)}
+      <div class="t3-sec">Кураторлар · ${others.length}</div>
+      ${others.map((c) => row(c.id, avatarHtml(curAv(c)), c.name, curRole(c), curOnline(c))).join("") || `<div class="sh-empty">Табылмады</div>`}
+    </div>`;
+  }
+  function openStaffChat(k) {
+    const C = staffChats();
+    const group = k === "group";
+    const cur = group ? null : MOCK.curators.find((c) => c.id === +k);
+    C[k] ||= [];
+    (MOCK.staffUnread ||= {})[k] = 0;
+    let typing = false;
+    const bubble = (m, i, arr) => {
+      const mine = m.from === "me";
+      const who = !mine && group ? MOCK.curators.find((c) => c.id === m.from) : null;
+      const firstOfRun = i === 0 || arr[i - 1].from !== m.from;
+      return `<div class="ch-msg ${mine ? "me" : ""} ${m.pin ? "pin" : ""}">
+        ${!mine && group ? (firstOfRun ? avatarHtml(curAv(who)) : `<span class="ch-gap"></span>`) : ""}
+        <span class="ch-b">${who && firstOfRun ? `<b style="color:${curAv(who).color}">${who.name}${who.isChief ? " · бас куратор" : ""}</b>` : ""}${m.pin ? `<i class="ch-pin">${icon("push_pin")}Бекітілген</i>` : ""}${m.text}<small>${m.t}${mine ? `<i class="ch-tick ${m.read ? "r" : ""}">${icon(m.read ? "done_all" : "done")}</i>` : ""}</small></span>
+      </div>`;
+    };
+    pushScreen(
+      group ? "Кураторлар" : cur.name,
+      () => `<div class="ch-thread" id="chThread">
+          <div class="ch-day"><span>Бүгін</span></div>
+          ${C[k].map(bubble).join("")}
+          ${typing ? `<div class="ch-msg"><span class="ch-b ch-typing"><i></i><i></i><i></i></span></div>` : ""}
+        </div>`,
+      () => {
+        const th = $("#chThread");
+        if (th) th.parentElement.scrollTop = 1e6;
+        const send = () => {
+          const v = $("#chMsg").value.trim();
+          if (!v) return;
+          C[k].push({ from: "me", text: v, t: `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}` });
+          $("#chMsg").value = "";
+          typing = true;
+          paintStack();
+          // макет: жауап (жеке чатта — сол куратор, арнада — біреуі)
+          setTimeout(() => {
+            const from = group ? MOCK.curators.filter((c) => c.id !== meCurId())[Math.floor(Math.random() * 4)].id : cur.id;
+            C[k].forEach((m) => m.from === "me" && (m.read = true));
+            C[k].push({ from, text: ["Жақсы, келістік 👍", "Рақмет, қазір қараймын", "Иә, дұрыс айтасың", "Түсінікті, кейін хабарласамын", "Керемет! 🙌"][Math.floor(Math.random() * 5)], t: `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}` });
+            typing = false;
+            if (state.navStack.length) paintStack();
+          }, 1800);
+        };
+        $("#chSend").onclick = send;
+        $("#chMsg").onkeydown = (e) => e.key === "Enter" && send();
+        $("#chAttach").onclick = () => toast("Файл, фото не отчёт тіркеу (макет)");
+      },
+      {
+        bar: () => `<div class="appbar ch-bar">
+          <button type="button" class="appbar-back" id="innerBack">${icon("arrow_back")}</button>
+          <span class="ch-av sm">${group ? `<span class="du-av ch-grp">${icon("groups")}</span>` : avatarHtml(curAv(cur))}${!group && curOnline(cur) ? "<i></i>" : ""}</span>
+          <span class="ch-hd"><b>${group ? "Кураторлар" : cur.name}</b><small>${group ? `${MOCK.curators.length} қатысушы` : typing ? "жазып жатыр…" : curOnline(cur) ? "онлайн" : "1 сағ бұрын болды"}</small></span>
+          ${group ? "" : `<button type="button" class="appbar-icon-btn" onclick="return false" title="Қоңырау">${icon("call", "material-icons-outlined")}</button>`}
+        </div>`,
+        footer: () => `<div class="sticky-foot ch-foot"><button type="button" class="ch-att" id="chAttach">${icon("attach_file")}</button><input id="chMsg" placeholder="Хабар жазу…" maxlength="500" /><button type="button" class="ch-send" id="chSend">${icon("send")}</button></div>`,
+      }
+    );
   }
 
   /* —— Staff: Магазин ——
@@ -9016,11 +9119,16 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     if (state.tab === 3)
       return `
+      <div class="appbar-title" style="flex:1">Чат</div>
+      <button type="button" class="appbar-icon-btn" id="chatNew" title="Жаңа хат">${icon("edit_square", "material-icons-outlined")}</button>
+      <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
+    if (state.tab === 4)
+      return `
       <div class="appbar-title-row"><span class="appbar-title">Зачисление</span><button type="button" class="appbar-add" id="enrollAdd" title="Дать доступ к курсу">${icon("add")}</button></div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     return `
-      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Зачисление"][state.tab]}</div>
+      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Чат", "Зачисление"][state.tab]}</div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
@@ -9053,7 +9161,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     else if (state.sub === "pushes") content.innerHTML = renderPushes();
     else if (state.tab === 0) content.innerHTML = renderStaffHome();
     else if (state.tab === 1) content.innerHTML = renderStaffNews();
-    else if (state.tab === 3) content.innerHTML = renderAccessList();
+    else if (state.tab === 3) content.innerHTML = renderStaffChat();
+    else if (state.tab === 4) content.innerHTML = renderAccessList();
     else content.innerHTML = renderGroups();
 
     bindContent();
@@ -9233,6 +9342,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       })
     );
 
+    $$("[data-chat]").forEach((b) => (b.onclick = () => ((state.navStack = []), openStaffChat(b.dataset.chat))));
+    bindSearch("#chatSearch", (v) => ((state.chatQ = v), render()));
+    $("#chatNew")?.addEventListener("click", () => {
+      openSheet(`<div class="sheet-handle"></div><div class="ex-title">Жаңа хат</div><div class="pick-list">${MOCK.curators.filter((c) => c.id !== meCurId()).map((c) => `<button type="button" class="pick-opt" data-chpick="${c.id}">${avatarHtml(curAv(c))}<span style="flex:1">${c.name}<small style="display:block;font-size:11px;color:#8a8d9c">${curRole(c)}</small></span>${icon("chevron_right")}</button>`).join("")}</div>`, { tall: true });
+      $$("[data-chpick]").forEach((b) => (b.onclick = () => (closeSheet(), (state.navStack = []), openStaffChat(b.dataset.chpick))));
+    });
     $("#sendPush")?.addEventListener("click", openPushSheet);
     $("#addPush")?.addEventListener("click", openPushSheet);
     $$("[data-news]").forEach((btn) => {
@@ -9475,7 +9590,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $$(".chip-role").forEach((b) => b.classList.toggle("active", b === btn));
         if (state.staffRole === "curator" && state.newsSeg === "review") state.newsSeg = "all";
         document.documentElement.dataset.role = state.staffRole;
-        if (state.staffRole === "curator" && state.tab === 3) return setTab(0);
+        if (state.staffRole === "curator" && state.tab === 4) return setTab(0);
         toast(state.staffRole === "head" ? "Рөл: бас куратор / академ. бөлім басшысы" : "Рөл: куратор");
         render();
       });
