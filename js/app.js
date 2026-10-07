@@ -4114,7 +4114,7 @@
           ${GAMES.map((g) => `
             <button type="button" class="gm-card" style="--c:${g.color}" data-game="${g.id}">
               <span class="sh-med" style="--c:${g.color}">${icon(g.icon)}</span>
-              <span class="gm-c"><em>${g.mode}</em><b>${g.name}</b><small>${g.desc}</small>
+              <span class="gm-c"><b>${g.name}</b><small>${g.desc}</small>
                 <i>${g.id === "bc" ? `Жеңіс ${G.bc.wins} · Жеңіліс ${G.bc.losses}` : g.id === "mafia" ? `${live.length} кеш · тіркелу ашық` : `${G.hang.incoming.length} сөз сені күтіп тұр`}</i></span>
               ${icon("chevron_right")}
             </button>`).join("")}
