@@ -5054,3 +5054,13 @@ u.b { background: #5CB36D; } u.c { background: #F2C230; }
 .ff-card.cardart .sh-med .material-icons-round { font-size: 26px; }
 .ff-card.cardart .ff-art::before { content: ""; position: absolute; width: 46px; height: 64px; border-radius: 8px; background: rgba(255,255,255,.12); transform: translateX(10px) rotate(8deg); }
 .ff-card.cardart .ff-art { position: relative; }
+
+/* Бұқа мен сиыр: 6 цифр — кішірек ұяшықтар */
+.bc-secret { padding-top: 12px; }
+.bc-cards { margin-top: 0; }
+.bc-secret.n6 .bc-cards { gap: 6px; }
+.bc-secret.n6 .bc-card { width: 42px; height: 54px; }
+.bc-secret.n6 .bc-card i { font-size: 24px; }
+.bc-foot.n6 .bc-in { gap: 6px; }
+.bc-foot.n6 .bc-in span { width: 42px; height: 50px; font-size: 22px; }
+.bc-tr .g b { flex-shrink: 0; }

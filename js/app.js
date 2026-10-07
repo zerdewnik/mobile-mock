@@ -4028,7 +4028,7 @@
      Бот: жеңіл — кейде кездейсоқ болжайды; қиын — әр жолы барлық жауапқа сай келетін нұсқаны таңдайды */
   function openBullsCows() {
     // Тек бот сан жасырады; сен табасың. Жеңіл — 3 цифр / 8 мүмкіндік, Қалыпты — 4 цифр / 10 мүмкіндік
-    const LV = { easy: { n: 3, max: 8, name: "Жеңіл · 3 цифр" }, norm: { n: 4, max: 10, name: "Қалыпты · 4 цифр" } };
+    const LV = { easy: { n: 3, max: 8, name: "3 цифр" }, norm: { n: 4, max: 10, name: "4 цифр" }, hard: { n: 6, max: 14, name: "6 цифр" } };
     const pickSecret = (n) => { const d = "0123456789".split("").sort(() => Math.random() - 0.5); return d.slice(0, n).join(""); };
     const B = { lv: "norm", secret: pickSecret(4), input: "", rows: [], end: null, shake: false, fresh: -1 };
     const L = () => LV[B.lv];
@@ -4039,8 +4039,7 @@
         const n = L().n, left = L().max - B.rows.length;
         return `<div class="list-pad gm bc2">
           <div class="ent-chips" style="justify-content:center">${Object.entries(LV).map(([k, v]) => `<button type="button" class="ent-chip ${B.lv === k ? "on" : ""}" style="--c:#F2A93B" data-bclv="${k}" ${B.rows.length && !B.end ? "disabled" : ""}>${v.name}</button>`).join("")}</div>
-          <div class="bc-secret ${B.end ? "open " + B.end : ""}">
-            <span class="bc-bot">${icon("smart_toy", "material-icons-outlined")}</span>
+          <div class="bc-secret n${n} ${B.end ? "open " + B.end : ""}">
             <div class="bc-cards">${[...B.secret].map((d, i) => `<span class="bc-card" style="--d:${i * 0.12}s"><i class="f">?</i><i class="b">${d}</i></span>`).join("")}</div>
             <small>${B.end === "win" ? `Таптың! ${B.rows.length} әрекетпен 🎉` : B.end === "lose" ? "Мүмкіндік бітті — бот жеңді" : `Бот ${n} әр түрлі цифр жасырды · ${left} мүмкіндік қалды`}</small>
           </div>
@@ -4086,7 +4085,7 @@
         footer: () => {
           const n = L().n;
           if (B.end) return `<div class="sticky-foot"><button type="button" class="ef-submit" style="margin:0" id="bcAgain">${icon("replay")}Жаңа ойын</button></div>`;
-          return `<div class="sticky-foot bc-foot">
+          return `<div class="sticky-foot bc-foot n${n}">
             <div class="bc-in">${Array.from({ length: n }, (_, i) => `<span class="${B.input[i] ? "on" : ""}">${B.input[i] ?? ""}</span>`).join("")}</div>
             <div class="bc-keys">${["1", "2", "3", "4", "5", "6", "7", "8", "9", "del", "0", "ok"].map((k) => (k === "del" ? `<button type="button" data-bck="del">${icon("backspace", "material-icons-outlined")}</button>` : k === "ok" ? `<button type="button" class="ok" data-bck="ok" ${B.input.length === n ? "" : "disabled"}>Тексеру</button>` : `<button type="button" data-bck="${k}" ${B.input.includes(k) || B.input.length === n ? "disabled" : ""}>${k}</button>`)).join("")}</div>
           </div>`;
@@ -4097,7 +4096,7 @@
   }
   function gameRules(id) {
     const R = {
-      bc: ["Бұқа мен сиыр", ["Бот әр түрлі цифрлардан құпия сан жасырады (Жеңіл — 3 цифр, Қалыпты — 4 цифр)", "Сен сан жазасың, бот жауап береді:", "🟢 Бұқа — цифр да, орны да дұрыс", "🟡 Сиыр — цифр бар, бірақ орны басқа", "Мысал: құпия 1234, болжам 1325 → 1 бұқа (1), 2 сиыр (3, 2)", "Мүмкіндік: Жеңіл — 8, Қалыпты — 10. Таптың — жеңдің!", "Жеңіске +10 монета (күніне 3 рет)"]],
+      bc: ["Бұқа мен сиыр", ["Бот әр түрлі цифрлардан құпия сан жасырады: 3, 4 не 6 цифр", "Сен сан жазасың, бот жауап береді:", "🟢 Бұқа — цифр да, орны да дұрыс", "🟡 Сиыр — цифр бар, бірақ орны басқа", "Мысал: құпия 1234, болжам 1325 → 1 бұқа (1), 2 сиыр (3, 2)", "Мүмкіндік: 3 цифр — 8, 4 цифр — 10, 6 цифр — 14. Таптың — жеңдің!", "Жеңіске +10 монета (күніне 3 рет)"]],
       mafia: ["Мафия", ["Жүргізуші (куратор не оқушы) кеш ашады, оқушылар тіркеледі: 6–12 адам", "Рөлдер жасырын таратылады: мафия (6–7 адамда 1, 8–9-да 2, 10+ — 3), дәрігер, комиссар, қалғаны тұрғын", "🌙 Түн: мафия біреуді таңдайды, дәрігер біреуді емдейді, комиссар біреуді тексереді", "☀️ Күн: жүргізуші түнгі нәтижені айтады, талқылау (1–3 мин), кейін дауыс беру", "Ең көп дауыс алған ойыннан шығады, рөлі ашылады; тең болса — ешкім шықпайды", "Мафия жойылса — тұрғындар жеңеді; мафия саны қалғандарға тең болса — мафия жеңеді", "Жеңген команда +20 монета"]],
       hang: ["Дар ағашы", ["Досыңа не тобыңа сөз жібересің (3–14 әріп, санат + кеңес)", "Ол сөзді әріптеп табады: қазақ әліпбиі, 42 әріп", "Қате әріп сайын суреттің бір бөлігі салынады — 7 қатеге дейін", "Сөзді тапса — +5 монета, жіберушіге нәтиже хабарламасы", "Куратор бүкіл топқа сөз жұмбағын жібере алады"]],
     }[id];
