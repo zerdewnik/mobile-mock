@@ -4693,34 +4693,40 @@
         }
         // рөлді көру: бір шерту → 3D айналып ашылады, 15 секунд тұрады, кейін өзі жабылады
         const pk = $("#mfPeek");
-        if (pk) pk.onclick = () => {
-          if (pk.classList.contains("open")) return;
-          pk.classList.add("open");
-          mfSfx("flip", S.sfx);
-          setTimeout(() => mfSfx("flip", S.sfx), 700);
-          const tm = $("#mfTimer"), bar = $("#mfTimerBar"), num = $("#mfTimerN");
-          tm.hidden = false;
-          $("#mfRvT").textContent = "Рөліңді есте сақта!";
-          let left = 15;
-          const iv = setInterval(() => {
-            left -= 1;
-            if (num) num.textContent = left;
-            if (bar) bar.style.width = `${(left / 15) * 100}%`;
-            if (left <= 0 || !document.body.contains(pk)) {
-              clearInterval(iv);
-              if (!document.body.contains(pk)) return;
-              pk.classList.remove("open");
-              pk.classList.add("close");
-              mfSfx("flip", S.sfx);
-              setTimeout(() => {
-                if (S.phase !== "roles") return;
-                S.peeked = S.flip = true;
-                paintStack();
-                setTimeout(() => { if (S.phase === "roles" && !asHost) ((S.phase = "night"), paintStack()); }, 2200);
-              }, 700);
-            }
-          }, 1000);
-        };
+        if (pk) {
+          let iv = null;
+          // жабу: 15 секунд біткенде не карта тағы бір рет басылғанда
+          const closeCard = () => {
+            clearInterval(iv);
+            if (!document.body.contains(pk) || !pk.classList.contains("open")) return;
+            pk.classList.remove("open");
+            pk.classList.add("close");
+            mfSfx("flip", S.sfx);
+            setTimeout(() => {
+              if (S.phase !== "roles") return;
+              S.peeked = S.flip = true;
+              paintStack();
+              setTimeout(() => { if (S.phase === "roles" && !asHost) ((S.phase = "night"), paintStack()); }, 2200);
+            }, 700);
+          };
+          pk.onclick = () => {
+            if (pk.classList.contains("close")) return;
+            if (pk.classList.contains("open")) return closeCard();
+            pk.classList.add("open");
+            mfSfx("flip", S.sfx);
+            setTimeout(() => mfSfx("flip", S.sfx), 700);
+            const tm = $("#mfTimer"), bar = $("#mfTimerBar"), num = $("#mfTimerN");
+            tm.hidden = false;
+            $("#mfRvT").textContent = "Рөліңді есте сақта! Жабу үшін тағы бір рет бас";
+            let left = 15;
+            iv = setInterval(() => {
+              left -= 1;
+              if (num) num.textContent = left;
+              if (bar) bar.style.width = `${(left / 15) * 100}%`;
+              if (left <= 0 || !document.body.contains(pk)) closeCard();
+            }, 1000);
+          };
+        }
         $("#mfSeen")?.addEventListener("click", () => {
           S.flip = true;
           paintStack();
