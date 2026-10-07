@@ -4219,7 +4219,7 @@
   };
   const mfMafiaCount = (n) => (n >= 10 ? 3 : n >= 8 ? 2 : 1);
   /** Дөңгелек үстел: ойыншылар шеңбер бойымен отырады (онлайн мафия үлгісі) */
-  function mfTable({ seats, center, night = false, enter = false, cls = "" }) {
+  function mfTable({ seats, center, night = false, enter = false, cls = "", extra = "" }) {
     const n = seats.length;
     return `<div class="mf-tbl ${night ? "night" : ""} ${enter ? "enter" : ""} ${cls}">
       <div class="mf-felt"><div class="mf-center">${center}</div></div>
@@ -4227,8 +4227,30 @@
         const a = ((-90 + (i * 360) / n) * Math.PI) / 180;
         return `<div class="mf-seat ${x.cls || ""}" style="left:${50 + 41 * Math.cos(a)}%;top:${50 + 41 * Math.sin(a)}%;--i:${i}">${x.html}</div>`;
       }).join("")}
+      ${extra}
     </div>`;
   }
+  /** Ойын дыбыстары (WebAudio): карта тарату, аудару, түн, дауыс */
+  let mfAC = null;
+  function mfSfx(kind, on = true) {
+    if (!on) return;
+    try {
+      mfAC ||= new (window.AudioContext || window.webkitAudioContext)();
+      const t = mfAC.currentTime, o = mfAC.createOscillator(), g = mfAC.createGain();
+      const P = { deal: [900, 600, 0.05, "triangle"], flip: [300, 900, 0.18, "sine"], night: [140, 70, 1.2, "sine"], day: [440, 660, 0.4, "sine"], vote: [520, 520, 0.08, "square"], msg: [700, 900, 0.07, "sine"] }[kind];
+      o.type = P[3];
+      o.frequency.setValueAtTime(P[0], t);
+      o.frequency.exponentialRampToValueAtTime(P[1], t + P[2]);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(kind === "night" ? 0.25 : 0.12, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + P[2] + 0.05);
+      o.connect(g).connect(mfAC.destination);
+      o.start(t);
+      o.stop(t + P[2] + 0.08);
+    } catch {}
+  }
+  const MF_TALK = ["Мен тұрғынмын, сеніңдер!", "Кеше {X} тым тыныш отырды 🤔", "Комиссар, өзіңді көрсет!", "Менің ойымша {X} — мафия", "{X}, сен неге үндемейсің?", "Дәлел жоқ қой, асықпайық", "Мен {X}-ке дауыс беремін", "Дәрігер кімді емдеді екен?"];
+  const MF_NIGHT = ["{X}-ті аламыз ба?", "{X} комиссар болуы мүмкін", "Келістік 👍", "Күндіз бізді байқамасын 🤫"];
   function openMafiaLobby() {
     pushScreen(
       "Мафия",
@@ -4383,7 +4405,7 @@
       const j = roles.indexOf(want);
       [roles[meIdx], roles[j]] = [roles[j], roles[meIdx]];
     }
-    r.game = { day: 1, phase: "roles", players: order.map((p, i) => ({ ...p, role: roles[i], alive: true })), log: [], pick: null, last: null, check: null, winner: null, cards, votes: null, entered: false };
+    r.game = { day: 1, phase: "deal", chat: [], mafChat: [], chatTab: "all", mic: false, sfx: true, unread: 0, players: order.map((p, i) => ({ ...p, role: roles[i], alive: true })), log: [], pick: null, last: null, check: null, winner: null, cards, votes: null, entered: false };
     return r.game;
   }
   function openMafiaGame(r, asHost) {
@@ -4454,20 +4476,64 @@
       S.phase = "verdict";
       if (!winCheck()) S.day++;
     };
+    /* —— Чат: күндіз жалпы (талқылауда), түнде тек мафия өзара; шыққандар жаза алмайды —— */
+    const chatState = () => {
+      const me = meP();
+      if (S.chatTab === "maf") return me?.role === "mafia" && me.alive ? (S.phase === "night" ? "" : "Мафия чаты тек түнде ашық") : "Тек мафия үшін";
+      if (asHost) return "";
+      if (!me) return "Сен көрерменсің";
+      if (!me.alive) return "Шыққандар жаза алмайды";
+      if (S.phase === "night") return "Түн — қала ұйықтап жатыр 🤫";
+      if (S.phase === "roles") return "Ойын енді басталады";
+      return "";
+    };
+    const msgHtml = (m) => `<div class="mf-msg ${m.me ? "me" : ""} ${m.sys ? "sys" : ""}">${m.sys ? "" : avatarHtml(m.p)}<span>${m.sys ? "" : `<b>${m.me ? "Сен" : m.p.name.split(" ")[0]}</b>`}${m.text}</span></div>`;
+    const mfChatHtml = () => {
+      const me = meP();
+      const list = S.chatTab === "maf" ? S.mafChat : S.chat;
+      const lock = chatState();
+      return `<div class="mf-chat" id="mfChat">
+        <div class="mf-ch-h">${icon("forum", "material-icons-outlined")}<b>Чат</b>
+          <span class="mf-ch-tabs"><button type="button" class="${S.chatTab === "all" ? "on" : ""}" data-mfct="all">Жалпы</button>${me?.role === "mafia" || asHost ? `<button type="button" class="${S.chatTab === "maf" ? "on" : ""} maf" data-mfct="maf">🎭 Мафия</button>` : ""}</span>
+        </div>
+        <div class="mf-ch-list" id="mfChList">${list.slice(-40).map(msgHtml).join("") || `<div class="sh-empty" style="text-align:center">Әзірге хабар жоқ</div>`}</div>
+        <div class="mf-ch-in ${lock ? "lock" : ""}">${lock ? `<span>${icon("lock", "material-icons-outlined")}${lock}</span>` : `<input id="mfMsg" placeholder="Хабар жаз…" maxlength="120" /><button type="button" id="mfSend">${icon("send")}</button>`}</div>
+      </div>`;
+    };
+    const pushMsg = (m, maf = false) => {
+      (maf ? S.mafChat : S.chat).push(m);
+      const el = $("#mfChList");
+      if (el && (S.chatTab === "maf") === maf) {
+        el.querySelector(".sh-empty")?.remove();
+        el.insertAdjacentHTML("beforeend", msgHtml(m));
+        el.lastElementChild.classList.add("new");
+        el.scrollTop = el.scrollHeight;
+      }
+      mfSfx("msg", S.sfx);
+    };
     pushScreen(
       asHost ? `${r.title} · жүргізуші` : r.title,
       () => {
         const me = meP();
         const night = S.phase === "night";
         const canPick = (S.phase === "night" && me?.alive && me.role !== "civ") || (S.phase === "vote" && me?.alive);
-        const centerTxt = { roles: ["🎭", "Рөлдер таратылды"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", "Таң атты"], talk: ["💬", "Талқылау"], vote: ["🗳", "Дауыс беру"], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Тұрғындар жеңді" : "Мафия жеңді"] }[S.phase];
-        const talkers = S.phase === "talk" ? alive().filter((p) => !p.me).slice(0, 2).map((p) => p.id) : [];
+        const centerTxt = { deal: ["🃏", "Карталар таратылуда"], roles: ["🎭", "Рөліңді қара"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", "Таң атты"], talk: ["💬", "Талқылау"], vote: ["🗳", "Дауыс беру"], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Тұрғындар жеңді" : "Мафия жеңді"] }[S.phase];
+        const talkers = S.phase === "talk" ? [...alive().filter((p) => !p.me).slice(0, 2).map((p) => p.id), ...(S.mic && me?.alive ? [me.id] : [])] : [];
+        // карталар: таратуда ұшып барады, кейін әр орынның қасында жатады (шыққандардікі ашық)
+        const cardsHtml = S.players.map((p, i) => {
+          const a = ((-90 + (i * 360) / S.players.length) * Math.PI) / 180;
+          const x = 50 + 27 * Math.cos(a), y = 50 + 27 * Math.sin(a);
+          return `<i class="mf-fly ${S.phase === "deal" ? "deal" : ""} ${!p.alive || S.phase === "end" ? "open" : ""} ${p.me && S.phase === "roles" ? "mine" : ""}" style="--x:${x}%;--y:${y}%;--i:${i};--c:${MF_ROLES[p.role].color}"></i>`;
+        }).join("");
         const grid = mfTable({
           night,
+          extra: cardsHtml,
           enter: !S.entered,
           center: `<span class="mf-ce">${centerTxt[0]}</span><b>${centerTxt[1]}</b><small>${alive().length} тірі · ${S.players.filter((p) => p.role === "mafia" && p.alive).length && (asHost || S.phase === "end") ? `${S.players.filter((p) => p.role === "mafia" && p.alive).length} мафия` : `${S.day}-раунд`}</small>`,
           seats: S.players.map((p) => {
-            const showRole = asHost || !p.alive || S.phase === "end" || (me?.role === "mafia" && p.role === "mafia") || p.me;
+            // карта ашылмайынша өз рөлің де, серіктесің де көрінбейді
+            const hidden = !asHost && (S.phase === "deal" || (S.phase === "roles" && !S.flip));
+            const showRole = !hidden && (asHost || !p.alive || S.phase === "end" || (me?.role === "mafia" && p.role === "mafia") || p.me);
             const sel = S.pick === p.id;
             const pickable = canPick && p.alive && (!p.me || (night && me.role === "doctor")) && !(night && me.role === "mafia" && p.role === "mafia");
             const v = S.phase === "verdict" && S.votes?.[p.id];
@@ -4477,17 +4543,24 @@
             };
           }),
         });
-        const banner = { roles: ["🎭", "Рөлдер таратылды"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", `${S.day}-таң`], talk: ["💬", `${S.day}-күн · талқылау`], vote: ["🗳", `${S.day}-күн · дауыс беру`], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Бейбіт тұрғындар жеңді!" : "Мафия жеңді!"] }[S.phase];
+        const banner = { deal: ["🃏", "Карталар таратылуда…"], roles: ["🎭", "Рөлдер таратылды"], night: ["🌙", `${S.day}-түн`], morning: ["🌅", `${S.day}-таң`], talk: ["💬", `${S.day}-күн · талқылау`], vote: ["🗳", `${S.day}-күн · дауыс беру`], verdict: ["⚖️", "Үкім"], end: ["🏆", S.winner === "town" ? "Бейбіт тұрғындар жеңді!" : "Мафия жеңді!"] }[S.phase];
         let action = "";
         if (asHost) {
-          const next = { roles: ["Түн басталсын", "night"], night: ["Таң атты (түнді қорытындылау)", "resolveNight"], morning: ["Талқылауды бастау", "talk"], talk: ["Дауыс беруге өту", "vote"], vote: ["Дауысты санау", "resolveVote"], verdict: ["Келесі түн", "night"] }[S.phase];
-          action = S.phase === "end" ? "" : `<div class="mf-host">${icon("record_voice_over", "material-icons-outlined")}<span>${{ roles: "Рөлдерді әр оқушы өз телефонында көрді. «Қала ұйықтайды…» деп түнді баста.", night: "Мафия, дәрігер, комиссар таңдап жатыр. Барлығы таңдаған соң таңды жарияла.", morning: S.last?.text || "", talk: `Талқылау ${r.talk} мин. Әркім өз ойын айтады.`, vote: "Әркім бір адамға дауыс береді.", verdict: S.last?.text || "" }[S.phase]}</span></div><button type="button" class="ef-submit" data-mfnext="${next[1]}">${next[0]}</button>`;
+          const next = { deal: ["Карталарды таратып болдым", "roles"], roles: ["Түн басталсын", "night"], night: ["Таң атты (түнді қорытындылау)", "resolveNight"], morning: ["Талқылауды бастау", "talk"], talk: ["Дауыс беруге өту", "vote"], vote: ["Дауысты санау", "resolveVote"], verdict: ["Келесі түн", "night"] }[S.phase];
+          action = S.phase === "end" ? "" : `<div class="mf-host">${icon("record_voice_over", "material-icons-outlined")}<span>${{ deal: "Карталар әр ойыншыға таратылуда.", roles: "Рөлдерді әр оқушы өз телефонында көрді. «Қала ұйықтайды…» деп түнді баста.", night: "Мафия, дәрігер, комиссар таңдап жатыр. Барлығы таңдаған соң таңды жарияла.", morning: S.last?.text || "", talk: `Талқылау ${r.talk} мин. Әркім өз ойын айтады.`, vote: "Әркім бір адамға дауыс береді.", verdict: S.last?.text || "" }[S.phase]}</span></div><button type="button" class="ef-submit" data-mfnext="${next[1]}">${next[0]}</button>`;
         } else if (!me) action = `<div class="tf-sum">Сен бұл ойында тіркелмегенсің — тек көресің</div>`;
-        else if (S.phase === "roles") action = `<button type="button" class="mf-card" id="mfFlip" style="--c:${MF_ROLES[me.role].color}"><span class="mf-card-in ${S.flip ? "flip" : ""}"><span class="f">${icon("help_outline")}<b>Рөліңді көру үшін бас</b><small>Ешкімге көрсетпе!</small></span><span class="b">${icon(MF_ROLES[me.role].icon)}<b>${MF_ROLES[me.role].name}</b><small>${MF_ROLES[me.role].act}</small></span></span></button>${S.flip ? `<div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Жүргізуші түнді бастауын күт…</div>` : ""}`;
+        else if (S.phase === "deal") action = `<div class="mf-wait">${icon("style", "material-icons-outlined")}Жүргізуші карталарды таратып жатыр…</div>`;
+        else if (S.phase === "roles") action = S.flip ? `<div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Барлығы рөлін көрді. Жүргізуші түнді бастауда…</div>` : `<div class="mf-reveal ${S.peeked ? "seen" : ""}" style="--c:${MF_ROLES[me.role].color}">
+            <div class="mf-big" id="mfPeek">
+              <span class="mf-big-in"><span class="f"><i class="mf-logo">I4U</i><b>МАФИЯ</b><small>${icon("touch_app", "material-icons-outlined")}Басып тұр — ашылады</small></span><span class="b"><span class="mf-burst"></span>${icon(MF_ROLES[me.role].icon)}<b>${MF_ROLES[me.role].name}</b><small>${MF_ROLES[me.role].act}</small></span></span>
+            </div>
+            <div class="mf-rv-t">${S.peeked ? "Рөліңді есте сақта. Ешкімге көрсетпе!" : "Картаңды басып тұрып қара — жіберсең жабылады"}</div>
+            ${S.peeked ? `<button type="button" class="ef-submit" id="mfSeen">Рөлімді көрдім ✓</button>` : ""}
+          </div>`;
         else if (!me.alive && S.phase !== "end") action = `<div class="mf-wait dead">${icon("visibility", "material-icons-outlined")}Сен ойыннан шықтың — енді тек бақылайсың. Ешкімге айтпа!</div>`;
         else if (S.phase === "night") action = me.role === "civ" ? `<div class="mf-wait">😴 Қала ұйықтап жатыр… Мафия, дәрігер мен комиссар таңдауда</div>` : `<div class="mf-act" style="--c:${MF_ROLES[me.role].color}">${icon(MF_ROLES[me.role].icon)}<span><b>${MF_ROLES[me.role].name}: ${me.role === "mafia" ? "кімді шығарасыңдар?" : me.role === "doctor" ? "кімді емдейсің?" : "кімді тексересің?"}</b><small>Жоғарыдан бір адамды таңда</small></span></div><button type="button" class="ef-submit" id="mfOk" ${S.pick ? "" : "disabled"}>Таңдауды растау</button>`;
         else if (S.phase === "morning") action = `<div class="mf-news">${S.last?.text || ""}</div>${S.check ? `<div class="mf-act" style="--c:#4F9BFF">${icon("search")}<span><b>Тек саған: ${S.check.name} — ${S.check.mafia ? "МАФИЯ!" : "мафия емес"}</b><small>Күндіз мұны қалай айтатыныңды ойла</small></span></div>` : ""}<div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Жүргізуші талқылауды бастауда…</div>`;
-        else if (S.phase === "talk") action = `<div class="mf-news">💬 Талқылау: кім мафия деп ойлайсың? Дәлелдеп айт (${r.talk} мин)</div><div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Талқылаудан кейін дауыс беру</div>`;
+        else if (S.phase === "talk") action = `<div class="mf-news">💬 Талқылау (${r.talk} мин): кім мафия деп ойлайсың? Микрофонды қосып айт не чатқа жаз</div>`;
         else if (S.phase === "vote") action = `<div class="mf-act" style="--c:#F2A93B">${icon("how_to_vote")}<span><b>Кімді шығарамыз?</b><small>Бір адамға дауыс бер</small></span></div><button type="button" class="ef-submit" id="mfOk" ${S.pick ? "" : "disabled"}>Дауыс беру</button>`;
         else if (S.phase === "verdict") action = `<div class="mf-news">${S.last?.text || ""}</div><div class="mf-wait">${icon("hourglass_top", "material-icons-outlined")}Келесі түн жақында…</div>`;
         else if (S.phase === "end") action = `<div class="bc-end ${me && MF_ROLES[me.role].team === S.winner ? "me" : "bot"}">${me && MF_ROLES[me.role].team === S.winner ? "Командаң жеңді! 🎉" : "Командаң жеңілді"}<small>Сенің рөлің: ${me ? MF_ROLES[me.role].name : "—"}</small></div>`;
@@ -4495,18 +4568,76 @@
           <div class="mf-banner"><span>${banner[0]}</span><b>${banner[1]}</b>${asHost ? `<em>жүргізуші</em>` : me ? `<em style="--c:${MF_ROLES[me.role].color}">${S.phase === "roles" && !S.flip ? "рөлің жасырын" : MF_ROLES[me.role].name}</em>` : ""}</div>
           ${grid}
           ${action}
+          ${S.phase !== "deal" ? mfChatHtml() : ""}
           ${S.log.length ? `<div class="t3-sec">Ойын барысы</div>${S.log.map((l) => `<div class="mf-log">${l}</div>`).join("")}` : ""}
         </div>`;
       },
       () => {
         S.entered = true;
-        const auto = (fn, ms = 1600) => setTimeout(() => { if (state.navStack.length && !asHost) (fn(), paintStack()); }, ms);
-        $("#mfFlip")?.addEventListener("click", () => {
-          if (S.flip) return;
+        const key = `${S.phase}:${S.day}`;
+        const fresh = S.sched !== key;
+        S.sched = key;
+        const auto = (fn, ms = 1600) => fresh && setTimeout(() => { if (state.navStack.length && !asHost && S.sched === key) (fn(), paintStack()); }, ms);
+        $("#mfChList") && ($("#mfChList").scrollTop = 1e6);
+        if (fresh && $(".mf-reveal")) centerIn($(".mf-reveal"), "y");
+        // фаза дыбыстары
+        if (fresh && S.phase === "night") mfSfx("night", S.sfx);
+        if (fresh && S.phase === "morning") mfSfx("day", S.sfx);
+        // карта тарату: әр ойыншыға кезекпен ұшады
+        if (S.phase === "deal" && fresh) {
+          S.players.forEach((_, i) => setTimeout(() => mfSfx("deal", S.sfx), 300 + i * 160));
+          setTimeout(() => { if (S.sched === key) ((S.phase = "roles"), paintStack()); }, 600 + S.players.length * 160 + 700);
+        }
+        // рөлді көру: басып тұрғанда ашылады
+        const pk = $("#mfPeek");
+        if (pk) {
+          const on = (e) => { e.preventDefault(); pk.classList.add("peek"); mfSfx("flip", S.sfx); };
+          const off = () => { if (!pk.classList.contains("peek")) return; pk.classList.remove("peek"); if (!S.peeked) ((S.peeked = true), paintStack()); };
+          pk.onpointerdown = on;
+          pk.onpointerup = pk.onpointerleave = pk.onpointercancel = off;
+        }
+        $("#mfSeen")?.addEventListener("click", () => {
           S.flip = true;
           paintStack();
-          auto(() => (S.phase = "night"), 2600);
+          setTimeout(() => { if (S.phase === "roles" && !asHost) ((S.phase = "night"), paintStack()); }, 2200);
         });
+        // чат
+        $$("[data-mfct]").forEach((b) => (b.onclick = () => ((S.chatTab = b.dataset.mfct), paintStack())));
+        const send = () => {
+          const v = $("#mfMsg")?.value.trim();
+          if (!v) return;
+          const me = meP();
+          pushMsg({ p: me || { name: myName(), initials: "Ж", color: "#F2A93B" }, me: true, text: asHost ? `🎙 ${v}` : v }, S.chatTab === "maf");
+          $("#mfMsg").value = "";
+        };
+        $("#mfSend")?.addEventListener("click", send);
+        $("#mfMsg")?.addEventListener("keydown", (e) => e.key === "Enter" && send());
+        // боттардың хабарлары: талқылауда — жалпы чат, түнде — мафия чаты
+        if (fresh && (S.phase === "talk" || S.phase === "night")) {
+          const night = S.phase === "night";
+          const speakers = alive().filter((p) => !p.me && (!night || p.role === "mafia"));
+          const others = alive().filter((p) => p.role !== "mafia" || !night);
+          const pool = night ? MF_NIGHT : MF_TALK;
+          if (speakers.length) for (let k = 0; k < (night ? 2 : 5); k++)
+            setTimeout(() => {
+              if (S.sched !== key) return;
+              const p = speakers[(k + S.day) % speakers.length];
+              const x = others[(k * 3 + S.day) % others.length];
+              pushMsg({ p, text: pool[(k + S.day * 2) % pool.length].replace("{X}", x ? x.name.split(" ")[0] : "біреу") }, night);
+            }, 900 + k * 2100);
+        }
+        if (fresh && ["morning", "verdict"].includes(S.phase) && S.last) S.chat.push({ sys: true, text: `🎙 Жүргізуші: ${S.last.text}` });
+        // аудио
+        $("#mfMic")?.addEventListener("click", () => {
+          const me = meP();
+          if (!me?.alive) return toast("Шыққандар сөйлей алмайды", "err");
+          if (S.phase !== "talk" && !S.mic) return toast("Микрофон тек талқылау кезінде ашылады", "err");
+          S.mic = !S.mic;
+          toast(S.mic ? "Микрофон қосулы — сені бәрі естиді 🎙" : "Микрофон өшірулі");
+          paintStack();
+        });
+        $("#mfSnd")?.addEventListener("click", () => ((S.sfx = !S.sfx), toast(S.sfx ? "Дыбыс қосулы" : "Дыбыс өшірулі"), paintStack()));
+        $("#mfChatGo")?.addEventListener("click", () => $("#mfChat")?.scrollIntoView({ behavior: "smooth", block: "center" }));
         $$("[data-mfp]").forEach((b) => (b.onclick = () => ((S.pick = +b.dataset.mfp), paintStack())));
         $("#mfOk")?.addEventListener("click", () => {
           if (S.phase === "night") (resolveNight(), paintStack(), !S.winner && auto(() => (S.phase = "talk"), 2600));
@@ -4516,7 +4647,7 @@
         const me = meP();
         if (!asHost && me) {
           if (S.phase === "night" && (me.role === "civ" || !me.alive)) auto(() => resolveNight(), 2200);
-          else if (S.phase === "talk") auto(() => (S.phase = "vote"), 3500);
+          else if (S.phase === "talk") auto(() => ((S.phase = "vote"), (S.mic = false)), 12500);
           else if (S.phase === "vote" && !me.alive) auto(() => resolveVote(), 2200);
           else if (S.phase === "morning" && !$("#mfOk")) auto(() => (S.phase = "talk"), 3200);
           else if (S.phase === "verdict") auto(() => (S.phase = "night"), 2800);
@@ -4529,7 +4660,19 @@
           paintStack();
         }));
       },
-      { screenCls: "gm-screen", right: `<button type="button" class="appbar-icon-btn" id="mfRules2">${icon("info", "material-icons-outlined")}</button>` }
+      {
+        screenCls: "gm-screen",
+        right: `<button type="button" class="appbar-icon-btn" id="mfRules2">${icon("info", "material-icons-outlined")}</button>`,
+        footer: () => {
+          const me = meP();
+          const micOk = me?.alive && S.phase === "talk";
+          return `<div class="sticky-foot mf-bar">
+            <button type="button" class="mf-ab ${S.mic ? "on" : ""} ${micOk || S.mic ? "" : "dim"}" id="mfMic">${icon(S.mic ? "mic" : "mic_off")}<small>${S.mic ? "Сөйлеп тұрсың" : "Микрофон"}</small></button>
+            <button type="button" class="mf-ab ${S.sfx ? "" : "dim"}" id="mfSnd">${icon(S.sfx ? "volume_up" : "volume_off")}<small>Дыбыс</small></button>
+            <button type="button" class="mf-ab" id="mfChatGo">${icon("forum", "material-icons-outlined")}<small>Чат${S.chat.length ? ` · ${S.chat.length}` : ""}</small></button>
+          </div>`;
+        },
+      }
     );
     $("#mfRules2")?.addEventListener("click", () => gameRules("mafia"));
   }
