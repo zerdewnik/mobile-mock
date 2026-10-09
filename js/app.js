@@ -6,7 +6,7 @@
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
     { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
-    { out: "forum", fill: "forum", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Чат" },
+    { out: "assignment", fill: "assignment", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Отчёт" },
     { out: "how_to_reg", fill: "how_to_reg", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисление" },
   ];
   const NAV_STUDENT = [
@@ -15,7 +15,7 @@
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Чат", "Зачисление"];
+  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Отчёт", "Зачисление"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
@@ -3576,105 +3576,218 @@
     return `<div class="ff">${rail}<div class="ff-main">${main}</div></div>`;
   }
 
-  /* —— Staff: Чат — кураторлар арасындағы хат алмасу ——
-     Ортақ «Кураторлар» арнасы (бас куратор хабарландыруы бекітулі) + жеке чаттар */
-  const meCurId = () => (isHead() ? 3 : MY_CURATOR_ID);
   const curRole = (c) => (c.isChief ? "Бас куратор" : COURSE_TITLE[c.courseId] ? `Куратор · ${COURSE_TITLE[c.courseId]}` : "Куратор");
   const curAv = (c) => ({ name: c.name, initials: c.name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase(), color: ["#5B6EC2", "#E07A3D", "#8B5CF6", "#2B8073", "#B13B5D", "#4690C6"][c.id % 6] });
-  const curOnline = (c) => rnd(c.id, 909) > 0.45;
-  function staffChats() {
-    if (!MOCK.staffChats) {
-      MOCK.staffChats = {
-        group: [
-          { from: 3, text: "Әріптестер, жұма күні 18:00-де апталық отчёт ата-аналарға кетуі керек. Кешіктірмейік 🙏", t: "09:10", pin: true },
-          { from: 2, text: "Түсінікті! Менің топтарым дайын.", t: "09:24" },
-          { from: 5, text: "Сенбі мафия кешіне кім жүргізуші болады?", t: "10:02" },
-          { from: 4, text: "Мен бола аламын 🙋‍♀️", t: "10:05" },
+  /* —— Staff: ОТЧЁТ — куратордың күндік / апталық / айлық міндеттері және есебі ——
+     Куратор: міндеттер тізімін белгілеп/толтырып, мерзімінде жібереді (кейбір сандар жүйеден өздігінен толады).
+     Бас куратор: кім жіберді / кешікті / жібермеді; отчётты ашып «Қабылдау» не «Түзетуге қайтару», жібермегенге «Еске салу». */
+  const REP_PERIODS = {
+    day: { name: "Күндік", due: "Бүгін 21:00 дейін", coins: 5 },
+    week: { name: "Апталық", due: "Сенбі 18:00 дейін", coins: 20 },
+    month: { name: "Айлық", due: "Айдың соңғы күні 18:00 дейін", coins: 50 },
+  };
+  const curGroups = () => visibleGroups().filter((g) => isHead() || g.curatorId === MY_CURATOR_ID);
+  const sumSt = () => curGroups().reduce((t, g) => t + g.students.length, 0);
+  /** Міндеттер шаблоны (бас куратор «Шаблон» арқылы толықтыра алады). kind: check | num | text | of (N/M) */
+  function repTasks() {
+    if (!MOCK.repTasks) {
+      const n = sumSt();
+      MOCK.repTasks = {
+        day: [
+          { id: "d1", t: "Топ чатына күн жоспары мен сабақ уақытын жіберу", kind: "check", req: true },
+          { id: "d2", t: "Сабаққа қатыспағандармен хабарласу", kind: "of", hint: "хабарластым / қатыспады", auto: () => `${Math.round(n * 0.12)}`, req: true },
+          { id: "d3", t: "Сабақ тестін тапсырмағандарды тексеру", kind: "num", hint: "оқушы саны", auto: () => `${Math.round(n * 0.18)}`, req: true },
+          { id: "d4", t: "Конспектілерді тексеру", kind: "num", hint: "тексерілді", req: false },
+          { id: "d5", t: "Оқушылар мен ата-аналар сұрақтарына жауап беру", kind: "check", req: true },
+          { id: "d6", t: "Эфир өткізу / эфирге шақыру", kind: "check", req: false, hint: "бүгін эфир болса" },
+          { id: "d7", t: "Мәселе не ескерту", kind: "text", req: false, hint: "мысалы: Ерман 3 күн кірмеді" },
         ],
-        2: [{ from: 2, text: "Сәлем! Викингтер тобының апталық сынақ нәтижесін жібере аласың ба?", t: "Кеше" }, { from: "me", text: "Сәлем, бүгін кешке жіберемін", t: "Кеше", read: true }],
-        3: [{ from: 3, text: "Диана, Қыркүйек кубогы өте жақсы өтті, рақмет! Келесі айға да жоспарлайық.", t: "11:40" }],
-        5: [{ from: "me", text: "Еркебұлан, топтар шайқасына Хронос 2-ні шақырайық па?", t: "Дс", read: true }, { from: 5, text: "Иә, келістік ⚔️", t: "Дс" }],
+        week: [
+          { id: "w1", t: "Апталық сынақ өткізу", kind: "of", hint: "қатысты / барлығы", auto: () => `${n}`, req: true },
+          { id: "w2", t: "Ата-аналарға апталық отчёт жіберу (WhatsApp)", kind: "of", hint: "жіберілді / барлығы", auto: () => `${n}`, req: true },
+          { id: "w3", t: "Артта қалған оқушылармен жеке жұмыс", kind: "text", hint: "кіммен, не істелді", req: true },
+          { id: "w4", t: "Апта чемпионын топта жариялау", kind: "check", req: true },
+          { id: "w5", t: "Топ белсенділігі", kind: "num", hint: "%", auto: () => "84", req: true },
+          { id: "w6", t: "Батл / турнир / ойын өткізу", kind: "check", req: false },
+          { id: "w7", t: "Келесі аптаға жоспар", kind: "text", hint: "2–3 мақсат", req: true },
+        ],
+        month: [
+          { id: "m1", t: "Айлық ҰБТ сынағы — орташа балл", kind: "num", hint: "балл", auto: () => "92", req: true },
+          { id: "m2", t: "Өткен аймен салыстырғанда өсім", kind: "num", hint: "+ балл", auto: () => "6", req: true },
+          { id: "m3", t: "Ата-аналармен жиналыс / қоңырау", kind: "of", hint: "хабарластым / барлығы", auto: () => `${n}`, req: true },
+          { id: "m4", t: "Доступы бітетін оқушылар (ұзарту)", kind: "of", hint: "ұзартты / бітетін", auto: () => "4", req: true },
+          { id: "m5", t: "Кеткен оқушылар және себебі", kind: "text", hint: "жоқ болса «0»", req: true },
+          { id: "m6", t: "Айдың жетістіктері мен қиындықтары", kind: "text", req: true },
+          { id: "m7", t: "Келесі айға мақсат", kind: "text", req: true },
+        ],
       };
-      MOCK.staffUnread = { group: 2, 3: 1 };
     }
-    return MOCK.staffChats;
+    return MOCK.repTasks;
   }
-  function renderStaffChat() {
-    const C = staffChats(), U = MOCK.staffUnread || {};
-    const q = (state.chatQ || "").toLowerCase();
-    const others = MOCK.curators.filter((c) => c.id !== meCurId() && c.name.toLowerCase().includes(q));
-    const last = (k) => C[k]?.[C[k].length - 1];
-    const row = (k, av, name, sub, online) => {
-      const m = last(k);
-      return `<button type="button" class="ch-row" data-chat="${k}">
-        <span class="ch-av">${av}${online ? `<i></i>` : ""}</span>
-        <span class="ch-mid"><b>${name}</b><small>${m ? `${m.from === "me" ? "Сен: " : k === "group" ? `${(MOCK.curators.find((c) => c.id === m.from)?.name || "").split(" ")[0]}: ` : ""}${m.text}` : sub}</small></span>
-        <span class="ch-end"><small>${m?.t || ""}</small>${U[k] ? `<em>${U[k]}</em>` : m?.from === "me" ? `<i class="ch-tick">${icon("done_all")}</i>` : ""}</span>
-      </button>`;
+  const repKey = (per) => (per === "day" ? dmy(AN_TODAY) : per === "week" ? "41-апта" : "Қазан 2026");
+  function myReport(per) {
+    const R = (MOCK.reports ||= {});
+    const k = `${per}:${repKey(per)}`;
+    if (!R[k]) {
+      R[k] = { per, key: repKey(per), status: "draft", vals: {}, comment: "" };
+      repTasks()[per].forEach((t) => t.auto && (R[k].vals[t.id] = t.kind === "num" ? { b: t.auto() } : { a: t.auto(), b: "" }));
+      if (per === "day") (R[k].vals.d1 = { done: true }), (R[k].vals.d5 = { done: true });
+    }
+    return R[k];
+  }
+  const taskDone = (t, v) => !!v && (t.kind === "check" ? v.done : t.kind === "of" ? v.a !== "" && v.b !== "" && v.b !== undefined : t.kind === "num" ? (v.b ?? v.a ?? "") !== "" : (v.b || "").trim().length > 0);
+  /** Аптаның күндері: өткен күндердің күйі (макет) */
+  const repWeekStrip = () => ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб"].map((d, i) => ({ d, st: i < 4 ? ["ok", "ok", "late", "ok"][i] : i === 4 ? (myReport("day").status === "draft" ? "now" : "ok") : "next" }));
+  function renderReports() {
+    const per = state.repPer || "day";
+    if (isHead()) return renderReportsHead(per);
+    const R = myReport(per), T = repTasks()[per], P = REP_PERIODS[per];
+    const done = T.filter((t) => taskDone(t, R.vals[t.id])).length, req = T.filter((t) => t.req);
+    const reqOk = req.every((t) => taskDone(t, R.vals[t.id]));
+    const locked = R.status === "sent" || R.status === "ok";
+    const pct = Math.round((done / T.length) * 100);
+    const st = { draft: ["Толтырылуда", "#F2A93B"], sent: ["Жіберілді · тексерілуде", "#5B9BF2"], ok: ["Қабылданды ✓", "#5CB36D"], back: ["Түзетуге қайтарылды", "#E2574C"] }[R.status];
+    const field = (t) => {
+      const v = R.vals[t.id] || {};
+      if (t.kind === "check") return "";
+      if (t.kind === "of") return `<span class="rp-of"><input class="rp-in sm" data-rpv="${t.id}:b" type="number" min="0" value="${v.b ?? ""}" placeholder="?" ${locked ? "disabled" : ""}/><i>/</i><input class="rp-in sm" data-rpv="${t.id}:a" type="number" min="0" value="${v.a ?? ""}" ${locked ? "disabled" : ""}/><small>${t.hint || ""}</small></span>`;
+      if (t.kind === "num") return `<span class="rp-of"><input class="rp-in sm" data-rpv="${t.id}:b" type="number" value="${v.b ?? ""}" placeholder="0" ${locked ? "disabled" : ""}/><small>${t.hint || ""}${t.auto ? " · жүйеден" : ""}</small></span>`;
+      return `<textarea class="rp-in" data-rpv="${t.id}:b" rows="2" placeholder="${t.hint || "Жазыңыз…"}" ${locked ? "disabled" : ""}>${v.b || ""}</textarea>`;
     };
-    return `<div class="list-pad ch-list">
-      <label class="ch-search">${icon("search")}<input id="chatSearch" value="${state.chatQ || ""}" placeholder="Куратор іздеу" /></label>
-      ${q ? "" : row("group", `<span class="du-av ch-grp">${icon("groups")}</span>`, "Кураторлар", "Ортақ арна", false)}
-      <div class="t3-sec">Кураторлар · ${others.length}</div>
-      ${others.map((c) => row(c.id, avatarHtml(curAv(c)), c.name, curRole(c), curOnline(c))).join("") || `<div class="sh-empty">Табылмады</div>`}
+    return `<div class="list-pad rp">
+      <div class="seg-tabs seg-3 rp-seg">${Object.entries(REP_PERIODS).map(([k, x]) => `<button type="button" data-rpper="${k}" class="${per === k ? "on" : ""}">${x.name}</button>`).join("")}</div>
+      <div class="rp-hero">
+        <div class="rp-ring" style="--p:${pct}"><b>${done}/${T.length}</b><small>орындалды</small></div>
+        <div class="rp-hi">
+          <b>${P.name} отчёт · ${R.key}</b>
+          <small>${icon("schedule", "material-icons-outlined")}${P.due}</small>
+          <em style="--c:${st[1]}">${st[0]}</em>
+          ${R.sentAt ? `<small>${icon("send", "material-icons-outlined")}Жіберілді ${R.sentAt}</small>` : ""}
+        </div>
+      </div>
+      ${per === "day" ? `<div class="rp-week">${repWeekStrip().map((x) => `<span class="${x.st}"><b>${x.d}</b><i>${x.st === "ok" ? icon("check") : x.st === "late" ? icon("schedule") : x.st === "now" ? icon("edit") : ""}</i></span>`).join("")}</div>` : ""}
+      ${R.status === "back" && R.headComment ? `<div class="rp-back">${icon("reply", "material-icons-outlined")}<span><b>Бас куратор:</b> ${R.headComment}</span></div>` : ""}
+      <div class="t3-sec">Міндеттер <small style="text-transform:none;font-weight:500">· * міндетті</small></div>
+      ${T.map((t, i) => {
+        const v = R.vals[t.id] || {}, ok = taskDone(t, v);
+        return `<div class="rp-task ${ok ? "done" : ""}">
+          <button type="button" class="rp-chk" data-rpchk="${t.id}" ${locked || t.kind !== "check" ? "disabled" : ""}>${ok ? icon("check") : `<span>${i + 1}</span>`}</button>
+          <div class="rp-tb"><b>${t.t}${t.req ? "<i>*</i>" : ""}</b>${t.kind === "check" && t.hint ? `<small>${t.hint}</small>` : ""}${field(t)}</div>
+        </div>`;
+      }).join("")}
+      <div class="t3-sec">Қосымша</div>
+      <textarea class="rp-in" id="rpComment" rows="2" placeholder="Түсініктеме (міндетті емес)" ${locked ? "disabled" : ""}>${R.comment || ""}</textarea>
+      <div class="rp-att">${(R.files || []).map((f) => `<span>${icon("description", "material-icons-outlined")}${f}</span>`).join("")}${locked ? "" : `<button type="button" id="rpAttach">${icon("attach_file")}Фото / файл тіркеу</button>`}</div>
+      <div class="rp-foot">
+        ${locked ? `<div class="tf-sum" style="justify-content:center">${icon("lock", "material-icons-outlined")}Жіберілген отчётты өзгертуге болмайды${R.status === "sent" ? " — бас куратор тексеруде" : ""}</div>` : `<button type="button" class="ef-submit" id="rpSend" ${reqOk ? "" : "disabled"}>${icon("send")}${R.status === "back" ? "Қайта жіберу" : "Отчёт жіберу"}</button>${reqOk ? "" : `<div class="tf-sum" style="justify-content:center">Міндетті (*) пункттерді толтырыңыз: ${req.filter((t) => taskDone(t, R.vals[t.id])).length}/${req.length}</div>`}`}
+      </div>
+      <div class="t3-sec">Тарих</div>
+      ${[["Кеше", "ok", "20:12"], ["Сейсенбі", "ok", "20:48"], ["Дүйсенбі", "late", "22:05"]].map(([d, s, tm]) => `<div class="rp-hist"><span class="rp-dot ${s}"></span><b>${P.name} · ${per === "day" ? d : per === "week" ? "40-апта" : "Қыркүйек"}</b><small>${s === "ok" ? `уақытында · ${tm} · қабылданды` : `кешікті · ${tm}`}</small></div>`).join("")}
     </div>`;
   }
-  function openStaffChat(k) {
-    const C = staffChats();
-    const group = k === "group";
-    const cur = group ? null : MOCK.curators.find((c) => c.id === +k);
-    C[k] ||= [];
-    (MOCK.staffUnread ||= {})[k] = 0;
-    let typing = false;
-    const bubble = (m, i, arr) => {
-      const mine = m.from === "me";
-      const who = !mine && group ? MOCK.curators.find((c) => c.id === m.from) : null;
-      const firstOfRun = i === 0 || arr[i - 1].from !== m.from;
-      return `<div class="ch-msg ${mine ? "me" : ""} ${m.pin ? "pin" : ""}">
-        ${!mine && group ? (firstOfRun ? avatarHtml(curAv(who)) : `<span class="ch-gap"></span>`) : ""}
-        <span class="ch-b">${who && firstOfRun ? `<b style="color:${curAv(who).color}">${who.name}${who.isChief ? " · бас куратор" : ""}</b>` : ""}${m.pin ? `<i class="ch-pin">${icon("push_pin")}Бекітілген</i>` : ""}${m.text}<small>${m.t}${mine ? `<i class="ch-tick ${m.read ? "r" : ""}">${icon(m.read ? "done_all" : "done")}</i>` : ""}</small></span>
-      </div>`;
-    };
+  function renderReportsHead(per) {
+    const cur = MOCK.curators.filter((c) => !c.isChief);
+    const sts = cur.map((c, i) => (c.id === MY_CURATOR_ID ? myReport(per).status === "draft" ? "none" : myReport(per).status : ["sent", "late", "none", "ok", "sent"][i % 5]));
+    const cnt = (s) => sts.filter((x) => x === s || (s === "sent" && x === "ok")).length;
+    const lab = { none: ["Жібермеді", "#E2574C"], late: ["Кешікті · 22:10", "#F2A93B"], sent: ["Жіберілді · тексеру керек", "#5B9BF2"], ok: ["Қабылданды", "#5CB36D"], back: ["Түзетуде", "#E2574C"] };
+    return `<div class="list-pad rp">
+      <div class="seg-tabs seg-3 rp-seg">${Object.entries(REP_PERIODS).map(([k, x]) => `<button type="button" data-rpper="${k}" class="${per === k ? "on" : ""}">${x.name}</button>`).join("")}</div>
+      <div class="rp-sum">
+        <span style="--c:#5CB36D"><b>${cnt("sent")}</b><small>жіберді</small></span>
+        <span style="--c:#F2A93B"><b>${cnt("late")}</b><small>кешікті</small></span>
+        <span style="--c:#E2574C"><b>${cnt("none")}</b><small>жібермеді</small></span>
+      </div>
+      <div class="t3-sec">${REP_PERIODS[per].name} · ${repKey(per)} <button type="button" class="t3-all" id="rpTpl">${icon("tune", "material-icons-outlined")}Шаблон</button></div>
+      ${cur.map((c, i) => { const s = sts[i]; return `<button type="button" class="rp-cur" data-rpcur="${c.id}" data-rpst="${s}">${avatarHtml(curAv(c))}<span><b>${c.name}</b><small>${curRole(c)}</small><em style="--c:${lab[s][1]}">${lab[s][0]}</em></span>${s === "none" ? `<i class="rp-remind" data-rpremind="${c.id}">${icon("notifications_active", "material-icons-outlined")}</i>` : icon("chevron_right")}</button>`; }).join("")}
+    </div>`;
+  }
+  function openHeadReport(c, per, status) {
+    const T = repTasks()[per];
+    const mine = c.id === MY_CURATOR_ID ? myReport(per) : null;
+    const R = mine || { key: repKey(per), status, sentAt: status === "late" ? "22:10" : "20:31", comment: "Ерман мен Арманға жеке сабақ ұсындым.", vals: Object.fromEntries(T.map((t, i) => [t.id, t.kind === "check" ? { done: rnd(c.id, i) > 0.15 } : t.kind === "of" ? { a: t.auto?.() || "15", b: String(Math.max(0, +(t.auto?.() || 15) - Math.floor(rnd(c.id, i, 2) * 3))) } : t.kind === "num" ? { b: t.auto?.() || String(Math.floor(rnd(c.id, i) * 9)) } : { b: ["Жоспар бойынша", "Арман, Ерман — қосымша тапсырма", "Белсенділікті 90%-ға жеткізу"][i % 3] }])) };
     pushScreen(
-      group ? "Кураторлар" : cur.name,
-      () => `<div class="ch-thread" id="chThread">
-          <div class="ch-day"><span>Бүгін</span></div>
-          ${C[k].map(bubble).join("")}
-          ${typing ? `<div class="ch-msg"><span class="ch-b ch-typing"><i></i><i></i><i></i></span></div>` : ""}
-        </div>`,
+      `${c.name} · ${REP_PERIODS[per].name.toLowerCase()}`,
+      () => `<div class="list-pad rp">
+        <div class="rp-hero"><span class="ch-av">${avatarHtml(curAv(c))}</span><div class="rp-hi"><b>${c.name}</b><small>${REP_PERIODS[per].name} отчёт · ${R.key}</small><small>${icon("send", "material-icons-outlined")}Жіберілді ${R.sentAt || "—"}</small></div></div>
+        ${T.map((t) => { const v = R.vals[t.id] || {}, ok = taskDone(t, v); return `<div class="rp-task ro ${ok ? "done" : "miss"}"><span class="rp-chk">${icon(ok ? "check" : "close")}</span><div class="rp-tb"><b>${t.t}</b><small>${t.kind === "check" ? (ok ? "орындалды" : "орындалмады") : t.kind === "of" ? `${v.b || 0} / ${v.a || 0} · ${t.hint}` : t.kind === "num" ? `${v.b ?? v.a ?? "—"} ${t.hint || ""}` : v.b || "—"}</small></div></div>`; }).join("")}
+        ${R.comment ? `<div class="rp-back" style="--c:#5B9BF2">${icon("chat", "material-icons-outlined")}<span>${R.comment}</span></div>` : ""}
+        <div class="t3-sec">Бас куратордың пікірі</div>
+        <textarea class="rp-in" id="rpHeadCm" rows="2" placeholder="Түзету керек болса — не түзету керегін жазыңыз"></textarea>
+      </div>`,
       () => {
-        const th = $("#chThread");
-        if (th) th.parentElement.scrollTop = 1e6;
-        const send = () => {
-          const v = $("#chMsg").value.trim();
-          if (!v) return;
-          C[k].push({ from: "me", text: v, t: `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}` });
-          $("#chMsg").value = "";
-          typing = true;
+        $("#rpOk").onclick = () => { if (mine) mine.status = "ok"; toast(`${c.name}: отчёт қабылданды ✓`); state.navStack.pop(); paintStack(); render(); };
+        $("#rpBack").onclick = () => {
+          const cm = $("#rpHeadCm").value.trim();
+          if (!cm) return toast("Не түзету керегін жазыңыз", "err");
+          if (mine) (mine.status = "back"), (mine.headComment = cm);
+          toast(`${c.name}: түзетуге қайтарылды — хабарлама кетті`);
+          state.navStack.pop();
           paintStack();
-          // макет: жауап (жеке чатта — сол куратор, арнада — біреуі)
-          setTimeout(() => {
-            const from = group ? MOCK.curators.filter((c) => c.id !== meCurId())[Math.floor(Math.random() * 4)].id : cur.id;
-            C[k].forEach((m) => m.from === "me" && (m.read = true));
-            C[k].push({ from, text: ["Жақсы, келістік 👍", "Рақмет, қазір қараймын", "Иә, дұрыс айтасың", "Түсінікті, кейін хабарласамын", "Керемет! 🙌"][Math.floor(Math.random() * 5)], t: `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}` });
-            typing = false;
-            if (state.navStack.length) paintStack();
-          }, 1800);
+          render();
         };
-        $("#chSend").onclick = send;
-        $("#chMsg").onkeydown = (e) => e.key === "Enter" && send();
-        $("#chAttach").onclick = () => toast("Файл, фото не отчёт тіркеу (макет)");
       },
-      {
-        bar: () => `<div class="appbar ch-bar">
-          <button type="button" class="appbar-back" id="innerBack">${icon("arrow_back")}</button>
-          <span class="ch-av sm">${group ? `<span class="du-av ch-grp">${icon("groups")}</span>` : avatarHtml(curAv(cur))}${!group && curOnline(cur) ? "<i></i>" : ""}</span>
-          <span class="ch-hd"><b>${group ? "Кураторлар" : cur.name}</b><small>${group ? `${MOCK.curators.length} қатысушы` : typing ? "жазып жатыр…" : curOnline(cur) ? "онлайн" : "1 сағ бұрын болды"}</small></span>
-          ${group ? "" : `<button type="button" class="appbar-icon-btn" onclick="return false" title="Қоңырау">${icon("call", "material-icons-outlined")}</button>`}
-        </div>`,
-        footer: () => `<div class="sticky-foot ch-foot"><button type="button" class="ch-att" id="chAttach">${icon("attach_file")}</button><input id="chMsg" placeholder="Хабар жазу…" maxlength="500" /><button type="button" class="ch-send" id="chSend">${icon("send")}</button></div>`,
-      }
+      { footer: () => `<div class="sticky-foot btn-row" style="display:flex;gap:8px"><button type="button" class="btn btn-ghost" id="rpBack" style="flex:1">Түзетуге қайтару</button><button type="button" class="btn btn-primary" id="rpOk" style="flex:1">Қабылдау</button></div>` }
     );
+  }
+  function openRepTemplate() {
+    const per = state.repPer || "day";
+    const draw = () => {
+      openSheet(`
+        <div class="sheet-handle"></div>
+        <div class="ef-head"><span>${REP_PERIODS[per].name} міндеттер шаблоны</span><button type="button" id="rtClose">${icon("close")}</button></div>
+        <div class="tf-sum">${icon("info", "material-icons-outlined")}Барлық кураторлардың ${REP_PERIODS[per].name.toLowerCase()} отчётына осы тізім шығады</div>
+        ${repTasks()[per].map((t, i) => `<div class="rt-row"><span>${i + 1}</span><b>${t.t}${t.req ? " *" : ""}</b><small>${{ check: "белгі", num: "сан", of: "N / M", text: "мәтін" }[t.kind]}</small><button type="button" data-rtdel="${t.id}">${icon("delete_outline", "material-icons-outlined")}</button></div>`).join("")}
+        <div class="ef-label">Жаңа міндет</div>
+        <input class="ef-input" id="rtNew" placeholder="Мысалы: Оқушылармен 1:1 кездесу" />
+        <div class="ent-chips" style="margin-top:8px">${[["check", "Белгі"], ["num", "Сан"], ["of", "N / M"], ["text", "Мәтін"]].map(([k, l]) => `<button type="button" class="ent-chip ${(state.rtKind || "check") === k ? "on" : ""}" style="--c:var(--primary)" data-rtk="${k}">${l}</button>`).join("")}</div>
+        <button type="button" class="ef-submit" id="rtAdd">${icon("add")}Қосу</button>`, { tall: true });
+      $("#rtClose").onclick = closeSheet;
+      $$("[data-rtk]").forEach((b) => (b.onclick = () => ((state.rtKind = b.dataset.rtk), draw())));
+      $$("[data-rtdel]").forEach((b) => (b.onclick = () => ((repTasks()[per] = repTasks()[per].filter((t) => t.id !== b.dataset.rtdel)), draw())));
+      $("#rtAdd").onclick = () => {
+        const v = $("#rtNew").value.trim();
+        if (!v) return toast("Міндетті жазыңыз", "err");
+        repTasks()[per].push({ id: `x${nextId()}`, t: v, kind: state.rtKind || "check", req: true });
+        toast("Қосылды — кураторлар отчётында шығады");
+        draw();
+      };
+    };
+    draw();
+  }
+  function bindReports() {
+    const per = state.repPer || "day";
+    $$("[data-rpper]").forEach((b) => (b.onclick = () => ((state.repPer = b.dataset.rpper), render())));
+    $("#rpTpl")?.addEventListener("click", openRepTemplate);
+    $$("[data-rpremind]").forEach((b) => (b.onclick = (e) => (e.stopPropagation(), toast("Еске салу жіберілді 🔔"))));
+    $$("[data-rpcur]").forEach((b) => (b.onclick = () => {
+      if (b.dataset.rpst === "none") return toast("Әлі жібермеді — 🔔 арқылы еске салыңыз");
+      state.navStack = [];
+      openHeadReport(MOCK.curators.find((c) => c.id === +b.dataset.rpcur), per, b.dataset.rpst);
+    }));
+    if (isHead()) return;
+    const R = myReport(per);
+    $$("[data-rpchk]").forEach((b) => (b.onclick = () => {
+      const v = (R.vals[b.dataset.rpchk] ||= {});
+      v.done = !v.done;
+      render();
+    }));
+    $$("[data-rpv]").forEach((el) => {
+      el.oninput = () => {
+        const [id, f] = el.dataset.rpv.split(":");
+        (R.vals[id] ||= {})[f] = el.value;
+      };
+      el.onchange = () => render();
+    });
+    $("#rpComment")?.addEventListener("input", (e) => (R.comment = e.target.value));
+    $("#rpAttach")?.addEventListener("click", () => ((R.files ||= []).push(`фото_${(R.files.length || 0) + 1}.jpg`), render()));
+    $("#rpSend")?.addEventListener("click", async () => {
+      const ok = await confirmDialog({ title: "Отчётты жіберу?", message: "Жіберілген соң өзгертуге болмайды. Бас куратор тексереді.", confirmLabel: "Жіберу" });
+      if (!ok) return;
+      R.status = "sent";
+      R.sentAt = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
+      render();
+      earnCoins(REP_PERIODS[per].coins, `${REP_PERIODS[per].name} отчёт уақытында жіберілді`);
+    });
   }
 
   /* —— Staff: Магазин ——
@@ -9147,8 +9260,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     if (state.tab === 3)
       return `
-      <div class="appbar-title" style="flex:1">Чат</div>
-      <button type="button" class="appbar-icon-btn" id="chatNew" title="Жаңа хат">${icon("edit_square", "material-icons-outlined")}</button>
+      <div class="appbar-title" style="flex:1">${isHead() ? "Отчёттар" : "Отчёт"}</div>
+      <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     if (state.tab === 4)
       return `
@@ -9156,7 +9269,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     return `
-      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Чат", "Зачисление"][state.tab]}</div>
+      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Отчёт", "Зачисление"][state.tab]}</div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
@@ -9189,7 +9302,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     else if (state.sub === "pushes") content.innerHTML = renderPushes();
     else if (state.tab === 0) content.innerHTML = renderStaffHome();
     else if (state.tab === 1) content.innerHTML = renderStaffNews();
-    else if (state.tab === 3) content.innerHTML = renderStaffChat();
+    else if (state.tab === 3) content.innerHTML = renderReports();
     else if (state.tab === 4) content.innerHTML = renderAccessList();
     else content.innerHTML = renderGroups();
 
@@ -9370,12 +9483,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       })
     );
 
-    $$("[data-chat]").forEach((b) => (b.onclick = () => ((state.navStack = []), openStaffChat(b.dataset.chat))));
-    bindSearch("#chatSearch", (v) => ((state.chatQ = v), render()));
-    $("#chatNew")?.addEventListener("click", () => {
-      openSheet(`<div class="sheet-handle"></div><div class="ex-title">Жаңа хат</div><div class="pick-list">${MOCK.curators.filter((c) => c.id !== meCurId()).map((c) => `<button type="button" class="pick-opt" data-chpick="${c.id}">${avatarHtml(curAv(c))}<span style="flex:1">${c.name}<small style="display:block;font-size:11px;color:#8a8d9c">${curRole(c)}</small></span>${icon("chevron_right")}</button>`).join("")}</div>`, { tall: true });
-      $$("[data-chpick]").forEach((b) => (b.onclick = () => (closeSheet(), (state.navStack = []), openStaffChat(b.dataset.chpick))));
-    });
+    if (state.mode === "staff" && state.tab === 3) bindReports();
     $("#sendPush")?.addEventListener("click", openPushSheet);
     $("#addPush")?.addEventListener("click", openPushSheet);
     $$("[data-news]").forEach((btn) => {
