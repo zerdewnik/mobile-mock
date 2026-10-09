@@ -3638,51 +3638,73 @@
   const taskDone = (t, v) => !!v && (t.kind === "check" ? v.done : t.kind === "of" ? v.a !== "" && v.b !== "" && v.b !== undefined : t.kind === "num" ? (v.b ?? v.a ?? "") !== "" : (v.b || "").trim().length > 0);
   /** Аптаның күндері: өткен күндердің күйі (макет) */
   const repWeekStrip = () => ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб"].map((d, i) => ({ d, st: i < 4 ? ["ok", "ok", "late", "ok"][i] : i === 4 ? (myReport("day").status === "draft" ? "now" : "ok") : "next" }));
+  /** Бөлімдер: міндеттер тақырып бойынша топталады (DingTalk / Bitrix24 «жұмыс есебі» үлгісі) */
+  const REP_SECS = {
+    day: [["Топпен жұмыс", "groups", ["d1", "d5", "d6"]], ["Оқушыларды бақылау", "fact_check", ["d2", "d3", "d4"]], ["Ескерту", "flag", ["d7"]]],
+    week: [["Сынақ және нәтиже", "quiz", ["w1", "w5", "w4"]], ["Ата-ана және оқушы", "family_restroom", ["w2", "w3", "w6"]], ["Жоспар", "event_note", ["w7"]]],
+    month: [["Нәтиже", "insights", ["m1", "m2"]], ["Ата-ана және төлем", "payments", ["m3", "m4", "m5"]], ["Қорытынды", "summarize", ["m6", "m7"]]],
+  };
   function renderReports() {
     const per = state.repPer || "day";
     if (isHead()) return renderReportsHead(per);
     const R = myReport(per), T = repTasks()[per], P = REP_PERIODS[per];
     const done = T.filter((t) => taskDone(t, R.vals[t.id])).length, req = T.filter((t) => t.req);
-    const reqOk = req.every((t) => taskDone(t, R.vals[t.id]));
+    const reqDone = req.filter((t) => taskDone(t, R.vals[t.id])).length, reqOk = reqDone === req.length;
     const locked = R.status === "sent" || R.status === "ok";
     const pct = Math.round((done / T.length) * 100);
-    const st = { draft: ["Толтырылуда", "#F2A93B"], sent: ["Жіберілді · тексерілуде", "#5B9BF2"], ok: ["Қабылданды ✓", "#5CB36D"], back: ["Түзетуге қайтарылды", "#E2574C"] }[R.status];
-    const field = (t) => {
-      const v = R.vals[t.id] || {};
-      if (t.kind === "check") return "";
-      if (t.kind === "of") return `<span class="rp-of"><input class="rp-in sm" data-rpv="${t.id}:b" type="number" min="0" value="${v.b ?? ""}" placeholder="?" ${locked ? "disabled" : ""}/><i>/</i><input class="rp-in sm" data-rpv="${t.id}:a" type="number" min="0" value="${v.a ?? ""}" ${locked ? "disabled" : ""}/><small>${t.hint || ""}</small></span>`;
-      if (t.kind === "num") return `<span class="rp-of"><input class="rp-in sm" data-rpv="${t.id}:b" type="number" value="${v.b ?? ""}" placeholder="0" ${locked ? "disabled" : ""}/><small>${t.hint || ""}${t.auto ? " · жүйеден" : ""}</small></span>`;
-      return `<textarea class="rp-in" data-rpv="${t.id}:b" rows="2" placeholder="${t.hint || "Жазыңыз…"}" ${locked ? "disabled" : ""}>${v.b || ""}</textarea>`;
-    };
-    return `<div class="list-pad rp">
-      <div class="seg-tabs seg-3 rp-seg">${Object.entries(REP_PERIODS).map(([k, x]) => `<button type="button" data-rpper="${k}" class="${per === k ? "on" : ""}">${x.name}</button>`).join("")}</div>
-      <div class="rp-hero">
-        <div class="rp-ring" style="--p:${pct}"><b>${done}/${T.length}</b><small>орындалды</small></div>
-        <div class="rp-hi">
-          <b>${P.name} отчёт · ${R.key}</b>
-          <small>${icon("schedule", "material-icons-outlined")}${P.due}</small>
-          <em style="--c:${st[1]}">${st[0]}</em>
-          ${R.sentAt ? `<small>${icon("send", "material-icons-outlined")}Жіберілді ${R.sentAt}</small>` : ""}
+    const st = { draft: ["Толтырылуда", "edit_note", "#F2A93B"], sent: ["Тексерілуде", "hourglass_top", "#6fb0ff"], ok: ["Қабылданды", "verified", "#5CB36D"], back: ["Түзету керек", "undo", "#ff8a80"] }[R.status];
+    const known = new Set(Object.values(REP_SECS[per]).flatMap((x) => x[2]));
+    const secs = [...REP_SECS[per], ...(T.some((t) => !known.has(t.id)) ? [["Қосымша міндеттер", "add_task", T.filter((t) => !known.has(t.id)).map((t) => t.id)]] : [])];
+    const stepper = (id, f, val, dis) => `<span class="rp-step ${dis ? "dis" : ""}"><button type="button" data-rpstep="${id}:${f}:-1" ${dis ? "disabled" : ""}>${icon("remove")}</button><input data-rpv="${id}:${f}" type="number" inputmode="numeric" value="${val ?? ""}" placeholder="0" ${dis ? "disabled" : ""}/><button type="button" data-rpstep="${id}:${f}:1" ${dis ? "disabled" : ""}>${icon("add")}</button></span>`;
+    const row = (t) => {
+      const v = R.vals[t.id] || {}, ok = taskDone(t, v);
+      let ctl = "";
+      if (t.kind === "num") ctl = `<div class="rp-ctl">${stepper(t.id, "b", v.b, locked)}<small>${t.hint || ""}</small>${t.auto ? `<em class="rp-auto">${icon("bolt")}жүйеден</em>` : ""}</div>`;
+      else if (t.kind === "of") {
+        const a = +v.a || 0, b = +v.b || 0;
+        const [l1, l2] = (t.hint || "/").split(" / ");
+        ctl = `<div class="rp-ctl">${stepper(t.id, "b", v.b, locked)}<span class="rp-of2"><i>/</i><input data-rpv="${t.id}:a" type="number" value="${v.a ?? ""}" ${locked ? "disabled" : ""}/><small>${l1}<br/>${l2 || ""}</small></span>${t.auto ? `<em class="rp-auto">${icon("bolt")}жүйеден</em>` : ""}</div>
+          <div class="rp-mini"><i style="width:${a ? Math.min(100, (b / a) * 100) : 0}%"></i></div>`;
+      } else if (t.kind === "text") ctl = `<textarea class="rp-ta" data-rpv="${t.id}:b" rows="2" placeholder="${t.hint || "Қысқаша жазыңыз…"}" ${locked ? "disabled" : ""}>${v.b || ""}</textarea>`;
+      return `<div class="rp-row ${ok ? "done" : ""} ${t.kind}">
+        <button type="button" class="rp-tick" ${t.kind === "check" && !locked ? `data-rpchk="${t.id}"` : "disabled"}>${icon("check")}</button>
+        <div class="rp-rb">
+          <div class="rp-rt"><b>${t.t}</b>${t.req ? `<i class="rp-req" title="міндетті"></i>` : ""}</div>
+          ${t.kind === "check" && t.hint ? `<small class="rp-h">${t.hint}</small>` : ""}
+          ${ctl}
         </div>
+      </div>`;
+    };
+    return `<div class="list-pad rp2">
+      <div class="seg-tabs seg-3 rp-seg">${Object.entries(REP_PERIODS).map(([k, x]) => `<button type="button" data-rpper="${k}" class="${per === k ? "on" : ""}">${x.name}</button>`).join("")}</div>
+      <div class="rp-head">
+        <div class="rp-h1"><span><small>${P.name} отчёт</small><b>${R.key}</b></span><em style="--c:${st[2]}">${icon(st[1], "material-icons-outlined")}${st[0]}</em></div>
+        <div class="rp-prog"><i style="width:${pct}%"></i></div>
+        <div class="rp-h2"><span><b>${done}</b>/${T.length} орындалды · ${pct}%</span><span>${icon("schedule", "material-icons-outlined")}${R.sentAt ? `жіберілді ${R.sentAt}` : P.due}</span></div>
+        ${per === "day" ? `<div class="rp-days">${repWeekStrip().map((x) => `<span class="${x.st}"><small>${x.d}</small><i>${x.st === "ok" ? icon("check") : x.st === "late" ? icon("schedule") : x.st === "now" ? icon("edit") : ""}</i></span>`).join("")}</div>` : ""}
       </div>
-      ${per === "day" ? `<div class="rp-week">${repWeekStrip().map((x) => `<span class="${x.st}"><b>${x.d}</b><i>${x.st === "ok" ? icon("check") : x.st === "late" ? icon("schedule") : x.st === "now" ? icon("edit") : ""}</i></span>`).join("")}</div>` : ""}
-      ${R.status === "back" && R.headComment ? `<div class="rp-back">${icon("reply", "material-icons-outlined")}<span><b>Бас куратор:</b> ${R.headComment}</span></div>` : ""}
-      <div class="t3-sec">Міндеттер <small style="text-transform:none;font-weight:500">· * міндетті</small></div>
-      ${T.map((t, i) => {
-        const v = R.vals[t.id] || {}, ok = taskDone(t, v);
-        return `<div class="rp-task ${ok ? "done" : ""}">
-          <button type="button" class="rp-chk" data-rpchk="${t.id}" ${locked || t.kind !== "check" ? "disabled" : ""}>${ok ? icon("check") : `<span>${i + 1}</span>`}</button>
-          <div class="rp-tb"><b>${t.t}${t.req ? "<i>*</i>" : ""}</b>${t.kind === "check" && t.hint ? `<small>${t.hint}</small>` : ""}${field(t)}</div>
-        </div>`;
+      ${R.status === "back" && R.headComment ? `<div class="rp-back">${icon("undo", "material-icons-outlined")}<span><b>Бас куратор қайтарды:</b> ${R.headComment}</span></div>` : ""}
+      ${secs.map(([name, ic, ids]) => {
+        const L = ids.map((id) => T.find((t) => t.id === id)).filter(Boolean);
+        if (!L.length) return "";
+        const d = L.filter((t) => taskDone(t, R.vals[t.id])).length;
+        return `<section class="rp-sec">
+          <header>${icon(ic, "material-icons-outlined")}<b>${name}</b><span class="${d === L.length ? "all" : ""}">${d}/${L.length}</span></header>
+          ${L.map(row).join("")}
+        </section>`;
       }).join("")}
-      <div class="t3-sec">Қосымша</div>
-      <textarea class="rp-in" id="rpComment" rows="2" placeholder="Түсініктеме (міндетті емес)" ${locked ? "disabled" : ""}>${R.comment || ""}</textarea>
-      <div class="rp-att">${(R.files || []).map((f) => `<span>${icon("description", "material-icons-outlined")}${f}</span>`).join("")}${locked ? "" : `<button type="button" id="rpAttach">${icon("attach_file")}Фото / файл тіркеу</button>`}</div>
-      <div class="rp-foot">
-        ${locked ? `<div class="tf-sum" style="justify-content:center">${icon("lock", "material-icons-outlined")}Жіберілген отчётты өзгертуге болмайды${R.status === "sent" ? " — бас куратор тексеруде" : ""}</div>` : `<button type="button" class="ef-submit" id="rpSend" ${reqOk ? "" : "disabled"}>${icon("send")}${R.status === "back" ? "Қайта жіберу" : "Отчёт жіберу"}</button>${reqOk ? "" : `<div class="tf-sum" style="justify-content:center">Міндетті (*) пункттерді толтырыңыз: ${req.filter((t) => taskDone(t, R.vals[t.id])).length}/${req.length}</div>`}`}
+      <section class="rp-sec">
+        <header>${icon("attach_file")}<b>Түсініктеме және файл</b></header>
+        <div class="rp-row free"><div class="rp-rb"><textarea class="rp-ta" id="rpComment" rows="2" placeholder="Бас куратор білуі керек нәрсе (міндетті емес)" ${locked ? "disabled" : ""}>${R.comment || ""}</textarea>
+          <div class="rp-files">${(R.files || []).map((f) => `<span>${icon("image", "material-icons-outlined")}${f}</span>`).join("")}${locked ? "" : `<button type="button" id="rpAttach">${icon("add_photo_alternate", "material-icons-outlined")}Фото / файл</button>`}</div></div></div>
+      </section>
+      <div class="rp-histh">Тарих</div>
+      <div class="rp-tl">${[["Кеше", "ok", "20:12"], ["Сейсенбі", "ok", "20:48"], ["Дүйсенбі", "late", "22:05"]].map(([d, s, tm]) => `<div class="${s}"><i></i><b>${per === "day" ? d : per === "week" ? "40-апта" : "Қыркүйек"}</b><small>${s === "ok" ? `${tm} · уақытында · қабылданды` : `${tm} · кешікті`}</small></div>`).join("")}</div>
+      <div class="rp-bar">
+        ${locked
+          ? `<div class="rp-lock">${icon(R.status === "ok" ? "verified" : "lock", "material-icons-outlined")}${R.status === "ok" ? "Отчёт қабылданды" : "Жіберілді — бас куратор тексеруде"}</div>`
+          : `<span class="rp-bq"><b>${reqDone}/${req.length}</b><small>міндетті</small></span><button type="button" class="rp-send" id="rpSend" ${reqOk ? "" : "disabled"}>${icon("send")}${R.status === "back" ? "Қайта жіберу" : "Отчёт жіберу"}</button>`}
       </div>
-      <div class="t3-sec">Тарих</div>
-      ${[["Кеше", "ok", "20:12"], ["Сейсенбі", "ok", "20:48"], ["Дүйсенбі", "late", "22:05"]].map(([d, s, tm]) => `<div class="rp-hist"><span class="rp-dot ${s}"></span><b>${P.name} · ${per === "day" ? d : per === "week" ? "40-апта" : "Қыркүйек"}</b><small>${s === "ok" ? `уақытында · ${tm} · қабылданды` : `кешікті · ${tm}`}</small></div>`).join("")}
     </div>`;
   }
   function renderReportsHead(per) {
@@ -3769,6 +3791,12 @@
     $$("[data-rpchk]").forEach((b) => (b.onclick = () => {
       const v = (R.vals[b.dataset.rpchk] ||= {});
       v.done = !v.done;
+      render();
+    }));
+    $$("[data-rpstep]").forEach((b) => (b.onclick = () => {
+      const [id, f, d] = b.dataset.rpstep.split(":");
+      const v = (R.vals[id] ||= {});
+      v[f] = String(Math.max(0, (+v[f] || 0) + +d));
       render();
     }));
     $$("[data-rpv]").forEach((el) => {
