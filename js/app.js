@@ -3594,22 +3594,22 @@
       const n = sumSt();
       MOCK.repTasks = {
         day: [
-          { id: "d1", t: "Топ чатына күн жоспары мен сабақ уақытын жіберу", kind: "check", req: true },
-          { id: "d2", t: "Сабаққа қатыспағандармен хабарласу", kind: "of", hint: "хабарластым / қатыспады", auto: () => `${Math.round(n * 0.12)}`, req: true },
-          { id: "d3", t: "Сабақ тестін тапсырмағандарды тексеру", kind: "num", hint: "оқушы саны", auto: () => `${Math.round(n * 0.18)}`, req: true },
-          { id: "d4", t: "Конспектілерді тексеру", kind: "num", hint: "тексерілді", req: false },
-          { id: "d5", t: "Оқушылар мен ата-аналар сұрақтарына жауап беру", kind: "check", req: true },
-          { id: "d6", t: "Эфир өткізу / эфирге шақыру", kind: "check", req: false, hint: "бүгін эфир болса" },
+          { id: "d1", t: "Күндік дұрыс жоспар", kind: "check", req: true, hint: "топ чатына күн жоспары, сабақ уақыты" },
+          { id: "d2", t: "Дедлайнды ескерту", kind: "check", req: true, hint: "тест, конспект, зачет мерзімін еске салу" },
+          { id: "d3", t: "Конспект қабылдау", kind: "of", hint: "қабылданды / тапсырды", auto: () => `${Math.round(n * 0.6)}`, req: true },
+          { id: "d4", t: "Жұптық жұмыс (тапсырма беру, қабылдау)", kind: "of", hint: "қабылданды / берілді", auto: () => `${Math.round(n / 2)}`, req: true },
+          { id: "d5", t: "Эфир түгендеу — кім қатысты", kind: "of", hint: "қатысты / барлығы", auto: () => `${n}`, req: false },
+          { id: "d6", t: "Эфирге соңына дейін отыру, мит скриндерін (басы + соңы) чатқа жіберу", kind: "check", req: false, hint: "бүгін эфир болса" },
           { id: "d7", t: "Мәселе не ескерту", kind: "text", req: false, hint: "мысалы: Ерман 3 күн кірмеді" },
         ],
         week: [
-          { id: "w1", t: "Апталық сынақ өткізу", kind: "of", hint: "қатысты / барлығы", auto: () => `${n}`, req: true },
-          { id: "w2", t: "Ата-аналарға апталық отчёт жіберу (WhatsApp)", kind: "of", hint: "жіберілді / барлығы", auto: () => `${n}`, req: true },
-          { id: "w3", t: "Артта қалған оқушылармен жеке жұмыс", kind: "text", hint: "кіммен, не істелді", req: true },
-          { id: "w4", t: "Апта чемпионын топта жариялау", kind: "check", req: true },
-          { id: "w5", t: "Топ белсенділігі", kind: "num", hint: "%", auto: () => "84", req: true },
-          { id: "w6", t: "Батл / турнир / ойын өткізу", kind: "check", req: false },
-          { id: "w7", t: "Келесі аптаға жоспар", kind: "text", hint: "2–3 мақсат", req: true },
+          { id: "w1", t: "Жұмада ертерек зачетқа дайындау (ескерту, тексеру)", kind: "check", req: true },
+          { id: "w2", t: "Зачет алу", kind: "of", hint: "тапсырды / барлығы", auto: () => `${n}`, req: true },
+          { id: "w3", t: "Пересдача алу", kind: "num", hint: "оқушы пересдача тапсырды", req: false },
+          { id: "w4", t: "Зачет тапсырмағандар тізімін жіберу", kind: "text", hint: "аты-жөні, себебі", req: true },
+          { id: "w5", t: "Рейтинг (апталық рейтингті топқа жариялау)", kind: "check", req: true },
+          { id: "w6", t: "Отчёт ата-анаға", kind: "of", hint: "жіберілді / барлығы", auto: () => `${n}`, req: true },
+          { id: "w7", t: "Келесі аптаға жоспар", kind: "text", hint: "2–3 мақсат", req: false },
         ],
         month: [
           { id: "m1", t: "Айлық ҰБТ сынағы — орташа балл", kind: "num", hint: "балл", auto: () => "92", req: true },
@@ -3631,7 +3631,7 @@
     if (!R[k]) {
       R[k] = { per, key: repKey(per), status: "draft", vals: {}, comment: "" };
       repTasks()[per].forEach((t) => t.auto && (R[k].vals[t.id] = t.kind === "num" ? { b: t.auto() } : { a: t.auto(), b: "" }));
-      if (per === "day") (R[k].vals.d1 = { done: true }), (R[k].vals.d5 = { done: true });
+      if (per === "day") (R[k].vals.d1 = { done: true }), (R[k].vals.d2 = { done: true });
     }
     return R[k];
   }
@@ -3640,8 +3640,8 @@
   const repWeekStrip = () => ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб"].map((d, i) => ({ d, st: i < 4 ? ["ok", "ok", "late", "ok"][i] : i === 4 ? (myReport("day").status === "draft" ? "now" : "ok") : "next" }));
   /** Бөлімдер: міндеттер тақырып бойынша топталады (DingTalk / Bitrix24 «жұмыс есебі» үлгісі) */
   const REP_SECS = {
-    day: [["Топпен жұмыс", "groups", ["d1", "d5", "d6"]], ["Оқушыларды бақылау", "fact_check", ["d2", "d3", "d4"]], ["Ескерту", "flag", ["d7"]]],
-    week: [["Сынақ және нәтиже", "quiz", ["w1", "w5", "w4"]], ["Ата-ана және оқушы", "family_restroom", ["w2", "w3", "w6"]], ["Жоспар", "event_note", ["w7"]]],
+    day: [["Жоспар және ескерту", "event_note", ["d1", "d2"]], ["Тапсырмаларды қабылдау", "fact_check", ["d3", "d4"]], ["Эфир", "live_tv", ["d5", "d6"]], ["Ескерту", "flag", ["d7"]]],
+    week: [["Зачет", "assignment_turned_in", ["w1", "w2", "w3", "w4"]], ["Рейтинг және ата-ана", "leaderboard", ["w5", "w6"]], ["Жоспар", "event_note", ["w7"]]],
     month: [["Нәтиже", "insights", ["m1", "m2"]], ["Ата-ана және төлем", "payments", ["m3", "m4", "m5"]], ["Қорытынды", "summarize", ["m6", "m7"]]],
   };
   function renderReports() {
