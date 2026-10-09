@@ -3596,19 +3596,20 @@
         day: [
           { id: "d1", t: "Күндік дұрыс жоспар", kind: "check", req: true, hint: "топ чатына күн жоспары, сабақ уақыты" },
           { id: "d2", t: "Дедлайнды ескерту", kind: "check", req: true, hint: "тест, конспект, зачет мерзімін еске салу" },
-          { id: "d3", t: "Конспект қабылдау", kind: "of", hint: "қабылданды / тапсырды", auto: () => `${Math.round(n * 0.6)}`, req: true },
-          { id: "d4", t: "Жұптық жұмыс (тапсырма беру, қабылдау)", kind: "of", hint: "қабылданды / берілді", auto: () => `${Math.round(n / 2)}`, req: true },
-          { id: "d5", t: "Эфир түгендеу — кім қатысты", kind: "of", hint: "қатысты / барлығы", auto: () => `${n}`, req: false },
-          { id: "d6", t: "Эфирге соңына дейін отыру, мит скриндерін (басы + соңы) чатқа жіберу", kind: "check", req: false, hint: "бүгін эфир болса" },
+          { id: "d3", t: "Конспект қабылдау", kind: "auto", calc: "notesDay", req: true },
+          { id: "d4", t: "Жұптық жұмыс (тапсырма беру, қабылдау)", kind: "auto", calc: "pairDay", req: true },
+          { id: "d5", t: "Эфир түгендеу", kind: "auto", calc: "efirDay", req: true },
+          { id: "d6", t: "Мит скрині: эфирдің басы мен соңы", kind: "shot", need: 2, req: true, hint: "эфирге соңына дейін отырып, 2 скрин салыңыз", show: () => todayEfirs().length > 0 },
           { id: "d7", t: "Мәселе не ескерту", kind: "text", req: false, hint: "мысалы: Ерман 3 күн кірмеді" },
         ],
         week: [
           { id: "w1", t: "Жұмада ертерек зачетқа дайындау (ескерту, тексеру)", kind: "check", req: true },
-          { id: "w2", t: "Зачет алу", kind: "of", hint: "тапсырды / барлығы", auto: () => `${n}`, req: true },
-          { id: "w3", t: "Пересдача алу", kind: "num", hint: "оқушы пересдача тапсырды", req: false },
-          { id: "w4", t: "Зачет тапсырмағандар тізімін жіберу", kind: "text", hint: "аты-жөні, себебі", req: true },
+          { id: "w2", t: "Зачет алу", kind: "auto", calc: "zachet", req: true },
+          { id: "w3", t: "Пересдача алу", kind: "auto", calc: "retake", req: false },
+          { id: "w4", t: "Зачет тапсырмағандар тізімін жіберу", kind: "auto", calc: "zachetList", req: true },
+          { id: "w8", t: "Видеосабақ пен конспект (апта бойы)", kind: "auto", calc: "videoWeek", req: false },
           { id: "w5", t: "Рейтинг (апталық рейтингті топқа жариялау)", kind: "check", req: true },
-          { id: "w6", t: "Отчёт ата-анаға", kind: "of", hint: "жіберілді / барлығы", auto: () => `${n}`, req: true },
+          { id: "w6", t: "Отчёт ата-анаға — жіберілген скрин", kind: "shot", need: 1, req: true, hint: "WhatsApp-та ата-анаға жіберілгенінің скрині" },
           { id: "w7", t: "Келесі аптаға жоспар", kind: "text", hint: "2–3 мақсат", req: false },
         ],
         month: [
@@ -3635,19 +3636,91 @@
     }
     return R[k];
   }
-  const taskDone = (t, v) => !!v && (t.kind === "check" ? v.done : t.kind === "of" ? v.a !== "" && v.b !== "" && v.b !== undefined : t.kind === "num" ? (v.b ?? v.a ?? "") !== "" : (v.b || "").trim().length > 0);
+  /* —— Отчёттағы АВТОМАТ деректер: куратор санамайды, жүйе өзі есептейді ——
+     Эфир — «Эфир» бөлімінде сол күнге бекітілген эфирлерден (жоқ болса пункт шықпайды);
+     Конспект — оқушыдағы «Расписание» бойынша сол күннің/аптаның видеосабақтарынан: тапсырды / қабылданды / күтуде;
+     Апталық сынақ, видеосабақ, пересдача — сол аптаның деректерінен. */
+  const repStudents = () => curGroups().flatMap((g) => g.students);
+  const repAcc = () => (MOCK.repAcc ||= {});
+  const todayLessons = () => MOCK.schedule.items.filter((i) => i.when === "today" && i.kind === "video");
+  const todayEfirs = () => { const ids = new Set(curGroups().map((g) => g.id)); return MOCK.efirs.filter((e) => e.date === iso(AN_TODAY) && e.groups.some((id) => ids.has(id))).sort((a, b) => a.time.localeCompare(b.time)); };
+  const nameList = (arr, max = 4) => arr.slice(0, max).map((x) => x.name.split(" ")[0]).join(", ") + (arr.length > max ? ` +${arr.length - max}` : "");
+  function autoNotes(lessons, tag) {
+    const st = repStudents();
+    return lessons.map((l, li) => {
+      const sub = st.filter((x) => rnd(x.id, l.id, li, 31) < 0.45 + (x.score || 0) / 220);
+      const key = `${tag}:${l.id}`;
+      const acc = Math.min(sub.length, repAcc()[key] ?? Math.round(sub.length * 0.45));
+      return { l, key, sub, acc, pend: sub.length - acc, total: st.length };
+    });
+  }
+  const statChip = (n, lab, c) => `<span class="rp-sc" style="--c:${c}"><b>${n}</b>${lab}</span>`;
+  const AUTO = {
+    // күндік
+    notesDay: () => {
+      const L = autoNotes(todayLessons(), "d");
+      if (!L.length) return { hide: true };
+      const pend = L.reduce((t, x) => t + x.pend, 0);
+      return {
+        done: pend === 0,
+        sum: L.map((x) => `${x.l.lesson}: ${x.sub.length} тапсырды, ${x.acc} қабылданды`).join(" · "),
+        html: L.map((x) => `<div class="rp-auto2"><div class="rp-a-h"><b>${x.l.lesson}</b><small>${x.l.course} · бүгінгі сабақ</small></div>
+          <div class="rp-scs">${statChip(x.sub.length + "/" + x.total, "тапсырды", "#6fb0ff")}${statChip(x.acc, "қабылданды", "#5CB36D")}${statChip(x.pend, "күтуде", x.pend ? "#F2A93B" : "#5CB36D")}</div>
+          ${x.pend ? `<button type="button" class="rp-go" data-rpacc="${x.key}:${x.sub.length}">${icon("task_alt", "material-icons-outlined")}${x.pend} конспектті қабылдау</button>` : ""}</div>`).join(""),
+      };
+    },
+    pairDay: () => {
+      const st = repStudents(), key = "pair:" + iso(AN_TODAY);
+      const sub = st.filter((x) => rnd(x.id, 77) < 0.55 + (x.score || 0) / 300);
+      const acc = Math.min(sub.length, repAcc()[key] ?? Math.round(sub.length * 0.5));
+      return { done: acc === sub.length, sum: `берілді ${st.length} жұпқа · ${sub.length} тапсырды · ${acc} қабылданды`,
+        html: `<div class="rp-auto2"><div class="rp-scs">${statChip(Math.ceil(st.length / 2), "жұп", "#B07CFF")}${statChip(sub.length, "тапсырды", "#6fb0ff")}${statChip(acc, "қабылданды", "#5CB36D")}</div>${sub.length - acc ? `<button type="button" class="rp-go" data-rpacc="${key}:${sub.length}">${icon("task_alt", "material-icons-outlined")}${sub.length - acc} жұмысты қабылдау</button>` : ""}</div>` };
+    },
+    efirDay: () => {
+      const E = todayEfirs();
+      if (!E.length) return { hide: true };
+      const st = repStudents();
+      const rows = E.map((e, i) => { const came = st.filter((x) => rnd(x.id, e.id, 41) < 0.5 + (x.score || 0) / 200); return { e, came, miss: st.filter((x) => !came.includes(x)) }; });
+      return { done: true, sum: rows.map((r) => `${r.e.time} ${r.e.title}: ${r.came.length}/${st.length}`).join(" · "),
+        html: rows.map((r) => `<div class="rp-auto2"><div class="rp-a-h"><b>${r.e.time} · ${r.e.title}</b><small>«Эфир» бөлімінен</small></div><div class="rp-scs">${statChip(r.came.length + "/" + st.length, "қатысты", "#5CB36D")}${statChip(r.miss.length, "қатыспады", r.miss.length ? "#E2574C" : "#5CB36D")}</div>${r.miss.length ? `<small class="rp-names">${icon("person_off", "material-icons-outlined")}${nameList(r.miss)}</small>` : ""}</div>`).join("") };
+    },
+    // апталық
+    zachet: () => {
+      const st = repStudents();
+      const done = st.filter((x) => rnd(x.id, 41, 7) < 0.55 + (x.score || 0) / 220);
+      const avg = Math.round(done.reduce((t, x) => t + 55 + ((x.score || 0) * 0.35) + rnd(x.id, 9) * 10, 0) / Math.max(1, done.length));
+      return { done: true, miss: st.filter((x) => !done.includes(x)), sum: `${done.length}/${st.length} тапсырды · орташа ${avg}%`,
+        html: `<div class="rp-auto2"><div class="rp-a-h"><b>Апталық сынақ (41-апта)</b><small>сенбі · сабақ кестесінен</small></div><div class="rp-scs">${statChip(done.length + "/" + st.length, "тапсырды", "#5CB36D")}${statChip(avg + "%", "орташа", "#6fb0ff")}${statChip(st.length - done.length, "тапсырмады", "#E2574C")}</div></div>` };
+    },
+    zachetList: (v) => {
+      const miss = AUTO.zachet().miss;
+      return { done: !!v?.done || !miss.length, sum: miss.length ? `${miss.length} оқушы: ${nameList(miss, 8)}${v?.done ? " · топқа жіберілді" : ""}` : "барлығы тапсырды",
+        html: `<div class="rp-auto2">${miss.length ? `<div class="rp-chips">${miss.map((x) => `<span>${avatarHtml(x)}${x.name.split(" ")[0]}</span>`).join("")}</div>${v?.done ? `<small class="rp-ok">${icon("check_circle", "material-icons-outlined")}Тізім топ чатына жіберілді</small>` : `<button type="button" class="rp-go" data-rpsendlist="1">${icon("send", "material-icons-outlined")}Тізімді топ чатына жіберу</button>`}` : `<small class="rp-ok">${icon("check_circle", "material-icons-outlined")}Барлығы тапсырды</small>`}</div>` };
+    },
+    retake: () => { const n = AUTO.zachet().miss.filter((x, i) => rnd(x.id, 55) < 0.5).length; return { done: true, sum: `${n} оқушы пересдача тапсырды`, html: `<div class="rp-auto2"><div class="rp-scs">${statChip(n, "пересдача тапсырды", "#B07CFF")}${statChip(AUTO.zachet().miss.length - n, "әлі жоқ", "#F2A93B")}</div></div>` }; },
+    videoWeek: () => {
+      const st = repStudents(), L = MOCK.schedule.items.filter((i) => i.kind === "video" && i.period.includes("week"));
+      const views = st.reduce((t, x) => t + L.filter((l) => rnd(x.id, l.id, 5) < 0.5 + (x.score || 0) / 200).length, 0), all = st.length * L.length;
+      const N = autoNotes(L, "w"), notes = N.reduce((t, x) => t + x.sub.length, 0), acc = N.reduce((t, x) => t + x.acc, 0);
+      return { done: true, sum: `видео ${views}/${all} · конспект ${notes} (қабылданды ${acc})`,
+        html: `<div class="rp-auto2"><div class="rp-a-h"><b>Аптаның ${L.length} видеосабағы</b><small>оқушыдағы «Расписание» бойынша</small></div><div class="rp-scs">${statChip(Math.round((views / Math.max(1, all)) * 100) + "%", `көрді (${views}/${all})`, "#6fb0ff")}${statChip(notes, "конспект", "#B07CFF")}${statChip(acc, "қабылданды", "#5CB36D")}</div></div>` };
+    },
+  };
+
+  const taskDone = (t, v) => t.kind === "auto" ? !!AUTO[t.calc](v).done : t.kind === "shot" ? (v?.shots || []).length >= (t.need || 1) : !!v && (t.kind === "check" ? v.done : t.kind === "of" ? v.a !== "" && v.b !== "" && v.b !== undefined : t.kind === "num" ? (v.b ?? v.a ?? "") !== "" : (v.b || "").trim().length > 0);
   /** Аптаның күндері: өткен күндердің күйі (макет) */
   const repWeekStrip = () => ["Дс", "Сс", "Ср", "Бс", "Жм", "Сб"].map((d, i) => ({ d, st: i < 4 ? ["ok", "ok", "late", "ok"][i] : i === 4 ? (myReport("day").status === "draft" ? "now" : "ok") : "next" }));
   /** Бөлімдер: міндеттер тақырып бойынша топталады (DingTalk / Bitrix24 «жұмыс есебі» үлгісі) */
   const REP_SECS = {
-    day: [["Жоспар және ескерту", "event_note", ["d1", "d2"]], ["Тапсырмаларды қабылдау", "fact_check", ["d3", "d4"]], ["Эфир", "live_tv", ["d5", "d6"]], ["Ескерту", "flag", ["d7"]]],
-    week: [["Зачет", "assignment_turned_in", ["w1", "w2", "w3", "w4"]], ["Рейтинг және ата-ана", "leaderboard", ["w5", "w6"]], ["Жоспар", "event_note", ["w7"]]],
+    day: [["Жоспар және ескерту", "event_note", ["d1", "d2"]], ["Тапсырмаларды қабылдау", "fact_check", ["d3", "d4"]], ["Бүгінгі эфир", "live_tv", ["d5", "d6"]], ["Ескерту", "flag", ["d7"]]],
+    week: [["Зачет", "assignment_turned_in", ["w1", "w2", "w3", "w4"]], ["Сабақтар", "smart_display", ["w8"]], ["Рейтинг және ата-ана", "leaderboard", ["w5", "w6"]], ["Жоспар", "event_note", ["w7"]]],
     month: [["Нәтиже", "insights", ["m1", "m2"]], ["Ата-ана және төлем", "payments", ["m3", "m4", "m5"]], ["Қорытынды", "summarize", ["m6", "m7"]]],
   };
   function renderReports() {
     const per = state.repPer || "day";
     if (isHead()) return renderReportsHead(per);
-    const R = myReport(per), T = repTasks()[per], P = REP_PERIODS[per];
+    const R = myReport(per), P = REP_PERIODS[per];
+    const T = repTasks()[per].filter((t) => (t.kind !== "auto" || !AUTO[t.calc](R.vals[t.id]).hide) && (!t.show || t.show()));
     const done = T.filter((t) => taskDone(t, R.vals[t.id])).length, req = T.filter((t) => t.req);
     const reqDone = req.filter((t) => taskDone(t, R.vals[t.id])).length, reqOk = reqDone === req.length;
     const locked = R.status === "sent" || R.status === "ok";
@@ -3659,7 +3732,9 @@
     const row = (t) => {
       const v = R.vals[t.id] || {}, ok = taskDone(t, v);
       let ctl = "";
-      if (t.kind === "num") ctl = `<div class="rp-ctl">${stepper(t.id, "b", v.b, locked)}<small>${t.hint || ""}</small>${t.auto ? `<em class="rp-auto">${icon("bolt")}жүйеден</em>` : ""}</div>`;
+      if (t.kind === "auto") ctl = `${AUTO[t.calc](v).html}<em class="rp-auto">${icon("bolt")}жүйе өзі есептеді</em>`;
+      else if (t.kind === "shot") ctl = `<div class="rp-shots">${(v.shots || []).map((u, i) => `<span class="rp-shot" style="background-image:url(${u})">${locked ? "" : `<button type="button" data-rpshotx="${t.id}:${i}">${icon("close")}</button>`}</span>`).join("")}${!locked && (v.shots || []).length < (t.need || 1) + 2 ? `<button type="button" class="rp-shot add" data-rpshot="${t.id}">${icon("add_a_photo", "material-icons-outlined")}<small>${(v.shots || []).length}/${t.need}</small></button>` : ""}</div>`;
+      else if (t.kind === "num") ctl = `<div class="rp-ctl">${stepper(t.id, "b", v.b, locked)}<small>${t.hint || ""}</small>${t.auto ? `<em class="rp-auto">${icon("bolt")}жүйеден</em>` : ""}</div>`;
       else if (t.kind === "of") {
         const a = +v.a || 0, b = +v.b || 0;
         const [l1, l2] = (t.hint || "/").split(" / ");
@@ -3670,7 +3745,7 @@
         <button type="button" class="rp-tick" ${t.kind === "check" && !locked ? `data-rpchk="${t.id}"` : "disabled"}>${icon("check")}</button>
         <div class="rp-rb">
           <div class="rp-rt"><b>${t.t}</b>${t.req ? `<i class="rp-req" title="міндетті"></i>` : ""}</div>
-          ${t.kind === "check" && t.hint ? `<small class="rp-h">${t.hint}</small>` : ""}
+          ${(t.kind === "check" || t.kind === "shot") && t.hint ? `<small class="rp-h">${t.hint}</small>` : ""}
           ${ctl}
         </div>
       </div>`;
@@ -3724,14 +3799,14 @@
     </div>`;
   }
   function openHeadReport(c, per, status) {
-    const T = repTasks()[per];
+    const T = repTasks()[per].filter((t) => (t.kind !== "auto" || !AUTO[t.calc]({}).hide) && (!t.show || t.show()));
     const mine = c.id === MY_CURATOR_ID ? myReport(per) : null;
-    const R = mine || { key: repKey(per), status, sentAt: status === "late" ? "22:10" : "20:31", comment: "Ерман мен Арманға жеке сабақ ұсындым.", vals: Object.fromEntries(T.map((t, i) => [t.id, t.kind === "check" ? { done: rnd(c.id, i) > 0.15 } : t.kind === "of" ? { a: t.auto?.() || "15", b: String(Math.max(0, +(t.auto?.() || 15) - Math.floor(rnd(c.id, i, 2) * 3))) } : t.kind === "num" ? { b: t.auto?.() || String(Math.floor(rnd(c.id, i) * 9)) } : { b: ["Жоспар бойынша", "Арман, Ерман — қосымша тапсырма", "Белсенділікті 90%-ға жеткізу"][i % 3] }])) };
+    const R = mine || { key: repKey(per), status, sentAt: status === "late" ? "22:10" : "20:31", comment: "Ерман мен Арманға жеке сабақ ұсындым.", vals: Object.fromEntries(T.map((t, i) => [t.id, t.kind === "check" ? { done: rnd(c.id, i) > 0.15 } : t.kind === "of" ? { a: t.auto?.() || "15", b: String(Math.max(0, +(t.auto?.() || 15) - Math.floor(rnd(c.id, i, 2) * 3))) } : t.kind === "num" ? { b: t.auto?.() || String(Math.floor(rnd(c.id, i) * 9)) } : t.kind === "shot" ? { shots: Array(t.need).fill("assets/v2/notification.png") } : t.kind === "auto" ? { done: true } : { b: ["Жоспар бойынша", "Арман, Ерман — қосымша тапсырма", "Белсенділікті 90%-ға жеткізу"][i % 3] }])) };
     pushScreen(
       `${c.name} · ${REP_PERIODS[per].name.toLowerCase()}`,
       () => `<div class="list-pad rp">
         <div class="rp-hero"><span class="ch-av">${avatarHtml(curAv(c))}</span><div class="rp-hi"><b>${c.name}</b><small>${REP_PERIODS[per].name} отчёт · ${R.key}</small><small>${icon("send", "material-icons-outlined")}Жіберілді ${R.sentAt || "—"}</small></div></div>
-        ${T.map((t) => { const v = R.vals[t.id] || {}, ok = taskDone(t, v); return `<div class="rp-task ro ${ok ? "done" : "miss"}"><span class="rp-chk">${icon(ok ? "check" : "close")}</span><div class="rp-tb"><b>${t.t}</b><small>${t.kind === "check" ? (ok ? "орындалды" : "орындалмады") : t.kind === "of" ? `${v.b || 0} / ${v.a || 0} · ${t.hint}` : t.kind === "num" ? `${v.b ?? v.a ?? "—"} ${t.hint || ""}` : v.b || "—"}</small></div></div>`; }).join("")}
+        ${T.map((t) => { const v = R.vals[t.id] || {}, ok = taskDone(t, v); return `<div class="rp-task ro ${ok ? "done" : "miss"}"><span class="rp-chk">${icon(ok ? "check" : "close")}</span><div class="rp-tb"><b>${t.t}</b><small>${t.kind === "auto" ? AUTO[t.calc](v).sum : t.kind === "shot" ? `${(v.shots || []).length || (ok ? t.need : 0)} скрин тіркелді` : t.kind === "check" ? (ok ? "орындалды" : "орындалмады") : t.kind === "of" ? `${v.b || 0} / ${v.a || 0} · ${t.hint}` : t.kind === "num" ? `${v.b ?? v.a ?? "—"} ${t.hint || ""}` : v.b || "—"}</small></div></div>`; }).join("")}
         ${R.comment ? `<div class="rp-back" style="--c:#5B9BF2">${icon("chat", "material-icons-outlined")}<span>${R.comment}</span></div>` : ""}
         <div class="t3-sec">Бас куратордың пікірі</div>
         <textarea class="rp-in" id="rpHeadCm" rows="2" placeholder="Түзету керек болса — не түзету керегін жазыңыз"></textarea>
@@ -3758,10 +3833,10 @@
         <div class="sheet-handle"></div>
         <div class="ef-head"><span>${REP_PERIODS[per].name} міндеттер шаблоны</span><button type="button" id="rtClose">${icon("close")}</button></div>
         <div class="tf-sum">${icon("info", "material-icons-outlined")}Барлық кураторлардың ${REP_PERIODS[per].name.toLowerCase()} отчётына осы тізім шығады</div>
-        ${repTasks()[per].map((t, i) => `<div class="rt-row"><span>${i + 1}</span><b>${t.t}${t.req ? " *" : ""}</b><small>${{ check: "белгі", num: "сан", of: "N / M", text: "мәтін" }[t.kind]}</small><button type="button" data-rtdel="${t.id}">${icon("delete_outline", "material-icons-outlined")}</button></div>`).join("")}
+        ${repTasks()[per].map((t, i) => `<div class="rt-row"><span>${i + 1}</span><b>${t.t}${t.req ? " *" : ""}</b><small>${{ check: "белгі", num: "сан", of: "N / M", text: "мәтін", auto: "жүйеден", shot: "скрин" }[t.kind]}</small><button type="button" data-rtdel="${t.id}">${icon("delete_outline", "material-icons-outlined")}</button></div>`).join("")}
         <div class="ef-label">Жаңа міндет</div>
         <input class="ef-input" id="rtNew" placeholder="Мысалы: Оқушылармен 1:1 кездесу" />
-        <div class="ent-chips" style="margin-top:8px">${[["check", "Белгі"], ["num", "Сан"], ["of", "N / M"], ["text", "Мәтін"]].map(([k, l]) => `<button type="button" class="ent-chip ${(state.rtKind || "check") === k ? "on" : ""}" style="--c:var(--primary)" data-rtk="${k}">${l}</button>`).join("")}</div>
+        <div class="ent-chips" style="margin-top:8px">${[["check", "Белгі"], ["num", "Сан"], ["of", "N / M"], ["text", "Мәтін"], ["shot", "Скрин"]].map(([k, l]) => `<button type="button" class="ent-chip ${(state.rtKind || "check") === k ? "on" : ""}" style="--c:var(--primary)" data-rtk="${k}">${l}</button>`).join("")}</div>
         <button type="button" class="ef-submit" id="rtAdd">${icon("add")}Қосу</button>`, { tall: true });
       $("#rtClose").onclick = closeSheet;
       $$("[data-rtk]").forEach((b) => (b.onclick = () => ((state.rtKind = b.dataset.rtk), draw())));
@@ -3769,7 +3844,7 @@
       $("#rtAdd").onclick = () => {
         const v = $("#rtNew").value.trim();
         if (!v) return toast("Міндетті жазыңыз", "err");
-        repTasks()[per].push({ id: `x${nextId()}`, t: v, kind: state.rtKind || "check", req: true });
+        repTasks()[per].push({ id: `x${nextId()}`, t: v, kind: state.rtKind || "check", req: true, need: 1 });
         toast("Қосылды — кураторлар отчётында шығады");
         draw();
       };
@@ -3793,6 +3868,32 @@
       v.done = !v.done;
       render();
     }));
+    $$("[data-rpacc]").forEach((b) => (b.onclick = () => {
+      const [a, k2, tot] = b.dataset.rpacc.split(":");
+      repAcc()[`${a}:${k2}`] = +tot;
+      toast("Қабылданды ✓ — оқушыларға «Принят» хабарламасы кетті");
+      render();
+    }));
+    $$("[data-rpsendlist]").forEach((b) => (b.onclick = () => (((R.vals.w4 ||= {}).done = true), toast("Тізім топ чатына жіберілді"), render())));
+    $$("[data-rpshot]").forEach((b) => (b.onclick = () => {
+      const id = b.dataset.rpshot, inp = document.createElement("input");
+      inp.type = "file";
+      inp.accept = "image/*";
+      inp.multiple = true;
+      inp.onchange = () => [...inp.files].forEach((f) => {
+        const img = new Image();
+        img.onload = () => {
+          const k = Math.min(1, 360 / img.width), cv = document.createElement("canvas");
+          cv.width = img.width * k; cv.height = img.height * k;
+          cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+          ((R.vals[id] ||= {}).shots ||= []).push(cv.toDataURL("image/jpeg", 0.8));
+          render();
+        };
+        img.src = URL.createObjectURL(f);
+      });
+      inp.click();
+    }));
+    $$("[data-rpshotx]").forEach((b) => (b.onclick = () => { const [id, i] = b.dataset.rpshotx.split(":"); R.vals[id].shots.splice(+i, 1); render(); }));
     $$("[data-rpstep]").forEach((b) => (b.onclick = () => {
       const [id, f, d] = b.dataset.rpstep.split(":");
       const v = (R.vals[id] ||= {});
