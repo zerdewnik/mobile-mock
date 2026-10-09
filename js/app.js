@@ -3698,13 +3698,13 @@
         <div class="rp-row free"><div class="rp-rb"><textarea class="rp-ta" id="rpComment" rows="2" placeholder="Бас куратор білуі керек нәрсе (міндетті емес)" ${locked ? "disabled" : ""}>${R.comment || ""}</textarea>
           <div class="rp-files">${(R.files || []).map((f) => `<span>${icon("image", "material-icons-outlined")}${f}</span>`).join("")}${locked ? "" : `<button type="button" id="rpAttach">${icon("add_photo_alternate", "material-icons-outlined")}Фото / файл</button>`}</div></div></div>
       </section>
-      <div class="rp-histh">Тарих</div>
-      <div class="rp-tl">${[["Кеше", "ok", "20:12"], ["Сейсенбі", "ok", "20:48"], ["Дүйсенбі", "late", "22:05"]].map(([d, s, tm]) => `<div class="${s}"><i></i><b>${per === "day" ? d : per === "week" ? "40-апта" : "Қыркүйек"}</b><small>${s === "ok" ? `${tm} · уақытында · қабылданды` : `${tm} · кешікті`}</small></div>`).join("")}</div>
       <div class="rp-bar">
         ${locked
           ? `<div class="rp-lock">${icon(R.status === "ok" ? "verified" : "lock", "material-icons-outlined")}${R.status === "ok" ? "Отчёт қабылданды" : "Жіберілді — бас куратор тексеруде"}</div>`
           : `<span class="rp-bq"><b>${reqDone}/${req.length}</b><small>міндетті</small></span><button type="button" class="rp-send" id="rpSend" ${reqOk ? "" : "disabled"}>${icon("send")}${R.status === "back" ? "Қайта жіберу" : "Отчёт жіберу"}</button>`}
       </div>
+      <div class="rp-histh">Тарих</div>
+      <div class="rp-tl">${[["Кеше", "ok", "20:12"], ["Сейсенбі", "ok", "20:48"], ["Дүйсенбі", "late", "22:05"]].map(([d, s, tm]) => `<div class="${s}"><i></i><b>${per === "day" ? d : per === "week" ? "40-апта" : "Қыркүйек"}</b><small>${s === "ok" ? `${tm} · уақытында · қабылданды` : `${tm} · кешікті`}</small></div>`).join("")}</div>
     </div>`;
   }
   function renderReportsHead(per) {

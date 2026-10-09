@@ -5352,3 +5352,7 @@ u.b { background: #5CB36D; } u.c { background: #F2C230; }
 .rp-lock .material-icons-outlined { color: #7fe08f; }
 .rp-sec > header > .material-icons-outlined, .rp-sec > header > .material-icons-round { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: rgba(139,92,246,.16); font-size: 18px; flex-shrink: 0; }
 .rp-bar { background: linear-gradient(180deg, rgba(18,18,20,0), #121214 35%); }
+
+/* Жіберу жолағы — тарихтың үстінде қалқып тұрмасын: тұрақты орында, түсініктемеден кейін */
+.rp-bar { position: static; margin: 14px 0 0; padding: 0; background: none; }
+.rp-tl { padding-bottom: 20px; }
