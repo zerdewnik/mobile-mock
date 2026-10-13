@@ -7407,10 +7407,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return `
       <div class="rank-row" data-student-id="${s.id}">
         ${renderRankBadge(s)}
-        <div class="avatar" style="background:${s.color}">${s.initials}${pend ? `<i class="note-dot" title="Тексерілмеген конспект">${pend}</i>` : ""}</div>
+        <div class="avatar" style="background:${s.color}">${s.initials}</div>
         <div class="rank-info">
           <div class="rank-name">${s.name}</div>
-          ${pend ? `<div class="rank-notes">${icon("description", "material-icons-outlined")}${pend} конспект күтуде</div>` : `<div class="rank-phone">${s.phone}</div>`}
+          <div class="rank-phone">${s.phone}</div>
         </div>
         <div class="rank-stats">
           <div class="rank-score-line">
@@ -7420,6 +7420,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           </div>
           <div class="rank-seen ${online ? "online" : ""}">${s.lastSeen}</div>
         </div>
+        ${pend ? `<span class="rank-note" title="${pend} конспект тексерілмеген">${icon("description", "material-icons-outlined")}${pend}</span>` : ""}
       </div>
       ${isLast ? "" : '<div class="rank-sep"></div>'}`;
   }
