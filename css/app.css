@@ -559,6 +559,16 @@ html[data-mode="student"] .fab-core {
   background: rgba(255, 255, 255, 0.03);
 }
 
+.rank-row .avatar { position: relative; overflow: visible; }
+.note-dot { position: absolute; top: -4px; right: -5px; min-width: 18px; height: 18px; padding: 0 4px; border-radius: 9px; display: grid; place-items: center; background: #e0873a; color: #fff; font-size: 10.5px; font-weight: 800; font-style: normal; line-height: 1; box-shadow: 0 0 0 2px var(--card, #1e1e1e); }
+.rank-notes { display: flex; align-items: center; gap: 3px; margin-top: 2px; font-size: 11.5px; font-weight: 600; color: #f0a35c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rank-notes .material-icons-outlined { font-size: 14px; }
+.pill.note-pill, html[data-mode="staff"] .pill.note-pill { gap: 3px; padding: 4px 8px; color: #fff; background: #e0873a; font-weight: 700; }
+.pill.note-pill .material-icons-outlined { font-size: 14px; }
+.note-sum { display: flex; align-items: center; gap: 8px; margin: 10px 12px 2px; padding: 9px 12px; border-radius: 12px; font-size: 12.5px; color: #ffd2a8; background: rgba(224,135,58,.12); border: 1px solid rgba(224,135,58,.35); }
+.note-sum .material-icons-outlined { font-size: 18px; color: #e0873a; }
+.note-sum b { color: #fff; }
+
 .rank-sep {
   height: 1px;
   margin: 0 12px;
@@ -5382,3 +5392,41 @@ u.b { background: #5CB36D; } u.c { background: #F2C230; }
 .rp-shot button .material-icons-round { font-size: 14px; }
 .rp-shot.add { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 1.5px dashed #4a4a55; color: #a98bff; font-family: inherit; cursor: pointer; }
 .rp-shot.add small { font-size: 11px; color: #8a8d9c; }
+
+/* Сенбілік пакет: шарт бойынша тапсыру */
+.rp-lead { margin: 10px 2px 0; font-size: 12.5px; line-height: 1.45; color: #b7bac8; }
+.rp-link { border: 0; background: none; color: #fff; font-family: inherit; font-size: 12px; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; cursor: pointer; opacity: .95; }
+.rp-jump { width: 100%; margin-top: 10px; display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 14px; border: 1px solid rgba(242,169,59,.45); background: rgba(242,169,59,.12); color: #ffd7a1; font-family: inherit; font-size: 12.5px; text-align: left; cursor: pointer; }
+.rp-jump .material-icons-outlined { font-size: 18px; }
+.rp-came { width: 100%; margin-top: 12px; display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 16px; border: 1px solid #3a3a44; background: #1c1c20; color: #fff; font-family: inherit; text-align: left; cursor: pointer; }
+.rp-came:disabled { cursor: default; }
+.rp-came b { display: block; font-size: 14px; }
+.rp-came small { display: block; margin-top: 2px; font-size: 11.5px; color: #8a8d9c; }
+.rp-came .rp-tick { border-style: solid; }
+.rp-came.on { border-color: rgba(92,179,109,.55); background: linear-gradient(180deg, rgba(92,179,109,.12), #1c1c20); }
+.rp-came.on .rp-tick { border: 0; color: #fff; background: linear-gradient(180deg, #5fd47a, #2f9a52); box-shadow: 0 2px 0 #1d5e33; }
+.rp-came.on .rp-tick .material-icons-round { transform: scale(1); }
+.rp-pad { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+.rp-due { margin-left: auto; font-style: normal; font-size: 10.5px; font-weight: 800; color: #c8cad4; background: #2a2a31; padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.rp-due.ok { color: #102015; background: #5CB36D; }
+.rp-due.late { color: #ffd0c8; background: rgba(226,87,76,.85); }
+.rp-due.soon { color: #2a2110; background: #F2A93B; }
+.rp-fine { margin-left: auto; font-style: normal; font-size: 10.5px; font-weight: 800; color: #ffd0c8; background: rgba(226,87,76,.85); padding: 3px 8px; border-radius: 99px; white-space: nowrap; }
+.rp-who { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-top: 1px solid #24242a; }
+.rp-who:first-child { border-top: 0; padding-top: 0; }
+.rp-who .du-av { width: 32px; height: 32px; font-size: 11px; flex: 0 0 32px; }
+.rp-who > span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.rp-who b { font-size: 13px; font-weight: 600; }
+.rp-who small { font-size: 11px; color: #8a8d9c; }
+.rp-pos { width: 18px; flex: 0 0 18px; font-size: 12px; color: #8a8d9c; }
+.rp-mark { margin-left: auto; height: 30px; padding: 0 10px; border: 0; border-radius: 10px; display: inline-flex; align-items: center; gap: 3px; font-family: inherit; font-size: 12px; font-weight: 700; color: #fff; background: #34343c; cursor: pointer; flex-shrink: 0; }
+.rp-mark .material-icons-round { font-size: 14px; }
+.rp-mark.on { background: #2f9a52; }
+.rp-mark:disabled { opacity: .7; cursor: default; }
+.rp-live { display: flex; align-items: center; gap: 8px; padding: 6px 0; }
+.rp-live > b { flex: 0 0 auto; font-size: 12px; color: #c8cad4; }
+.rp-live > span { flex: 1; min-width: 0; font-size: 12.5px; }
+.rp-live small { display: block; color: #8a8d9c; font-size: 11px; }
+.rp-rules { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.rp-rules b { margin-top: 8px; font-size: 14px; }
+.rp-rules p { margin: 0; font-size: 13px; line-height: 1.45; color: #c8cad4; }
