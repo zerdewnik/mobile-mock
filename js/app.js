@@ -7966,7 +7966,25 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="pdoc-foot">Отчёт сформирован автоматически в приложении I4U.</div>
       </div>`;
   }
-  function sheetRowsFromReport(D) {
+  function sheetPackFromReport(D) {
+    const needBody = D.needWork.length
+      ? D.needWork.map((s) => [s.name, s.need, D.a.plan ? `${s.lessons}/${D.a.plan}` : s.lessons, s.testAvg ?? "—", s.ent ?? "—"])
+      : [["Все ученики в норме", "", "", "", ""]];
+    const studBody = D.students.map((s, i) => [
+      i + 1,
+      s.name,
+      s.phone,
+      s.active ? "да" : "нет",
+      s.activeDays,
+      s.lessons,
+      s.plan || "—",
+      s.testAvg ?? "—",
+      s.points,
+      s.notes,
+      s.pending,
+      s.ent ?? "—",
+      s.need || "",
+    ]);
     const rows = [
       ["I4U · Отчёт по группе"],
       ["Курс", D.course],
@@ -7979,7 +7997,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       ["Пробный ЕНТ (ср.)", D.a.entAvg != null ? D.a.entAvg : "—", "/ 140"],
       ["Сдавали ЕНТ", `${D.a.entCount} из ${D.n}`],
       ["≥ 50 баллов", D.a.entCount ? `${D.a.entGrant} из ${D.a.entCount}` : "—"],
-      ["Средний балл за период", D.a.avgPoints],
+      ["Средний балл за период", D.a.avgPoints, "из 100"],
       ["Средний результат тестов", D.a.testsCount ? D.a.avgTest : "—", D.a.testsCount ? "из 100" : ""],
       ["Активны", `${D.a.active} / ${D.n}`],
       ["Конспекты сдано", D.a.notes, D.a.pending ? `на проверке: ${D.a.pending}` : ""],
@@ -7989,29 +8007,32 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       [],
       ["ЖҰМЫС ЖАСАЛУЫ КЕРЕК"],
       ["Ученик", "Причина", "Уроки", "Ср. тест", "ЕНТ"],
-      ...(D.needWork.length
-        ? D.needWork.map((s) => [s.name, s.need, D.a.plan ? `${s.lessons}/${D.a.plan}` : s.lessons, s.testAvg ?? "—", s.ent ?? "—"])
-        : [["Все ученики в норме", "", "", "", ""]]),
+      ...needBody,
       [],
       ["ПОКАЗАТЕЛИ ПО УЧЕНИКАМ"],
       ["№", "Ученик", "Телефон", "Активен", "Дней акт.", "Уроки", "План", "Ср. тест", "Балл", "Конспект", "На проверке", "ЕНТ", "Внимание"],
-      ...D.students.map((s, i) => [
-        i + 1,
-        s.name,
-        s.phone,
-        s.active ? "да" : "нет",
-        s.activeDays,
-        s.lessons,
-        s.plan || "—",
-        s.testAvg ?? "—",
-        s.points,
-        s.notes,
-        s.pending,
-        s.ent ?? "—",
-        s.need || "",
-      ]),
+      ...studBody,
     ];
-    return rows;
+    const needHead = 20; // 0-based
+    const studHead = needHead + 1 + needBody.length + 2;
+    return {
+      rows,
+      layout: {
+        title: 0,
+        sectionGeneral: 7,
+        needTitle: 19,
+        needHead,
+        needEnd: needHead + needBody.length,
+        studTitle: studHead - 1,
+        studHead,
+        studEnd: studHead + studBody.length,
+        needCols: 5,
+        studCols: 13,
+      },
+    };
+  }
+  function sheetRowsFromReport(D) {
+    return sheetPackFromReport(D).rows;
   }
   function loadExcelBook(g) {
     try {
@@ -8036,10 +8057,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     return names;
   }
-  function upsertExcelTab(book, tabName, rows, meta = {}) {
+  function upsertExcelTab(book, tabName, pack, meta = {}) {
+    const rows = Array.isArray(pack) ? pack : pack.rows;
+    const layout = Array.isArray(pack) ? null : pack.layout;
     const i = book.tabs.findIndex((t) => t.name === tabName);
-    const tab = { name: tabName, rows, ...meta };
-    if (i >= 0) book.tabs[i] = tab;
+    const tab = { name: tabName, rows, layout, ...meta };
+    if (i >= 0) book.tabs[i] = { ...book.tabs[i], ...tab };
     else book.tabs.push(tab);
     const weekNums = book.tabs.map((t) => /^(\d+) - апта$/.exec(t.name)).filter(Boolean).map((m) => +m[1]);
     const maxW = weekNums.length ? Math.max(...weekNums) : 0;
@@ -8051,12 +8074,129 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     });
     return book;
   }
+  /** Аптаның толық 7 күні — Excel үшін (болашақ апта да толық толтырылады) */
+  function analyzeFullWeek(g, date) {
+    const R0 = periodRange("week", date);
+    const days = [];
+    for (let d = new Date(R0.from); d <= R0.to; d.setDate(d.getDate() + 1)) days.push(new Date(d));
+    const fakeToday = R0.to > AN_TODAY ? new Date(R0.to) : AN_TODAY;
+    const saved = AN_TODAY;
+    // уақытша «бүгінді» апта соңына жылжытып, сол аптаның толық деректерін аламыз
+    try {
+      // analyze AN_TODAY-ға тәуелді — толық күндерді қолмен есептейміз
+      const st = g.students;
+      const workdays = days.filter((d) => d.getDay() !== 0 && d.getDay() !== 6).length;
+      const plan = workdays ? Math.max(1, Math.round(workdays * 1.6)) : 0;
+      const per = st.map((x) => {
+        const ds = days.map((d) => studentDay(x, d));
+        const tests = ds.flatMap((d) => d.tests);
+        const inRange = entAttempts(x).filter((e) => e.date >= R0.from && e.date <= R0.to);
+        return {
+          x,
+          days: ds,
+          active: ds.some((d) => d.active),
+          activeDays: ds.filter((d) => d.active).length,
+          lessons: ds.reduce((t, d) => t + d.lessons, 0),
+          tests,
+          points: tests.reduce((t, v) => t + Math.round(v / 10), 0),
+          notes: ds.reduce((t, d) => t + d.notes, 0),
+          pendingNotes: days.reduce((t, d, i) => t + (ds[i].notes && (fakeToday - d) / 864e5 <= 2 ? 1 : 0), 0),
+          ent: inRange,
+        };
+      });
+      const avg = (arr) => (arr.length ? arr.reduce((t, v) => t + v, 0) / arr.length : 0);
+      const prevDate = new Date(R0.from);
+      prevDate.setDate(prevDate.getDate() - 7);
+      const P = periodRange("week", prevDate);
+      const entNow = per.flatMap((r) => r.ent.map((e) => e.score));
+      const entPrev = st.flatMap((x) => entAttempts(x).filter((e) => e.date >= P.from && e.date <= P.to).map((e) => e.score));
+      const allTests = per.flatMap((r) => r.tests);
+      const series = days.map((d, i) => {
+        const v = per.filter((r) => r.days[i].active).length;
+        const wd = ["Жс", "Дс", "Сс", "Ср", "Бс", "Жм", "Сб"][d.getDay()];
+        return { label: wd, tip: `${wd}, ${pad(d.getDate())}.${pad(d.getMonth() + 1)}`, v };
+      });
+      const attention = per
+        .map((r) => {
+          const reasons = [];
+          if (!r.active) reasons.push("не заходил за период");
+          else if (plan && r.lessons < plan * 0.5) reasons.push(`прошёл ${r.lessons} из ${plan} уроков`);
+          if (r.tests.length && avg(r.tests) < 55) reasons.push(`ср. тест ${Math.round(avg(r.tests))}`);
+          return { x: r.x, reasons };
+        })
+        .filter((r) => r.reasons.length);
+      const maxV = Math.max(0, ...series.map((p) => p.v || 0));
+      return {
+        R: { from: R0.from, to: R0.to, days },
+        per,
+        plan,
+        future: false,
+        active: per.filter((r) => r.active).length,
+        avgPoints: Math.round(avg(per.map((r) => r.points))),
+        avgTest: Math.round(avg(allTests)),
+        testsCount: allTests.length,
+        notes: per.reduce((t, r) => t + r.notes, 0),
+        pending: per.reduce((t, r) => t + r.pendingNotes, 0),
+        avgLessons: Math.round(avg(per.map((r) => r.lessons)) * 10) / 10,
+        met: per.filter((r) => plan && r.lessons >= plan).length,
+        entAvg: entNow.length ? Math.round(avg(entNow)) : null,
+        entPrev: entPrev.length ? Math.round(avg(entPrev)) : null,
+        entCount: per.filter((r) => r.ent.length).length,
+        entGrant: per.filter((r) => r.ent.length && r.ent[r.ent.length - 1].score >= 50).length,
+        series,
+        attention,
+        _maxV: maxV,
+      };
+    } finally {
+      void saved;
+    }
+  }
+  function groupReportDataWeek(g, date) {
+    const a = analyzeFullWeek(g, date);
+    const n = g.students.length;
+    const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
+    const maxV = a._maxV ?? Math.max(0, ...a.series.map((p) => p.v || 0));
+    const peak = a.series.findIndex((p) => p.v === maxV);
+    const students = [...a.per]
+      .sort((p, q) => q.lessons - p.lessons || (q.x.score || 0) - (p.x.score || 0))
+      .map((r) => {
+        const ent = r.ent.length ? r.ent[r.ent.length - 1].score : null;
+        const testAvg = r.tests.length ? Math.round(avgArr(r.tests)) : null;
+        const need = a.attention.find((x) => x.x.id === r.x.id);
+        return {
+          id: r.x.id,
+          name: r.x.name,
+          phone: r.x.phone || "",
+          active: r.active,
+          activeDays: r.activeDays,
+          lessons: r.lessons,
+          plan: a.plan,
+          testAvg,
+          points: r.points,
+          notes: r.notes,
+          pending: r.pendingNotes,
+          ent,
+          need: need ? need.reasons.join("; ") : "",
+        };
+      });
+    return {
+      a,
+      n,
+      pct,
+      peak: maxV ? a.series[peak] : null,
+      maxV,
+      label: periodLabel("week", date),
+      period: "week",
+      weekNo: academicWeek(date),
+      course: courseTitleOf(g),
+      group: g.name,
+      curator: MOCK.curators.find((c) => c.id === g.curatorId)?.name || myName(),
+      students,
+      needWork: students.filter((s) => s.need),
+    };
+  }
   function monthSummaryFromWeeks(g, weekNos, dateHint) {
-    const parts = weekNos.map((w) => {
-      const d = new Date(periodRange("week", SCHED_START).from);
-      d.setDate(d.getDate() + (w - 1) * 7 + 3);
-      return groupReportData(g, "week", d);
-    });
+    const parts = weekNos.map((w) => groupReportDataWeek(g, dateOfAcademicWeek(w)));
     const n = g.students.length;
     const avg = (fn) => Math.round(avgArr(parts.map(fn)) * 10) / 10;
     const D0 = parts[0];
@@ -8121,22 +8261,106 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
   let xlsxLib = null;
   function loadXlsx() {
-    if (!xlsxLib) xlsxLib = loadScript("https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js").then(() => window.XLSX);
+    if (!xlsxLib)
+      xlsxLib = loadScript("https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js").then(() => window.XLSX);
     return xlsxLib;
+  }
+  const XL = {
+    title: { font: { bold: true, sz: 16, color: { rgb: "2D5A8C" } } },
+    label: { font: { color: { rgb: "6C6F84" }, sz: 11 }, fill: { fgColor: { rgb: "F5F7FB" } } },
+    value: { font: { bold: true, sz: 11 } },
+    section: { font: { bold: true, sz: 12, color: { rgb: "2D5A8C" } } },
+    needHead: { font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 }, fill: { fgColor: { rgb: "8B4513" } }, alignment: { horizontal: "center", vertical: "center" } },
+    studHead: { font: { bold: true, color: { rgb: "FFFFFF" }, sz: 11 }, fill: { fgColor: { rgb: "3B4089" } }, alignment: { horizontal: "center", vertical: "center" } },
+    band: { fill: { fgColor: { rgb: "F3F4F8" } } },
+    needTitle: { font: { bold: true, sz: 12, color: { rgb: "8B4513" } } },
+    cell: { font: { sz: 11 }, alignment: { vertical: "center" } },
+  };
+  function styleReportSheet(XLSX, ws, layout) {
+    if (!layout || !ws["!ref"] || layout.studHead < 0) return;
+    const set = (r, c, s) => {
+      const ref = XLSX.utils.encode_cell({ r, c });
+      if (!ws[ref]) ws[ref] = { t: "s", v: "" };
+      ws[ref].s = { ...(ws[ref].s || {}), ...s };
+    };
+    const paintRow = (r, cols, s) => {
+      for (let c = 0; c < cols; c++) set(r, c, s);
+    };
+    set(layout.title, 0, XL.title);
+    for (let r = 1; r <= 5; r++) {
+      set(r, 0, XL.label);
+      set(r, 1, XL.value);
+    }
+    if (layout.sectionGeneral >= 0) set(layout.sectionGeneral, 0, XL.section);
+    if (layout.needTitle >= 0) set(layout.needTitle, 0, XL.needTitle);
+    if (layout.studTitle >= 0) set(layout.studTitle, 0, XL.section);
+    if (layout.needHead >= 0) paintRow(layout.needHead, layout.needCols, XL.needHead);
+    paintRow(layout.studHead, layout.studCols, XL.studHead);
+    for (let r = layout.needHead + 1; r <= layout.needEnd; r++) {
+      for (let c = 0; c < layout.needCols; c++) set(r, c, { ...XL.cell, ...(r % 2 ? XL.band : {}) });
+    }
+    for (let r = layout.studHead + 1; r <= layout.studEnd; r++) {
+      for (let c = 0; c < layout.studCols; c++) set(r, c, { ...XL.cell, ...((r - layout.studHead) % 2 === 0 ? XL.band : {}) });
+    }
+    ws["!autofilter"] = {
+      ref: XLSX.utils.encode_range({
+        s: { r: layout.studHead, c: 0 },
+        e: { r: Math.max(layout.studHead, layout.studEnd), c: layout.studCols - 1 },
+      }),
+    };
   }
   async function downloadExcelBook(book) {
     const XLSX = await loadXlsx();
     const wb = XLSX.utils.book_new();
     (book.tabs.length ? book.tabs : [{ name: "1 - апта", rows: [["Бос"]] }]).forEach((t) => {
-      const ws = XLSX.utils.aoa_to_sheet(t.rows);
-      ws["!cols"] = [{ wch: 6 }, { wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 28 }];
+      const rows = t.rows;
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws["!cols"] = [
+        { wch: 8 },
+        { wch: 26 },
+        { wch: 18 },
+        { wch: 12 },
+        { wch: 11 },
+        { wch: 9 },
+        { wch: 8 },
+        { wch: 10 },
+        { wch: 9 },
+        { wch: 11 },
+        { wch: 12 },
+        { wch: 8 },
+        { wch: 32 },
+      ];
+      let layout = t.layout;
+      if (!layout && rows[0]?.[0] === "I4U · Отчёт по группе") {
+        const studHead = rows.findIndex((r) => r[0] === "№" && r[1] === "Ученик");
+        const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "Причина");
+        layout = {
+          title: 0,
+          sectionGeneral: rows.findIndex((r) => r[0] === "ОБЩИЕ ПОКАЗАТЕЛИ"),
+          needTitle: rows.findIndex((r) => String(r[0] || "").includes("ЖҰМЫС")),
+          needHead,
+          needEnd: studHead >= 0 ? studHead - 2 : needHead,
+          studTitle: studHead >= 0 ? studHead - 1 : -1,
+          studHead,
+          studEnd: rows.length - 1,
+          needCols: 5,
+          studCols: 13,
+        };
+      }
+      if (layout) styleReportSheet(XLSX, ws, layout);
       XLSX.utils.book_append_sheet(wb, ws, t.name.slice(0, 31));
     });
     const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
     saveFile(new File([out], `${book.name}.xlsx`, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
   }
+  /** Апта күні: academicWeek(w) үшін апта ортасы */
+  function dateOfAcademicWeek(w) {
+    const d = new Date(periodRange("week", SCHED_START).from);
+    d.setDate(d.getDate() + (w - 1) * 7 + 3);
+    return d;
+  }
   async function exportGroupPdf(g, period, date) {
-    const D = groupReportData(g, period, date);
+    const D = period === "month" ? groupReportData(g, period, date) : groupReportDataWeek(g, date);
     const name = `${D.group} ${D.label.replace(/[–—]/g, "-")} ${D.course}.pdf`;
     return makeReportPdf(groupReportDocHtml(g, D), name.replace(/[^\wа-яёәіңғүұқөһА-ЯЁӘІҢҒҮҰҚӨҺ \-.–]+/gi, "_"));
   }
@@ -8151,30 +8375,33 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       }
       const uniq = [...new Set(weeks)].filter((w) => w >= 1);
       uniq.forEach((w) => {
-        const d = new Date(periodRange("week", SCHED_START).from);
-        d.setDate(d.getDate() + (w - 1) * 7 + 3);
-        if (d > AN_TODAY) return;
-        const D = groupReportData(g, "week", d);
-        upsertExcelTab(book, `${w} - апта`, sheetRowsFromReport(D), { week: w, label: D.label });
+        const d = dateOfAcademicWeek(w);
+        const D = groupReportDataWeek(g, d);
+        upsertExcelTab(book, `${w} - апта`, sheetPackFromReport(D), { week: w, label: D.label });
         if (w % 4 === 0) {
           const range = [w - 3, w - 2, w - 1, w];
           const M = monthSummaryFromWeeks(g, range, d);
-          upsertExcelTab(book, `${w / 4} - ай`, sheetRowsFromReport(M), { month: w / 4, label: M.label });
+          upsertExcelTab(book, `${w / 4} - ай`, sheetPackFromReport(M), { month: w / 4, label: M.label });
         }
       });
     } else {
-      const D = groupReportData(g, "week", date);
+      const D = groupReportDataWeek(g, date);
       const w = D.weekNo;
-      upsertExcelTab(book, `${w} - апта`, sheetRowsFromReport(D), { week: w, label: D.label });
+      upsertExcelTab(book, `${w} - апта`, sheetPackFromReport(D), { week: w, label: D.label });
       if (w % 4 === 0) {
         const range = [w - 3, w - 2, w - 1, w];
         const M = monthSummaryFromWeeks(g, range, date);
-        upsertExcelTab(book, `${w / 4} - ай`, sheetRowsFromReport(M), { month: w / 4, label: M.label });
+        upsertExcelTab(book, `${w / 4} - ай`, sheetPackFromReport(M), { month: w / 4, label: M.label });
       }
     }
     saveExcelBook(g, book);
     await downloadExcelBook(book);
     return book;
+  }
+  /** Сыртқы шақыру: нақты апта нөмірін Excel-ге қосу (5, 6, …) */
+  async function exportAcademicWeek(g, weekNo) {
+    const d = dateOfAcademicWeek(weekNo);
+    return exportGroupExcel(g, "week", d);
   }
   function openDriveAccountSheet(onDone) {
     openSheet(`
@@ -10360,6 +10587,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     applyPrefs();
   }
 
-  window.__i4u = { tournaments, startTournament }; // макетті тексеру үшін
+  window.__i4u = { tournaments, startTournament, exportAcademicWeek, excelBookName, loadExcelBook, dateOfAcademicWeek }; // макетті тексеру үшін
   document.addEventListener("DOMContentLoaded", init);
 })();
