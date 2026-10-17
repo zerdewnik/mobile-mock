@@ -3676,12 +3676,139 @@
     return `<div class="rp-shots">${(p.shots || []).map((u, i) => `<span class="rp-shot" style="background-image:url(${u})">${locked ? "" : `<button type="button" data-rpshotx="${i}">${icon("close")}</button>`}</span>`).join("")}${locked ? "" : `<button type="button" class="rp-shot add" id="rpShot">${icon("add_a_photo", "material-icons-outlined")}<small>${(p.shots || []).length ? "тағы" : "скрин"}</small></button>`}</div>`;
   }
 
+  /** Отчёт: тек PDF (жүктелген күні бойынша) + рөл регламенті */
+  function reportPdfArchive() {
+    if (!MOCK.reportPdfs) {
+      const mk = (id, title, sub, y, m, d, hh, mm, groupId, week) => ({
+        id,
+        title,
+        sub,
+        uploaded: new Date(y, m, d, hh, mm),
+        groupId,
+        week,
+      });
+      MOCK.reportPdfs = [
+        mk(1, "Викингтер · 28.09 – 04.10", "Дүниежүзі тарихы · апталық отчёт", 2026, 9, 4, 18, 20, 9, 5),
+        mk(2, "Викингтер · 21.09 – 27.09", "Дүниежүзі тарихы · апталық отчёт", 2026, 8, 27, 16, 5, 9, 4),
+        mk(3, "Викингтер · 14.09 – 20.09", "Дүниежүзі тарихы · апталық отчёт", 2026, 8, 20, 15, 40, 9, 3),
+        mk(4, "Викингтер · Қыркүйек", "Дүниежүзі тарихы · айлық қорытынды", 2026, 8, 30, 12, 10, 9, null),
+        mk(5, "Хронос 3 · 28.09 – 04.10", "Қазақстан тарихы · апталық отчёт", 2026, 9, 4, 19, 5, 3, 5),
+        mk(6, "Math Empire · 28.09 – 04.10", "Математика · апталық отчёт", 2026, 9, 3, 17, 50, 2, 5),
+      ];
+    }
+    let list = [...MOCK.reportPdfs];
+    if (!isHead()) {
+      const ids = new Set(visibleGroups().map((g) => g.id));
+      list = list.filter((p) => ids.has(p.groupId));
+    }
+    return list.sort((a, b) => b.uploaded - a.uploaded);
+  }
+  function reglamentBlocks() {
+    if (isHead())
+      return {
+        title: "Бас куратор регламенті және міндеттері",
+        sub: "I4U · 4-бөлім",
+        blocks: [
+          ["Рөл", "Бас куратор мұғалімнің орнына бөтен сабақ жүргізбейді және куратордың орнына бөтен кесте жазбайды. Ол жұмысты қабылдайды және куратордың құқығы жоқ нәрсені өзі жасайды."],
+          ["Оқушы доступы", "Зачисление ашық. Доступты ұзарту, қатыру, мерзім мен құн — бас куратор / академ. бөлім. Қатардағы кураторда бұл экран жоқ."],
+          ["Кураторларды қабылдау", "Сенбіде әр куратор бойынша пакет: тапсырды / кешікті / жоқ. Пакетті қабылдау немесе пікірмен қайтару. Өткізіп алғанға еске салу, сосын айыппұл."],
+          ["Күндік және ата-ана контуры", "10:00-ге дейін кестесі жоқ кураторлар мен жауапсыз хаттар көрінеді. Ата-ана циклінде кімде скрин жетіспейтіні тұрады."],
+          ["Платформа", "Жаңалықты бірден жариялау, бөтенді қайтару, турнир мен шайқас, дүкен витринасы, кез келген топтың аналитикасы."],
+        ],
+      };
+    return {
+      title: "Куратор регламенті және міндеттері",
+      sub: "I4U · 3-бөлім · қызмет шарты 4 және 6",
+      blocks: [
+        ["Әр оқу күні", "10:00-ге дейін топ чатына күндік кесте. 14:00-ге дейін сабақ ашпағандарға жеке хат. Эфир болса — таңертеңгі ескерту және презентация 14:00-ге дейін бас кураторда. Жауап түнге қалмайды (10 000 ₸)."],
+        ["Топ және прогресс", "Тек өз топтары. Рейтинг, чемпион, Сегодня / На неделе / Просрочено. Видео → конспект → тест тізбегі. Мерзімі өткен сабақ — сол күні жеке хат."],
+        ["Ата-ана", "Әр 14 күн сайын үлгерім есебі. Цикл сенбісінде пакетке скрин. Тапсырылмаса — 10 000 ₸."],
+        ["Сенбі, офис", "Толық пакетпен офисте тапсыру: зачёт, рейтинг таблицасы, апталық есеп, ата-ана скрині, офистік эфир, апталық ойын. «Келдім» белгісі міндетті."],
+        ["Айыппұл", "Рейтинг жоқ — 5 000 ₸. Ата-ана есебі жоқ — 10 000 ₸. Уақытылы жауап жоқ — 10 000 ₸. Айлықтан ұсталады."],
+      ],
+    };
+  }
+  function openReglament() {
+    const R = reglamentBlocks();
+    pushScreen(
+      isHead() ? "Бас куратор регламенті" : "Куратор регламенті",
+      () => `<div class="list-pad rp-doc">
+        <div class="rp-doc-hero">
+          ${icon("gavel", "material-icons-outlined")}
+          <div><b>${esc(R.title)}</b><small>${esc(R.sub)}</small></div>
+        </div>
+        ${R.blocks
+          .map(
+            ([t, p]) => `<section class="rp-doc-block"><h3>${esc(t)}</h3><p>${esc(p)}</p></section>`
+          )
+          .join("")}
+        <p class="rp-doc-foot">Толық мәтін · docs/REGLAMENT.md · операциялық құжат</p>
+      </div>`,
+      null,
+      { right: "<span></span>" }
+    );
+  }
+  function openReportPdfItem(p) {
+    const g = MOCK.groups.find((x) => x.id === p.groupId) || visibleGroups()[0];
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">${esc(p.title)}</div>
+      <div class="sheet-sub">${esc(p.sub)}<br>Жүктелген: ${dmy(p.uploaded)} ${pad(p.uploaded.getHours())}:${pad(p.uploaded.getMinutes())}</div>
+      <div class="sheet-actions" style="flex-direction:column;gap:8px">
+        <button type="button" class="btn btn-primary" id="rpPdfOpen">${icon("picture_as_pdf", "material-icons-outlined")} PDF ашу / скачать</button>
+        <button type="button" class="btn" id="rpPdfClose">Жабу</button>
+      </div>`);
+    $("#rpPdfClose").onclick = closeSheet;
+    $("#rpPdfOpen").onclick = async () => {
+      const b = $("#rpPdfOpen");
+      b.disabled = true;
+      b.textContent = "PDF…";
+      try {
+        const date = p.week ? dateOfAcademicWeek(p.week) : AN_TODAY;
+        const file = await exportGroupPdf(g, p.week ? "week" : "month", date);
+        // атауын архивтегідей қою
+        const named = new File([file], `${p.title.replace(/\s+/g, " ")}.pdf`, { type: "application/pdf" });
+        saveFile(named);
+        closeSheet();
+        toast("PDF скачан", "ok");
+      } catch (e) {
+        console.error(e);
+        toast("PDF қатесі", "err");
+        b.disabled = false;
+      }
+    };
+  }
   function renderReports() {
-    const view = repView();
-    if (isHead()) return renderReportsHead(view);
-    if (view === "today") return renderRepToday();
-    if (view === "parent") return renderRepParent();
-    return renderRepSat();
+    const pdfs = reportPdfArchive();
+    const R = reglamentBlocks();
+    const when = (d) => {
+      const same = dayKey(d) === dayKey(AN_TODAY);
+      return same ? `бүгін ${pad(d.getHours())}:${pad(d.getMinutes())}` : `${dmy(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    };
+    return `<div class="list-pad rp-arch">
+      <button type="button" class="rp-reg" id="rpReglament">
+        ${icon("gavel", "material-icons-outlined")}
+        <span><b>${esc(R.title)}</b><small>${isHead() ? "Бас куратор / Академ. бөлім" : "Куратор"} · міндеттер мен ереже</small></span>
+        ${icon("chevron_right")}
+      </button>
+      <div class="rp-arch-h">
+        <b>PDF отчёттар</b>
+        <small>жүктелген күні бойынша · ${pdfs.length}</small>
+      </div>
+      ${
+        pdfs.length
+          ? pdfs
+              .map(
+                (p) => `<button type="button" class="rp-pdf-row" data-rppdf="${p.id}">
+          <span class="rp-pdf-ico">${icon("picture_as_pdf", "material-icons-outlined")}</span>
+          <span class="rp-pdf-b"><b>${esc(p.title)}</b><small>${esc(p.sub)}</small></span>
+          <span class="rp-pdf-d">${when(p.uploaded)}</span>
+        </button>`
+              )
+              .join("")
+          : `<div class="efir-empty" style="min-height:160px">Әзірге PDF жоқ</div>`
+      }
+    </div>`;
   }
   function renderRepToday() {
     const p = satPack(), locked = p.status === "sent" || p.status === "ok";
@@ -3934,7 +4061,17 @@
       </div>`, { tall: true });
   }
   function bindReports() {
-    const view = repView();
+    $("#rpReglament")?.addEventListener("click", () => {
+      state.navStack = [];
+      openReglament();
+    });
+    $$("[data-rppdf]").forEach((b) => {
+      b.onclick = () => {
+        const p = reportPdfArchive().find((x) => x.id === Number(b.dataset.rppdf));
+        if (p) openReportPdfItem(p);
+      };
+    });
+    // ескі сенбілік пакет UI сақталған — тек ішкі экрандардан шақырылса
     $$("[data-rpview]").forEach((b) => (b.onclick = () => ((state.repView = b.dataset.rpview), render())));
     $("#rpRules")?.addEventListener("click", openRepRules);
     $$("[data-rpremind]").forEach((b) => (b.onclick = (e) => (e.stopPropagation(), toast("Еске салу жіберілді"))));
@@ -3946,6 +4083,7 @@
     if (isHead()) return;
     const p = satPack();
     const locked = p.status === "sent" || p.status === "ok";
+    if (!$("#rpSched") && !$("#rpCame") && !$("#rpSend")) return;
     const tog = (id, key) => { const b = $(id); if (b) b.onclick = () => { if (locked) return; p[key] = !p[key]; render(); }; };
     tog("#rpSched", "sched"); tog("#rpWarn", "warn"); tog("#rpPres", "pres"); tog("#rpCame", "came"); tog("#rpRating", "rating"); tog("#rpGame", "game");
     const mark = (sel, bag) => $$("[data-" + sel + "]").forEach((b) => (b.onclick = () => { if (locked) return; const id = +b.dataset[sel]; p[bag][id] = !p[bag][id]; render(); }));
@@ -5762,6 +5900,15 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           </div>
         </div>
         <div class="menu-block">
+          ${
+            inStaff
+              ? `${menuRow({
+                  iconName: "gavel",
+                  title: isHead() ? "Бас куратор регламенті және міндеттері" : "Куратор регламенті және міндеттері",
+                  action: "reglament",
+                })}<div class="menu-divider"></div>`
+              : ""
+          }
           ${menuRow({ iconName: "info", title: L.about, action: "about" })}
           <div class="menu-divider"></div>
           ${menuRow({ iconName: "description", title: L.terms, action: "terms" })}
@@ -5857,6 +6004,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             closeSheet();
             toast("Покупки восстановлены", "ok");
           };
+          return;
+        }
+        if (a === "reglament") {
+          closeScreen();
+          state.navStack = [];
+          openReglament();
           return;
         }
         const labels = {

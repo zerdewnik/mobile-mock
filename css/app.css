@@ -3445,6 +3445,31 @@ html[data-mode="staff"] .fab-core { background: #8b5cf6; }
 .pdoc .bad { color: #c0392b; font-weight: 600; }
 .pdoc .warn { color: #d07a1c; font-weight: 600; }
 .pdoc-foot { margin-top: 20px; color: #9aa0b4; font-size: 10.5px; }
+/* Отчёт: PDF архив + регламент */
+.rp-arch { display: flex; flex-direction: column; gap: 10px; padding-bottom: 24px; }
+.rp-reg { display: flex; align-items: center; gap: 12px; width: 100%; padding: 14px 14px; border: 0; border-radius: 16px; background: linear-gradient(135deg, rgba(91,110,194,.35), rgba(42,42,48,.95)); color: inherit; text-align: left; }
+.rp-reg > .material-icons-outlined:first-child { font-size: 26px; color: #c4b5fd; }
+.rp-reg span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.rp-reg b { font-size: 14px; font-weight: 700; }
+.rp-reg small { font-size: 12px; color: #b8bbc8; }
+.rp-arch-h { display: flex; align-items: baseline; justify-content: space-between; padding: 8px 4px 2px; }
+.rp-arch-h b { font-size: 15px; }
+.rp-arch-h small { font-size: 12px; color: #8a8d9c; }
+.rp-pdf-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 12px 12px; border: 0; border-radius: 14px; background: var(--card, #1e1e1e); color: inherit; text-align: left; }
+.rp-pdf-ico { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; background: rgba(226,87,76,.15); color: #e2574c; }
+.rp-pdf-ico .material-icons-outlined { font-size: 22px; }
+.rp-pdf-b { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rp-pdf-b b { font-size: 13.5px; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-pdf-b small { font-size: 11.5px; color: #8a8d9c; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rp-pdf-d { flex-shrink: 0; font-size: 11px; color: #9aa0b4; text-align: right; max-width: 72px; line-height: 1.25; }
+.rp-doc-hero { display: flex; gap: 12px; align-items: center; padding: 16px; border-radius: 16px; background: rgba(91,110,194,.2); margin-bottom: 12px; }
+.rp-doc-hero .material-icons-outlined { font-size: 32px; color: #c4b5fd; }
+.rp-doc-hero b { display: block; font-size: 15px; }
+.rp-doc-hero small { color: #b8bbc8; font-size: 12px; }
+.rp-doc-block { padding: 12px 4px 14px; border-bottom: 1px solid rgba(255,255,255,.06); }
+.rp-doc-block h3 { margin: 0 0 6px; font-size: 14px; color: #e8eaf2; }
+.rp-doc-block p { margin: 0; font-size: 13px; line-height: 1.45; color: #b8bbc8; }
+.rp-doc-foot { margin: 16px 4px; font-size: 11px; color: #6c6f84; }
 .pdoc .warn-row td { background: #fff8f0; }
 .pdoc-need { margin-top: 2px; font-size: 10px; color: #c07820; font-weight: 500; }
 .ga-export-foot { display: flex; gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
