@@ -7032,8 +7032,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
   const hm = (d) => `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   /** Оқушының орындауы (тұрақты жалған деректер) */
-  function rowStatus(s, r) {
-    if (r.date > AN_TODAY) return { future: true };
+  function rowStatus(s, r, asOf = AN_TODAY) {
+    if (r.date > asOf) return { future: true };
     const skill = (s.score || 0) / 100;
     const k = dayKey(r.date);
     const at = (h, m) => new Date(r.date.getFullYear(), r.date.getMonth(), r.date.getDate(), h, m);
@@ -7043,7 +7043,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       const min = watched ? len : Math.floor(len * rnd(s.id, k, 3) * 0.6);
       const vt = at(15 + Math.floor(rnd(s.id, k, 4) * 7), Math.floor(rnd(s.id, k, 5) * 60));
       const noteSent = watched && rnd(s.id, k, 6) < 0.45 + skill * 0.5;
-      const fresh = (AN_TODAY - r.date) / 864e5 <= 2;
+      const fresh = (asOf - r.date) / 864e5 <= 2;
       const note = !noteSent ? "none" : fresh ? "pending" : rnd(s.id, k, 7) < 0.85 ? "ok" : "back";
       const tested = watched && rnd(s.id, k, 8) < 0.4 + skill * 0.6;
       const score = tested ? Math.round((45 + skill * 40 + rnd(s.id, k, 9) * 20) / 5) * 5 : null;
@@ -7052,6 +7052,29 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     if (r.type === "efir") return { attended: rnd(s.id, k, 11) < 0.4 + skill * 0.5 };
     const done = rnd(s.id, k, 12) < 0.5 + skill * 0.5;
     return { done, score: done ? Math.round((50 + skill * 40 + rnd(s.id, k, 13) * 15) / 5) * 5 : null, time: done ? at(10, Math.floor(rnd(s.id, k, 14) * 50)) : null };
+  }
+  /** Оқушының апталық кестесі бойынша: видео/конспект жоспар vs өткізгені */
+  function studentWeekScheduleStats(s, g, from, to, asOf = AN_TODAY) {
+    const data = staffCourseFor(s, g);
+    const rows = scheduleFor(data, from, to).map((r) => ({ ...r, st: rowStatus(s, r, asOf) }));
+    const lessons = rows.filter((r) => r.type === "lesson" && !r.st.future);
+    const efirs = rows.filter((r) => r.type === "efir" && !r.st.future);
+    const weeklies = rows.filter((r) => r.type === "weekly" && !r.st.future);
+    const videoPlan = lessons.length;
+    const videoDone = lessons.filter((r) => r.st.watched).length;
+    const notePlan = lessons.length;
+    const noteDone = lessons.filter((r) => r.st.note && r.st.note !== "none").length;
+    const testScores = [
+      ...lessons.filter((r) => r.st.tested && r.st.score != null).map((r) => r.st.score),
+      ...weeklies.filter((r) => r.st.done && r.st.score != null).map((r) => r.st.score),
+    ];
+    const testAvg = testScores.length ? Math.round(avgArr(testScores)) : null;
+    const efirPlan = efirs.length;
+    const efirDone = efirs.filter((r) => r.st.attended).length;
+    const planOk = videoPlan > 0 && videoDone >= videoPlan && noteDone >= notePlan;
+    const planPct = videoPlan + notePlan ? Math.round(((videoDone + noteDone) / (videoPlan + notePlan)) * 100) : 0;
+    const overallAvg = testAvg;
+    return { videoPlan, videoDone, notePlan, noteDone, testAvg, testScores, efirPlan, efirDone, planOk, planPct, overallAvg };
   }
 
   /* —— Отчёт → PDF (ақ бланк, A4) —— */
@@ -7908,28 +7931,31 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       needWork: students.filter((s) => s.need),
     };
   }
+  function frac(a, b) {
+    return b ? `${a}/${b}` : "—";
+  }
+  function pctOf(a, b) {
+    return b ? `${Math.round((a / b) * 100)}%` : "";
+  }
   function groupReportDocHtml(g, D) {
-    const word = D.period === "month" ? "месяц" : "неделю";
-    const entLine =
-      D.a.entAvg == null
-        ? "Пробных ЕНТ в периоде не было"
-        : `${D.a.entAvg} / 140 · сдавали ${D.a.entCount} из ${D.n} · ≥50: ${D.a.entGrant}`;
     const studRows = D.students
       .map(
         (s, i) => `<tr class="${s.need ? "warn-row" : ""}">
           <td>${i + 1}</td><td><b>${s.name}</b>${s.need ? `<div class="pdoc-need">${s.need}</div>` : ""}</td>
-          <td>${s.active ? "да" : "нет"}</td>
-          <td>${s.lessons}${D.a.plan ? ` / ${D.a.plan}` : ""}</td>
+          <td>${s.planOk ? "да" : "нет"}${s.videoPlan ? ` · ${s.planPct}%` : ""}</td>
+          <td>${frac(s.videoDone, s.videoPlan)}</td>
+          <td>${frac(s.noteDone, s.notePlan)}</td>
           <td>${s.testAvg != null ? s.testAvg : "—"}</td>
-          <td>${s.points}</td>
-          <td>${s.notes}${s.pending ? ` (+${s.pending})` : ""}</td>
+          <td>${frac(s.efirDone, s.efirPlan)}</td>
+          <td>${s.active ? "да" : "нет"}</td>
           <td>${s.ent != null ? s.ent : "—"}</td>
+          <td>${s.overallAvg != null ? s.overallAvg : "—"}</td>
         </tr>`
       )
       .join("");
     const needRows = D.needWork.length
-      ? D.needWork.map((s) => `<tr><td>${s.name}</td><td>${s.need}</td><td>${s.lessons}${D.a.plan ? `/${D.a.plan}` : ""}</td><td>${s.testAvg ?? "—"}</td></tr>`).join("")
-      : `<tr><td colspan="4">Все ученики в норме</td></tr>`;
+      ? D.needWork.map((s) => `<tr><td>${s.name}</td><td>${s.need}</td><td>${frac(s.videoDone, s.videoPlan)}</td><td>${frac(s.noteDone, s.notePlan)}</td><td>${s.testAvg ?? "—"}</td></tr>`).join("")
+      : `<tr><td colspan="5">Все ученики в норме</td></tr>`;
     return `
       <div class="pdoc">
         <div class="pdoc-head"><b>I4U</b><div>I4U.kz Білім беру орталығы<br>Образовательный центр I4U.kz</div></div>
@@ -7939,28 +7965,28 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <tr><td>Группа</td><td><b>${D.group}</b></td><td>Курс</td><td><b>${D.course}</b></td></tr>
           <tr><td>Куратор</td><td>${D.curator}</td><td>Учеников</td><td>${D.n}</td></tr>
         </table>
-        <div class="pdoc-plan">Общие показатели за ${word}.
-          План: <b>${D.a.plan || "—"}</b> уроков · прогресс <b>${D.pct}%</b> · активны <b>${D.a.active} из ${D.n}</b>.</div>
+        <div class="pdoc-plan">Общие показатели за период · план кестеден · видео/конспект = өткізгені / кестедегі жоспар.</div>
         <table class="pdoc-sum">
-          <tr><th>Пробный ЕНТ</th><th>Средний балл</th><th>Тесты</th><th>Активны</th><th>Конспекты</th><th>Прогресс</th></tr>
+          <tr><th>Пробный ЕНТ</th><th>Ср. тест</th><th>Общий балл</th><th>Активны</th><th>Видео</th><th>Конспекты</th><th>План</th></tr>
           <tr>
             <td>${D.a.entAvg != null ? `${D.a.entAvg}/140` : "—"}</td>
-            <td>${D.a.avgPoints}</td>
-            <td>${D.a.testsCount ? `${D.a.avgTest}/100` : "—"}</td>
+            <td>${D.a.avgTest != null ? `${D.a.avgTest}/100` : "—"}</td>
+            <td>${D.a.avgScore != null ? `${D.a.avgScore}/100` : "—"}</td>
             <td>${D.a.active}/${D.n}</td>
-            <td>${D.a.notes}${D.a.pending ? ` · ${D.a.pending} на проверке` : ""}</td>
-            <td>+${D.a.avgLessons} · ${D.pct}%</td>
+            <td>${frac(D.a.videoDone, D.a.videoPlan)}</td>
+            <td>${frac(D.a.noteDone, D.a.notePlan)}</td>
+            <td>${D.a.met} из ${D.n}</td>
           </tr>
         </table>
-        <div class="pdoc-plan" style="margin-top:10px">${entLine}${D.peak ? `<br>Пик активности: ${D.peak.tip} · ${D.maxV} из ${D.n}` : ""}</div>
+        <div class="pdoc-plan" style="margin-top:10px">Сдавали ЕНТ: ${D.a.entCount} из ${D.n}${D.a.entCount ? ` · ≥50: ${D.a.entGrant} из ${D.a.entCount}` : ""}${D.peak ? `<br>Пик активности: ${D.peak.tip} · ${D.maxV} из ${D.n}` : ""}</div>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Жұмыс жасалуы керек оқушылар</h2>
         <table class="pdoc-tbl">
-          <tr><th>Ученик</th><th>Причина</th><th>Уроки</th><th>Тест</th></tr>
+          <tr><th>Ученик</th><th>Причина</th><th>Видео</th><th>Конспект</th><th>Тест</th></tr>
           ${needRows}
         </table>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Показатели по ученикам</h2>
         <table class="pdoc-tbl">
-          <tr><th>№</th><th>Ученик</th><th>Активен</th><th>Уроки</th><th>Тест</th><th>Балл</th><th>Конспект</th><th>ЕНТ</th></tr>
+          <tr><th>№</th><th>Ученик</th><th>План</th><th>Видео</th><th>Конспект</th><th>Ср. тест</th><th>Эфир</th><th>Активен</th><th>ЕНТ</th><th>Общий балл</th></tr>
           ${studRows}
         </table>
         <div class="pdoc-foot">Отчёт сформирован автоматически в приложении I4U.</div>
@@ -7968,21 +7994,20 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
   function sheetPackFromReport(D) {
     const needBody = D.needWork.length
-      ? D.needWork.map((s) => [s.name, s.need, D.a.plan ? `${s.lessons}/${D.a.plan}` : s.lessons, s.testAvg ?? "—", s.ent ?? "—"])
-      : [["Все ученики в норме", "", "", "", ""]];
+      ? D.needWork.map((s) => [s.name, s.need, frac(s.videoDone, s.videoPlan), frac(s.noteDone, s.notePlan), s.testAvg ?? "—", s.ent ?? "—"])
+      : [["Все ученики в норме", "", "", "", "", ""]];
     const studBody = D.students.map((s, i) => [
       i + 1,
       s.name,
-      s.phone,
-      s.active ? "да" : "нет",
-      s.activeDays,
-      s.lessons,
-      s.plan || "—",
+      s.planOk ? "да" : "нет",
+      s.videoPlan ? `${s.planPct}%` : "—",
+      frac(s.videoDone, s.videoPlan),
+      frac(s.noteDone, s.notePlan),
       s.testAvg ?? "—",
-      s.points,
-      s.notes,
-      s.pending,
+      frac(s.efirDone, s.efirPlan),
+      s.active ? "да" : "нет",
       s.ent ?? "—",
+      s.overallAvg ?? "—",
       s.need || "",
     ]);
     const rows = [
@@ -7997,37 +8022,37 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       ["Пробный ЕНТ (ср.)", D.a.entAvg != null ? D.a.entAvg : "—", "/ 140"],
       ["Сдавали ЕНТ", `${D.a.entCount} из ${D.n}`],
       ["≥ 50 баллов", D.a.entCount ? `${D.a.entGrant} из ${D.a.entCount}` : "—"],
-      ["Средний балл за период", D.a.avgPoints, "из 100"],
-      ["Средний результат тестов", D.a.testsCount ? D.a.avgTest : "—", D.a.testsCount ? "из 100" : ""],
+      ["Средний результат тестов", D.a.avgTest != null ? D.a.avgTest : "—", "из 100"],
+      ["Общий средний балл", D.a.avgScore != null ? D.a.avgScore : "—", "из 100"],
       ["Активны", `${D.a.active} / ${D.n}`],
-      ["Конспекты сдано", D.a.notes, D.a.pending ? `на проверке: ${D.a.pending}` : ""],
-      ["Прогресс (ср. уроков)", D.a.avgLessons, D.a.plan ? `план ${D.a.plan} · ${D.pct}%` : ""],
+      ["Видеоуроки", frac(D.a.videoDone, D.a.videoPlan), pctOf(D.a.videoDone, D.a.videoPlan)],
+      ["Конспекты сдано", frac(D.a.noteDone, D.a.notePlan), pctOf(D.a.noteDone, D.a.notePlan)],
       ["Выполнили план", `${D.a.met} из ${D.n}`],
       ["Пик активности", D.peak ? `${D.peak.tip} · ${D.maxV} из ${D.n}` : "—"],
       [],
       ["ЖҰМЫС ЖАСАЛУЫ КЕРЕК"],
-      ["Ученик", "Причина", "Уроки", "Ср. тест", "ЕНТ"],
+      ["Ученик", "Причина", "Видео", "Конспект", "Ср. тест", "ЕНТ"],
       ...needBody,
       [],
       ["ПОКАЗАТЕЛИ ПО УЧЕНИКАМ"],
-      ["№", "Ученик", "Телефон", "Активен", "Дней акт.", "Уроки", "План", "Ср. тест", "Балл", "Конспект", "На проверке", "ЕНТ", "Внимание"],
+      ["№", "Ученик", "План", "План %", "Видеоурок", "Конспект", "Ср. тест", "Эфир", "Активен", "ЕНТ", "Общий балл", "Внимание"],
       ...studBody,
     ];
-    const needHead = 20; // 0-based
-    const studHead = needHead + 1 + needBody.length + 2;
+    const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "Причина");
+    const studHead = rows.findIndex((r) => r[0] === "№" && r[1] === "Ученик");
     return {
       rows,
       layout: {
         title: 0,
-        sectionGeneral: 7,
-        needTitle: 19,
+        sectionGeneral: rows.findIndex((r) => r[0] === "ОБЩИЕ ПОКАЗАТЕЛИ"),
+        needTitle: rows.findIndex((r) => String(r[0] || "").includes("ЖҰМЫС")),
         needHead,
         needEnd: needHead + needBody.length,
         studTitle: studHead - 1,
         studHead,
         studEnd: studHead + studBody.length,
-        needCols: 5,
-        studCols: 13,
+        needCols: 6,
+        studCols: 12,
       },
     };
   }
@@ -8152,38 +8177,61 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
   }
   function groupReportDataWeek(g, date) {
-    const a = analyzeFullWeek(g, date);
+    const act = analyzeFullWeek(g, date);
+    const { from, to } = periodRange("week", date);
+    const asOf = to > AN_TODAY ? new Date(to) : AN_TODAY;
     const n = g.students.length;
-    const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
-    const maxV = a._maxV ?? Math.max(0, ...a.series.map((p) => p.v || 0));
-    const peak = a.series.findIndex((p) => p.v === maxV);
-    const students = [...a.per]
-      .sort((p, q) => q.lessons - p.lessons || (q.x.score || 0) - (p.x.score || 0))
-      .map((r) => {
-        const ent = r.ent.length ? r.ent[r.ent.length - 1].score : null;
-        const testAvg = r.tests.length ? Math.round(avgArr(r.tests)) : null;
-        const need = a.attention.find((x) => x.x.id === r.x.id);
-        return {
-          id: r.x.id,
-          name: r.x.name,
-          phone: r.x.phone || "",
-          active: r.active,
-          activeDays: r.activeDays,
-          lessons: r.lessons,
-          plan: a.plan,
-          testAvg,
-          points: r.points,
-          notes: r.notes,
-          pending: r.pendingNotes,
-          ent,
-          need: need ? need.reasons.join("; ") : "",
-        };
-      });
+    const maxV = act._maxV ?? Math.max(0, ...act.series.map((p) => p.v || 0));
+    const peak = act.series.findIndex((p) => p.v === maxV);
+    const byId = Object.fromEntries(act.per.map((r) => [r.x.id, r]));
+    const students = g.students.map((x) => {
+      const sch = studentWeekScheduleStats(x, g, from, to, asOf);
+      const live = byId[x.id];
+      const ent = live?.ent?.length ? live.ent[live.ent.length - 1].score : null;
+      const reasons = [];
+      if (!live?.active) reasons.push("не заходил за период");
+      if (sch.videoPlan && sch.videoDone < sch.videoPlan) reasons.push(`видео ${sch.videoDone} из ${sch.videoPlan}`);
+      if (sch.notePlan && sch.noteDone < sch.notePlan) reasons.push(`конспект ${sch.noteDone} из ${sch.notePlan}`);
+      if (sch.testAvg != null && sch.testAvg < 55) reasons.push(`ср. тест ${sch.testAvg}`);
+      if (sch.efirPlan && sch.efirDone < sch.efirPlan) reasons.push(`эфир ${sch.efirDone} из ${sch.efirPlan}`);
+      return {
+        id: x.id,
+        name: x.name,
+        phone: x.phone || "",
+        active: !!live?.active,
+        activeDays: live?.activeDays || 0,
+        ...sch,
+        ent,
+        need: reasons.join("; "),
+      };
+    });
+    students.sort((p, q) => (q.planPct || 0) - (p.planPct || 0) || (q.overallAvg || 0) - (p.overallAvg || 0));
+    const videoDone = students.reduce((t, s) => t + s.videoDone, 0);
+    const videoPlan = students.reduce((t, s) => t + s.videoPlan, 0);
+    const noteDone = students.reduce((t, s) => t + s.noteDone, 0);
+    const notePlan = students.reduce((t, s) => t + s.notePlan, 0);
+    const testAvgs = students.map((s) => s.testAvg).filter((v) => v != null);
+    const scoreAvgs = students.map((s) => s.overallAvg).filter((v) => v != null);
+    const met = students.filter((s) => s.planOk).length;
     return {
-      a,
+      a: {
+        entAvg: act.entAvg,
+        entPrev: act.entPrev,
+        entCount: act.entCount,
+        entGrant: act.entGrant,
+        avgTest: testAvgs.length ? Math.round(avgArr(testAvgs)) : null,
+        avgScore: scoreAvgs.length ? Math.round(avgArr(scoreAvgs)) : null,
+        active: act.active,
+        videoDone,
+        videoPlan,
+        noteDone,
+        notePlan,
+        met,
+        testsCount: testAvgs.length,
+      },
       n,
-      pct,
-      peak: maxV ? a.series[peak] : null,
+      pct: videoPlan + notePlan ? Math.round(((videoDone + noteDone) / (videoPlan + notePlan)) * 100) : 0,
+      peak: maxV ? act.series[peak] : null,
       maxV,
       label: periodLabel("week", date),
       period: "week",
@@ -8198,27 +8246,37 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   function monthSummaryFromWeeks(g, weekNos, dateHint) {
     const parts = weekNos.map((w) => groupReportDataWeek(g, dateOfAcademicWeek(w)));
     const n = g.students.length;
-    const avg = (fn) => Math.round(avgArr(parts.map(fn)) * 10) / 10;
     const D0 = parts[0];
     const needMap = new Map();
     parts.forEach((D) => D.needWork.forEach((s) => needMap.set(s.id, s)));
     const students = g.students.map((x) => {
       const rows = parts.map((D) => D.students.find((s) => s.id === x.id)).filter(Boolean);
+      const videoDone = rows.reduce((t, r) => t + r.videoDone, 0);
+      const videoPlan = rows.reduce((t, r) => t + r.videoPlan, 0);
+      const noteDone = rows.reduce((t, r) => t + r.noteDone, 0);
+      const notePlan = rows.reduce((t, r) => t + r.notePlan, 0);
+      const efirDone = rows.reduce((t, r) => t + r.efirDone, 0);
+      const efirPlan = rows.reduce((t, r) => t + r.efirPlan, 0);
+      const testAvgs = rows.map((r) => r.testAvg).filter((v) => v != null);
+      const planOk = videoPlan > 0 && videoDone >= videoPlan && noteDone >= notePlan;
+      const planPct = videoPlan + notePlan ? Math.round(((videoDone + noteDone) / (videoPlan + notePlan)) * 100) : 0;
+      const overallAvg = testAvgs.length ? Math.round(avgArr(testAvgs)) : null;
       return {
         id: x.id,
         name: x.name,
         phone: x.phone || "",
         active: rows.some((r) => r.active),
         activeDays: Math.round(avgArr(rows.map((r) => r.activeDays))),
-        lessons: Math.round(avgArr(rows.map((r) => r.lessons)) * 10) / 10,
-        plan: Math.round(avgArr(rows.map((r) => r.plan || 0))),
-        testAvg: (() => {
-          const t = rows.map((r) => r.testAvg).filter((v) => v != null);
-          return t.length ? Math.round(avgArr(t)) : null;
-        })(),
-        points: Math.round(avgArr(rows.map((r) => r.points))),
-        notes: Math.round(avgArr(rows.map((r) => r.notes))),
-        pending: Math.round(avgArr(rows.map((r) => r.pending))),
+        videoDone,
+        videoPlan,
+        noteDone,
+        notePlan,
+        efirDone,
+        efirPlan,
+        testAvg: testAvgs.length ? Math.round(avgArr(testAvgs)) : null,
+        planOk,
+        planPct,
+        overallAvg,
         ent: (() => {
           const t = rows.map((r) => r.ent).filter((v) => v != null);
           return t.length ? Math.round(avgArr(t)) : null;
@@ -8226,26 +8284,31 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         need: needMap.get(x.id)?.need || "",
       };
     });
-    const D = {
+    students.sort((p, q) => (q.planPct || 0) - (p.planPct || 0));
+    const videoDone = students.reduce((t, s) => t + s.videoDone, 0);
+    const videoPlan = students.reduce((t, s) => t + s.videoPlan, 0);
+    const noteDone = students.reduce((t, s) => t + s.noteDone, 0);
+    const notePlan = students.reduce((t, s) => t + s.notePlan, 0);
+    const testAvgs = students.map((s) => s.testAvg).filter((v) => v != null);
+    const scoreAvgs = students.map((s) => s.overallAvg).filter((v) => v != null);
+    const entAvgs = parts.map((p) => p.a.entAvg).filter((v) => v != null);
+    return {
       a: {
-        entAvg: (() => {
-          const t = parts.map((p) => p.a.entAvg).filter((v) => v != null);
-          return t.length ? Math.round(avgArr(t)) : null;
-        })(),
-        entCount: Math.round(avg(p => p.a.entCount)),
-        entGrant: Math.round(avg(p => p.a.entGrant)),
-        avgPoints: Math.round(avg(p => p.a.avgPoints)),
-        avgTest: Math.round(avg(p => p.a.avgTest)),
-        testsCount: parts.reduce((t, p) => t + p.a.testsCount, 0),
-        active: Math.round(avg(p => p.a.active)),
-        notes: Math.round(avg(p => p.a.notes)),
-        pending: Math.round(avg(p => p.a.pending)),
-        avgLessons: avg(p => p.a.avgLessons),
-        plan: Math.round(avg(p => p.a.plan || 0)),
-        met: Math.round(avg(p => p.a.met)),
+        entAvg: entAvgs.length ? Math.round(avgArr(entAvgs)) : null,
+        entCount: Math.round(avgArr(parts.map((p) => p.a.entCount))),
+        entGrant: Math.round(avgArr(parts.map((p) => p.a.entGrant))),
+        avgTest: testAvgs.length ? Math.round(avgArr(testAvgs)) : null,
+        avgScore: scoreAvgs.length ? Math.round(avgArr(scoreAvgs)) : null,
+        active: Math.round(avgArr(parts.map((p) => p.a.active))),
+        videoDone,
+        videoPlan,
+        noteDone,
+        notePlan,
+        met: students.filter((s) => s.planOk).length,
+        testsCount: testAvgs.length,
       },
       n,
-      pct: 0,
+      pct: videoPlan + notePlan ? Math.round(((videoDone + noteDone) / (videoPlan + notePlan)) * 100) : 0,
       peak: null,
       maxV: 0,
       label: `${weekNos[0]}–${weekNos[weekNos.length - 1]} апта · айлық қорытынды`,
@@ -8254,10 +8317,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       group: g.name,
       curator: D0.curator,
       students,
-      needWork: [...needMap.values()],
+      needWork: students.filter((s) => s.need),
     };
-    D.pct = D.a.plan ? Math.round((D.a.avgLessons / D.a.plan) * 100) : 0;
-    return D;
   }
   let xlsxLib = null;
   function loadXlsx() {
@@ -8360,7 +8421,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     return d;
   }
   async function exportGroupPdf(g, period, date) {
-    const D = period === "month" ? groupReportData(g, period, date) : groupReportDataWeek(g, date);
+    let D;
+    if (period === "month") {
+      const { from } = periodRange("month", date);
+      const weeks = [];
+      for (let d = new Date(from), i = 0; i < 6 && d.getMonth() === from.getMonth(); d.setDate(d.getDate() + 7), i++) weeks.push(academicWeek(d));
+      D = monthSummaryFromWeeks(g, [...new Set(weeks)].filter((w) => w >= 1), date);
+      D.label = periodLabel("month", date);
+    } else D = groupReportDataWeek(g, date);
     const name = `${D.group} ${D.label.replace(/[–—]/g, "-")} ${D.course}.pdf`;
     return makeReportPdf(groupReportDocHtml(g, D), name.replace(/[^\wа-яёәіңғүұқөһА-ЯЁӘІҢҒҮҰҚӨҺ \-.–]+/gi, "_"));
   }
