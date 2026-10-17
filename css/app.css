@@ -3445,6 +3445,18 @@ html[data-mode="staff"] .fab-core { background: #8b5cf6; }
 .pdoc .bad { color: #c0392b; font-weight: 600; }
 .pdoc .warn { color: #d07a1c; font-weight: 600; }
 .pdoc-foot { margin-top: 20px; color: #9aa0b4; font-size: 10.5px; }
+.pdoc .warn-row td { background: #fff8f0; }
+.pdoc-need { margin-top: 2px; font-size: 10px; color: #c07820; font-weight: 500; }
+.ga-export-foot { display: flex; gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
+.ga-export-foot .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+.ga-export-foot .material-icons-outlined { font-size: 18px; }
+.ga-drive { width: 100%; display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-top: 8px; border: 0; border-radius: 14px; background: var(--card, #2a2a30); color: inherit; text-align: left; }
+.ga-drive .material-icons-outlined:first-child { color: #5b9cff; font-size: 22px; }
+.ga-drive span { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.ga-drive b { font-size: 14px; }
+.ga-drive small { color: #9aa0b4; font-size: 12px; overflow: hidden; text-overflow: ellipsis; }
+.ga-xmeta { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,.04); font-size: 12.5px; color: #b8bbc8; line-height: 1.45; }
+.ga-xmeta b { color: #fff; font-weight: 600; }
 
 /* Ашық тема: телефон экранын инверттеу, суреттер мен түсті белгілер өз түсінде қалады */
 html[data-theme="light"] .phone .app { filter: invert(0.92) hue-rotate(180deg); background: #121212; }

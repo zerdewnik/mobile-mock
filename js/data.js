@@ -117,6 +117,8 @@ window.MOCK = {
     phone: "+7 778 215 35 57",
     photo: "assets/avatar/me.jpg",
     canStaff: true,
+    /** Куратордың Google Drive аккаунты — топ Excel-дері осы жерге түседі */
+    driveEmail: "diana.i4u@gmail.com",
   },
   stories: [
     { id: 1, title: "Старт недели", hue: "linear-gradient(135deg,#3d4a8c,#1e2744 55%,#6b4a2a)" },

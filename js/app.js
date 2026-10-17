@@ -7836,6 +7836,417 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     };
   }
 
+  /* —— Топ отчёты: PDF + Excel (Google Drive) —— */
+  const driveEmail = () => {
+    try {
+      return localStorage.getItem("i4uDriveEmail") || MOCK.me.driveEmail || `${(MOCK.me.firstName || "curator").toLowerCase()}.i4u@gmail.com`;
+    } catch {
+      return MOCK.me.driveEmail || "diana.i4u@gmail.com";
+    }
+  };
+  const setDriveEmail = (v) => {
+    const email = (v || "").trim();
+    if (!email) return;
+    MOCK.me.driveEmail = email;
+    try {
+      localStorage.setItem("i4uDriveEmail", email);
+    } catch {}
+  };
+  const courseTitleOf = (g) => COURSE_TITLE[g.courseId] || MOCK.courses.find((c) => c.id === g.courseId)?.title || g.courseLabel || "Курс";
+  const excelBookName = (g) => `${courseTitleOf(g)} - ${g.name}`;
+  const excelStoreKey = (g) => `i4uExcel:${g.id}:${courseTitleOf(g)}`;
+  /** Оқу жылының апта нөмірі (1 қыркүйектен) */
+  function academicWeek(date) {
+    const mon = periodRange("week", date).from.getTime();
+    const start = periodRange("week", SCHED_START).from.getTime();
+    return Math.max(1, Math.round((mon - start) / 6048e5) + 1);
+  }
+  function avgArr(arr) {
+    return arr.length ? arr.reduce((t, v) => t + v, 0) / arr.length : 0;
+  }
+  function groupReportData(g, period, date) {
+    const a = analyze(g, period === "day" ? "week" : period, date);
+    const n = g.students.length;
+    const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
+    const maxV = Math.max(0, ...a.series.map((p) => p.v || 0));
+    const peak = a.series.findIndex((p) => p.v === maxV);
+    const students = [...a.per]
+      .sort((p, q) => q.lessons - p.lessons || (q.x.score || 0) - (p.x.score || 0))
+      .map((r) => {
+        const ent = r.ent.length ? r.ent[r.ent.length - 1].score : null;
+        const testAvg = r.tests.length ? Math.round(avgArr(r.tests)) : null;
+        const need = a.attention.find((x) => x.x.id === r.x.id);
+        return {
+          id: r.x.id,
+          name: r.x.name,
+          phone: r.x.phone || "",
+          active: r.active,
+          activeDays: r.activeDays,
+          lessons: r.lessons,
+          plan: a.plan,
+          testAvg,
+          points: r.points,
+          notes: r.notes,
+          pending: r.pendingNotes,
+          ent,
+          need: need ? need.reasons.join("; ") : "",
+        };
+      });
+    return {
+      a,
+      n,
+      pct,
+      peak: maxV ? a.series[peak] : null,
+      maxV,
+      label: periodLabel(period === "day" ? "week" : period, date),
+      period: period === "day" ? "week" : period,
+      weekNo: academicWeek(date),
+      course: courseTitleOf(g),
+      group: g.name,
+      curator: MOCK.curators.find((c) => c.id === g.curatorId)?.name || myName(),
+      students,
+      needWork: students.filter((s) => s.need),
+    };
+  }
+  function groupReportDocHtml(g, D) {
+    const word = D.period === "month" ? "месяц" : "неделю";
+    const entLine =
+      D.a.entAvg == null
+        ? "Пробных ЕНТ в периоде не было"
+        : `${D.a.entAvg} / 140 · сдавали ${D.a.entCount} из ${D.n} · ≥50: ${D.a.entGrant}`;
+    const studRows = D.students
+      .map(
+        (s, i) => `<tr class="${s.need ? "warn-row" : ""}">
+          <td>${i + 1}</td><td><b>${s.name}</b>${s.need ? `<div class="pdoc-need">${s.need}</div>` : ""}</td>
+          <td>${s.active ? "да" : "нет"}</td>
+          <td>${s.lessons}${D.a.plan ? ` / ${D.a.plan}` : ""}</td>
+          <td>${s.testAvg != null ? s.testAvg : "—"}</td>
+          <td>${s.points}</td>
+          <td>${s.notes}${s.pending ? ` (+${s.pending})` : ""}</td>
+          <td>${s.ent != null ? s.ent : "—"}</td>
+        </tr>`
+      )
+      .join("");
+    const needRows = D.needWork.length
+      ? D.needWork.map((s) => `<tr><td>${s.name}</td><td>${s.need}</td><td>${s.lessons}${D.a.plan ? `/${D.a.plan}` : ""}</td><td>${s.testAvg ?? "—"}</td></tr>`).join("")
+      : `<tr><td colspan="4">Все ученики в норме</td></tr>`;
+    return `
+      <div class="pdoc">
+        <div class="pdoc-head"><b>I4U</b><div>I4U.kz Білім беру орталығы<br>Образовательный центр I4U.kz</div></div>
+        <h1>Отчёт по группе</h1>
+        <div class="pdoc-sub">${D.period === "month" ? "Месяц" : "Неделя"}: ${D.label} · сформирован ${dmy(new Date())}</div>
+        <table class="pdoc-info">
+          <tr><td>Группа</td><td><b>${D.group}</b></td><td>Курс</td><td><b>${D.course}</b></td></tr>
+          <tr><td>Куратор</td><td>${D.curator}</td><td>Учеников</td><td>${D.n}</td></tr>
+        </table>
+        <div class="pdoc-plan">Общие показатели за ${word}.
+          План: <b>${D.a.plan || "—"}</b> уроков · прогресс <b>${D.pct}%</b> · активны <b>${D.a.active} из ${D.n}</b>.</div>
+        <table class="pdoc-sum">
+          <tr><th>Пробный ЕНТ</th><th>Средний балл</th><th>Тесты</th><th>Активны</th><th>Конспекты</th><th>Прогресс</th></tr>
+          <tr>
+            <td>${D.a.entAvg != null ? `${D.a.entAvg}/140` : "—"}</td>
+            <td>${D.a.avgPoints}</td>
+            <td>${D.a.testsCount ? `${D.a.avgTest}/100` : "—"}</td>
+            <td>${D.a.active}/${D.n}</td>
+            <td>${D.a.notes}${D.a.pending ? ` · ${D.a.pending} на проверке` : ""}</td>
+            <td>+${D.a.avgLessons} · ${D.pct}%</td>
+          </tr>
+        </table>
+        <div class="pdoc-plan" style="margin-top:10px">${entLine}${D.peak ? `<br>Пик активности: ${D.peak.tip} · ${D.maxV} из ${D.n}` : ""}</div>
+        <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Жұмыс жасалуы керек оқушылар</h2>
+        <table class="pdoc-tbl">
+          <tr><th>Ученик</th><th>Причина</th><th>Уроки</th><th>Тест</th></tr>
+          ${needRows}
+        </table>
+        <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Показатели по ученикам</h2>
+        <table class="pdoc-tbl">
+          <tr><th>№</th><th>Ученик</th><th>Активен</th><th>Уроки</th><th>Тест</th><th>Балл</th><th>Конспект</th><th>ЕНТ</th></tr>
+          ${studRows}
+        </table>
+        <div class="pdoc-foot">Отчёт сформирован автоматически в приложении I4U.</div>
+      </div>`;
+  }
+  function sheetRowsFromReport(D) {
+    const rows = [
+      ["I4U · Отчёт по группе"],
+      ["Курс", D.course],
+      ["Группа", D.group],
+      ["Куратор", D.curator],
+      ["Период", D.label],
+      ["Сформирован", dmy(new Date())],
+      [],
+      ["ОБЩИЕ ПОКАЗАТЕЛИ"],
+      ["Пробный ЕНТ (ср.)", D.a.entAvg != null ? D.a.entAvg : "—", "/ 140"],
+      ["Сдавали ЕНТ", `${D.a.entCount} из ${D.n}`],
+      ["≥ 50 баллов", D.a.entCount ? `${D.a.entGrant} из ${D.a.entCount}` : "—"],
+      ["Средний балл за период", D.a.avgPoints],
+      ["Средний результат тестов", D.a.testsCount ? D.a.avgTest : "—", D.a.testsCount ? "из 100" : ""],
+      ["Активны", `${D.a.active} / ${D.n}`],
+      ["Конспекты сдано", D.a.notes, D.a.pending ? `на проверке: ${D.a.pending}` : ""],
+      ["Прогресс (ср. уроков)", D.a.avgLessons, D.a.plan ? `план ${D.a.plan} · ${D.pct}%` : ""],
+      ["Выполнили план", `${D.a.met} из ${D.n}`],
+      ["Пик активности", D.peak ? `${D.peak.tip} · ${D.maxV} из ${D.n}` : "—"],
+      [],
+      ["ЖҰМЫС ЖАСАЛУЫ КЕРЕК"],
+      ["Ученик", "Причина", "Уроки", "Ср. тест", "ЕНТ"],
+      ...(D.needWork.length
+        ? D.needWork.map((s) => [s.name, s.need, D.a.plan ? `${s.lessons}/${D.a.plan}` : s.lessons, s.testAvg ?? "—", s.ent ?? "—"])
+        : [["Все ученики в норме", "", "", "", ""]]),
+      [],
+      ["ПОКАЗАТЕЛИ ПО УЧЕНИКАМ"],
+      ["№", "Ученик", "Телефон", "Активен", "Дней акт.", "Уроки", "План", "Ср. тест", "Балл", "Конспект", "На проверке", "ЕНТ", "Внимание"],
+      ...D.students.map((s, i) => [
+        i + 1,
+        s.name,
+        s.phone,
+        s.active ? "да" : "нет",
+        s.activeDays,
+        s.lessons,
+        s.plan || "—",
+        s.testAvg ?? "—",
+        s.points,
+        s.notes,
+        s.pending,
+        s.ent ?? "—",
+        s.need || "",
+      ]),
+    ];
+    return rows;
+  }
+  function loadExcelBook(g) {
+    try {
+      return JSON.parse(localStorage.getItem(excelStoreKey(g))) || { name: excelBookName(g), tabs: [] };
+    } catch {
+      return { name: excelBookName(g), tabs: [] };
+    }
+  }
+  function saveExcelBook(g, book) {
+    book.name = excelBookName(g);
+    try {
+      localStorage.setItem(excelStoreKey(g), JSON.stringify(book));
+    } catch {}
+    return book;
+  }
+  /** Апталар оңға қарай: 1–4 апта → «1 - ай» → 5–8 → «2 - ай» … */
+  function orderedTabNames(maxWeek) {
+    const names = [];
+    for (let w = 1; w <= maxWeek; w++) {
+      names.push(`${w} - апта`);
+      if (w % 4 === 0) names.push(`${w / 4} - ай`);
+    }
+    return names;
+  }
+  function upsertExcelTab(book, tabName, rows, meta = {}) {
+    const i = book.tabs.findIndex((t) => t.name === tabName);
+    const tab = { name: tabName, rows, ...meta };
+    if (i >= 0) book.tabs[i] = tab;
+    else book.tabs.push(tab);
+    const weekNums = book.tabs.map((t) => /^(\d+) - апта$/.exec(t.name)).filter(Boolean).map((m) => +m[1]);
+    const maxW = weekNums.length ? Math.max(...weekNums) : 0;
+    const order = orderedTabNames(maxW);
+    book.tabs.sort((a, b) => {
+      const ia = order.indexOf(a.name);
+      const ib = order.indexOf(b.name);
+      return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || a.name.localeCompare(b.name);
+    });
+    return book;
+  }
+  function monthSummaryFromWeeks(g, weekNos, dateHint) {
+    const parts = weekNos.map((w) => {
+      const d = new Date(periodRange("week", SCHED_START).from);
+      d.setDate(d.getDate() + (w - 1) * 7 + 3);
+      return groupReportData(g, "week", d);
+    });
+    const n = g.students.length;
+    const avg = (fn) => Math.round(avgArr(parts.map(fn)) * 10) / 10;
+    const D0 = parts[0];
+    const needMap = new Map();
+    parts.forEach((D) => D.needWork.forEach((s) => needMap.set(s.id, s)));
+    const students = g.students.map((x) => {
+      const rows = parts.map((D) => D.students.find((s) => s.id === x.id)).filter(Boolean);
+      return {
+        id: x.id,
+        name: x.name,
+        phone: x.phone || "",
+        active: rows.some((r) => r.active),
+        activeDays: Math.round(avgArr(rows.map((r) => r.activeDays))),
+        lessons: Math.round(avgArr(rows.map((r) => r.lessons)) * 10) / 10,
+        plan: Math.round(avgArr(rows.map((r) => r.plan || 0))),
+        testAvg: (() => {
+          const t = rows.map((r) => r.testAvg).filter((v) => v != null);
+          return t.length ? Math.round(avgArr(t)) : null;
+        })(),
+        points: Math.round(avgArr(rows.map((r) => r.points))),
+        notes: Math.round(avgArr(rows.map((r) => r.notes))),
+        pending: Math.round(avgArr(rows.map((r) => r.pending))),
+        ent: (() => {
+          const t = rows.map((r) => r.ent).filter((v) => v != null);
+          return t.length ? Math.round(avgArr(t)) : null;
+        })(),
+        need: needMap.get(x.id)?.need || "",
+      };
+    });
+    const D = {
+      a: {
+        entAvg: (() => {
+          const t = parts.map((p) => p.a.entAvg).filter((v) => v != null);
+          return t.length ? Math.round(avgArr(t)) : null;
+        })(),
+        entCount: Math.round(avg(p => p.a.entCount)),
+        entGrant: Math.round(avg(p => p.a.entGrant)),
+        avgPoints: Math.round(avg(p => p.a.avgPoints)),
+        avgTest: Math.round(avg(p => p.a.avgTest)),
+        testsCount: parts.reduce((t, p) => t + p.a.testsCount, 0),
+        active: Math.round(avg(p => p.a.active)),
+        notes: Math.round(avg(p => p.a.notes)),
+        pending: Math.round(avg(p => p.a.pending)),
+        avgLessons: avg(p => p.a.avgLessons),
+        plan: Math.round(avg(p => p.a.plan || 0)),
+        met: Math.round(avg(p => p.a.met)),
+      },
+      n,
+      pct: 0,
+      peak: null,
+      maxV: 0,
+      label: `${weekNos[0]}–${weekNos[weekNos.length - 1]} апта · айлық қорытынды`,
+      period: "month",
+      course: courseTitleOf(g),
+      group: g.name,
+      curator: D0.curator,
+      students,
+      needWork: [...needMap.values()],
+    };
+    D.pct = D.a.plan ? Math.round((D.a.avgLessons / D.a.plan) * 100) : 0;
+    return D;
+  }
+  let xlsxLib = null;
+  function loadXlsx() {
+    if (!xlsxLib) xlsxLib = loadScript("https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js").then(() => window.XLSX);
+    return xlsxLib;
+  }
+  async function downloadExcelBook(book) {
+    const XLSX = await loadXlsx();
+    const wb = XLSX.utils.book_new();
+    (book.tabs.length ? book.tabs : [{ name: "1 - апта", rows: [["Бос"]] }]).forEach((t) => {
+      const ws = XLSX.utils.aoa_to_sheet(t.rows);
+      ws["!cols"] = [{ wch: 6 }, { wch: 28 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 12 }, { wch: 8 }, { wch: 28 }];
+      XLSX.utils.book_append_sheet(wb, ws, t.name.slice(0, 31));
+    });
+    const out = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+    saveFile(new File([out], `${book.name}.xlsx`, { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }));
+  }
+  async function exportGroupPdf(g, period, date) {
+    const D = groupReportData(g, period, date);
+    const name = `${D.group} ${D.label.replace(/[–—]/g, "-")} ${D.course}.pdf`;
+    return makeReportPdf(groupReportDocHtml(g, D), name.replace(/[^\wа-яёәіңғүұқөһА-ЯЁӘІҢҒҮҰҚӨҺ \-.–]+/gi, "_"));
+  }
+  async function exportGroupExcel(g, period, date) {
+    const usePeriod = period === "day" ? "week" : period;
+    let book = loadExcelBook(g);
+    if (usePeriod === "month") {
+      const { from } = periodRange("month", date);
+      const weeks = [];
+      for (let d = new Date(from), i = 0; i < 6 && d.getMonth() === from.getMonth(); d.setDate(d.getDate() + 7), i++) {
+        weeks.push(academicWeek(d));
+      }
+      const uniq = [...new Set(weeks)].filter((w) => w >= 1);
+      uniq.forEach((w) => {
+        const d = new Date(periodRange("week", SCHED_START).from);
+        d.setDate(d.getDate() + (w - 1) * 7 + 3);
+        if (d > AN_TODAY) return;
+        const D = groupReportData(g, "week", d);
+        upsertExcelTab(book, `${w} - апта`, sheetRowsFromReport(D), { week: w, label: D.label });
+        if (w % 4 === 0) {
+          const range = [w - 3, w - 2, w - 1, w];
+          const M = monthSummaryFromWeeks(g, range, d);
+          upsertExcelTab(book, `${w / 4} - ай`, sheetRowsFromReport(M), { month: w / 4, label: M.label });
+        }
+      });
+    } else {
+      const D = groupReportData(g, "week", date);
+      const w = D.weekNo;
+      upsertExcelTab(book, `${w} - апта`, sheetRowsFromReport(D), { week: w, label: D.label });
+      if (w % 4 === 0) {
+        const range = [w - 3, w - 2, w - 1, w];
+        const M = monthSummaryFromWeeks(g, range, date);
+        upsertExcelTab(book, `${w / 4} - ай`, sheetRowsFromReport(M), { month: w / 4, label: M.label });
+      }
+    }
+    saveExcelBook(g, book);
+    await downloadExcelBook(book);
+    return book;
+  }
+  function openDriveAccountSheet(onDone) {
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Google Drive аккаунты</div>
+      <div class="sheet-sub">Топ Excel файлдары осы аккаунттың Drive-ына түседі (макет · жергілікті сақталады)</div>
+      <div class="ef-label">Email</div>
+      <input class="ef-input" id="driveEmailIn" type="email" value="${driveEmail().replace(/"/g, "&quot;")}" placeholder="name@gmail.com" />
+      <div class="sheet-actions btn-row" style="margin-top:14px">
+        <button type="button" class="btn" id="driveCancel">Болдырмау</button>
+        <button type="button" class="btn btn-primary" id="driveSave">Сақтау</button>
+      </div>`);
+    $("#driveCancel").onclick = closeSheet;
+    $("#driveSave").onclick = () => {
+      const v = $("#driveEmailIn").value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return toast("Email дұрыс емес", "err");
+      setDriveEmail(v);
+      closeSheet();
+      toast(`Drive: ${v}`, "ok");
+      onDone?.(v);
+    };
+  }
+  function openGroupExportSheet(g, period, date) {
+    const book = loadExcelBook(g);
+    const tabs = book.tabs.map((t) => t.name).join(" · ") || "әлі жоқ";
+    openSheet(`
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">Топ отчёты</div>
+      <div class="sheet-sub">${excelBookName(g)} · ${periodLabel(period === "day" ? "week" : period, date)}</div>
+      <button type="button" class="ga-drive" id="gaDriveAcc">
+        ${icon("cloud", "material-icons-outlined")}
+        <span><b>Google Drive</b><small>${driveEmail()}</small></span>
+        ${icon("chevron_right")}
+      </button>
+      <div class="ga-xmeta">Файл: <b>${excelBookName(g)}.xlsx</b><br>Беттер: ${tabs}</div>
+      <div class="sheet-actions" style="flex-direction:column;gap:8px;margin-top:14px">
+        <button type="button" class="btn btn-primary" id="gaDlPdf">${icon("picture_as_pdf", "material-icons-outlined")} PDF скачать</button>
+        <button type="button" class="btn" id="gaDlXls">${icon("table_view", "material-icons-outlined")} Excel → Drive</button>
+      </div>`);
+    $("#gaDriveAcc").onclick = () => openDriveAccountSheet(() => openGroupExportSheet(g, period, date));
+    $("#gaDlPdf").onclick = async (e) => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      b.textContent = "PDF…";
+      try {
+        saveFile(await exportGroupPdf(g, period, date));
+        closeSheet();
+        toast("PDF скачан", "ok");
+      } catch (err) {
+        toast("PDF қатесі", "err");
+        console.error(err);
+      } finally {
+        b.disabled = false;
+      }
+    };
+    $("#gaDlXls").onclick = async (e) => {
+      const b = e.currentTarget;
+      b.disabled = true;
+      b.textContent = "Excel…";
+      try {
+        const book2 = await exportGroupExcel(g, period, date);
+        closeSheet();
+        toast(`Drive · ${driveEmail()} · ${book2.name}`, "ok");
+      } catch (err) {
+        toast("Excel қатесі", "err");
+        console.error(err);
+      } finally {
+        b.disabled = false;
+      }
+    };
+  }
+
   /* —— Көрсеткіштерге түсіндірме: не екені, қалай есептеледі, мысал —— */
   function openMetricExplain(key, a, period, g) {
     const W = { day: "күн", week: "апта", month: "ай" }[period];
@@ -8096,8 +8507,18 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             openMetricExplain(el.dataset.ex, analyze(g, A.period, A.date), A.period, g);
           })
         );
+        $("#gaExport")?.addEventListener("click", () => openGroupExportSheet(g, A.period, A.date));
+        $("#gaPdfQuick")?.addEventListener("click", () => openGroupExportSheet(g, A.period, A.date));
+        $("#gaXlsQuick")?.addEventListener("click", () => openGroupExportSheet(g, A.period, A.date));
       },
-      { right: "<span></span>" }
+      {
+        right: `<button type="button" class="appbar-icon-btn" id="gaExport" title="Отчёт">${icon("ios_share", "material-icons-outlined")}</button>`,
+        footer: () =>
+          `<div class="sticky-foot ga-export-foot">
+            <button type="button" class="btn" id="gaPdfQuick">${icon("picture_as_pdf", "material-icons-outlined")}PDF</button>
+            <button type="button" class="btn btn-primary" id="gaXlsQuick">${icon("table_view", "material-icons-outlined")}Excel</button>
+          </div>`,
+      }
     );
   }
 
