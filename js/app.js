@@ -3607,49 +3607,111 @@
     }
     return list.sort((a, b) => b.uploaded - a.uploaded);
   }
-  function reglamentBlocks() {
-    if (isHead())
-      return {
-        title: "Бас куратор регламенті және міндеттері",
-        sub: "I4U · 4-бөлім",
-        blocks: [
-          ["Рөл", "Бас куратор мұғалімнің орнына бөтен сабақ жүргізбейді және куратордың орнына бөтен кесте жазбайды. Ол жұмысты қабылдайды және куратордың құқығы жоқ нәрсені өзі жасайды."],
-          ["Оқушы доступы", "Зачисление ашық. Доступты ұзарту, қатыру, мерзім мен құн — бас куратор / академ. бөлім. Қатардағы кураторда бұл экран жоқ."],
-          ["Кураторларды қабылдау", "Сенбіде әр куратор бойынша пакет: тапсырды / кешікті / жоқ. Пакетті қабылдау немесе пікірмен қайтару. Өткізіп алғанға еске салу, сосын айыппұл."],
-          ["Күндік және ата-ана контуры", "10:00-ге дейін кестесі жоқ кураторлар мен жауапсыз хаттар көрінеді. Ата-ана циклінде кімде скрин жетіспейтіні тұрады."],
-          ["Платформа", "Жаңалықты бірден жариялау, бөтенді қайтару, турнир мен шайқас, дүкен витринасы, кез келген топтың аналитикасы."],
-        ],
+  const DEFAULT_DUTIES = [
+    "Группамен танысу (куратор сағаты)",
+    "Группаның списогын жасау (аты-жөні, номері, ата-анасының номері, қай қаладан, квартира ма общежитие ма, ҰБТ балы, қай мектепті бітірді, спортпен немесе өнермен айналыса ма)",
+    "Группаның старостасын сайлау",
+    "Группаның ватсап чатын ашу",
+    "Группаның ережесін бекіту",
+    "Группаның мақсатын айқындау",
+    "Сабақ кестесімен таныстыру",
+    "Универдің ережелерімен таныстыру",
+    "Студенттердің сабаққа қатысуын бақылау",
+    "Студенттердің үлгерімін бақылау",
+    "Студенттердің тәртібін бақылау",
+    "Студенттердің жатақханадағы жағдайын бақылау",
+    "Студенттермен жеке жұмыс жасау",
+    "Ата-аналармен байланыста болу",
+    "Деканатпен байланыста болу",
+    "Тәрбиелік іс-шаралар өткізу",
+    "Студенттердің қоғамдық жұмыстарға қатысуын қадағалау",
+    "Есеп беру (апталық, айлық, семестрлік)",
+  ];
+  function reglamentStore() {
+    const key = isHead() ? "head" : "curator";
+    const bag = (MOCK.reglament ||= {});
+    if (!bag[key]) {
+      bag[key] = {
+        tab: "duties",
+        text: "",
+        duties: DEFAULT_DUTIES.map((text, i) => ({ id: i + 1, text, done: false })),
+        nextId: DEFAULT_DUTIES.length + 1,
       };
-    return {
-      title: "Куратор регламенті және міндеттері",
-      sub: "I4U · 3-бөлім · қызмет шарты 4 және 6",
-      blocks: [
-        ["Әр оқу күні", "10:00-ге дейін топ чатына күндік кесте. 14:00-ге дейін сабақ ашпағандарға жеке хат. Эфир болса — таңертеңгі ескерту және презентация 14:00-ге дейін бас кураторда. Жауап түнге қалмайды (10 000 ₸)."],
-        ["Топ және прогресс", "Тек өз топтары. Рейтинг, чемпион, Сегодня / На неделе / Просрочено. Видео → конспект → тест тізбегі. Мерзімі өткен сабақ — сол күні жеке хат."],
-        ["Ата-ана", "Әр 14 күн сайын үлгерім есебі. Цикл сенбісінде пакетке скрин. Тапсырылмаса — 10 000 ₸."],
-        ["Сенбі, офис", "Толық пакетпен офисте тапсыру: зачёт, рейтинг таблицасы, апталық есеп, ата-ана скрині, офистік эфир, апталық ойын. «Келдім» белгісі міндетті."],
-        ["Айыппұл", "Рейтинг жоқ — 5 000 ₸. Ата-ана есебі жоқ — 10 000 ₸. Уақытылы жауап жоқ — 10 000 ₸. Айлықтан ұсталады."],
-      ],
-    };
+    }
+    return bag[key];
   }
   function openReglament() {
-    const R = reglamentBlocks();
+    const S = reglamentStore();
+    const paint = () => paintStack();
     pushScreen(
-      isHead() ? "Бас куратор регламенті" : "Куратор регламенті",
-      () => `<div class="list-pad rp-doc">
-        <div class="rp-doc-hero">
-          ${icon("gavel", "material-icons-outlined")}
-          <div><b>${esc(R.title)}</b><small>${esc(R.sub)}</small></div>
-        </div>
-        ${R.blocks
-          .map(
-            ([t, p]) => `<section class="rp-doc-block"><h3>${esc(t)}</h3><p>${esc(p)}</p></section>`
-          )
-          .join("")}
-        <p class="rp-doc-foot">Толық мәтін · docs/REGLAMENT.md · операциялық құжат</p>
-      </div>`,
-      null,
-      { right: "<span></span>" }
+      "Регламент",
+      () => {
+        const tab = S.tab || "duties";
+        const done = S.duties.filter((d) => d.done).length;
+        return `<div class="list-pad rg">
+          <div class="seg-tabs">
+            <button type="button" data-rgtab="duties" class="${tab === "duties" ? "on" : ""}">Міндеттер</button>
+            <button type="button" data-rgtab="text" class="${tab === "text" ? "on" : ""}">Регламент</button>
+          </div>
+          ${
+            tab === "duties"
+              ? `<div class="rg-meta"><b>${done}/${S.duties.length}</b><small>орындалды · мәтінді өзгертуге болады</small></div>
+            <div class="rg-list">
+              ${S.duties
+                .map(
+                  (d) => `<div class="rg-duty ${d.done ? "on" : ""}" data-rgduty="${d.id}">
+                <button type="button" class="rg-check" data-rgtoggle="${d.id}" aria-label="Галочка">${icon("check")}</button>
+                <textarea class="rg-duty-t" data-rgtext="${d.id}" rows="2">${esc(d.text)}</textarea>
+                <button type="button" class="rg-del" data-rgdel="${d.id}" aria-label="Өшіру">${icon("close")}</button>
+              </div>`
+                )
+                .join("")}
+            </div>
+            <button type="button" class="rg-add" id="rgAddDuty">${icon("add")} Міндет қосу</button>`
+              : `<div class="rg-meta"><small>Бос — өзіңіз жазыңыз. Сақталады.</small></div>
+            <textarea class="rg-body" id="rgBody" rows="16" placeholder="Регламент мәтінін осында жазыңыз…">${esc(S.text)}</textarea>`
+          }
+        </div>`;
+      },
+      () => {
+        $$("[data-rgtab]").forEach((b) => {
+          b.onclick = () => {
+            S.tab = b.dataset.rgtab;
+            paint();
+          };
+        });
+        $$("[data-rgtoggle]").forEach((b) => {
+          b.onclick = (e) => {
+            e.stopPropagation();
+            const d = S.duties.find((x) => x.id === +b.dataset.rgtoggle);
+            if (d) d.done = !d.done;
+            paint();
+          };
+        });
+        $$("[data-rgtext]").forEach((ta) => {
+          ta.oninput = () => {
+            const d = S.duties.find((x) => x.id === +ta.dataset.rgtext);
+            if (d) d.text = ta.value;
+          };
+        });
+        $$("[data-rgdel]").forEach((b) => {
+          b.onclick = (e) => {
+            e.stopPropagation();
+            S.duties = S.duties.filter((x) => x.id !== +b.dataset.rgdel);
+            paint();
+          };
+        });
+        $("#rgAddDuty")?.addEventListener("click", () => {
+          S.duties.push({ id: S.nextId++, text: "", done: false });
+          paint();
+          const ta = $(`[data-rgtext="${S.duties[S.duties.length - 1].id}"]`);
+          ta?.focus();
+        });
+        $("#rgBody")?.addEventListener("input", (e) => {
+          S.text = e.target.value;
+        });
+      },
+      { right: "<span></span>", cls: "rg-screen" }
     );
   }
   function openReportPdfItem(p) {
@@ -3683,7 +3745,6 @@
   }
   function renderReports() {
     const pdfs = reportPdfArchive();
-    const R = reglamentBlocks();
     const when = (d) => {
       const same = dayKey(d) === dayKey(AN_TODAY);
       return same ? `бүгін ${pad(d.getHours())}:${pad(d.getMinutes())}` : `${dmy(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -3691,7 +3752,7 @@
     return `<div class="list-pad rp-arch">
       <button type="button" class="rp-reg" id="rpReglament">
         ${icon("gavel", "material-icons-outlined")}
-        <span><b>${esc(R.title)}</b><small>${isHead() ? "Бас куратор / Академ. бөлім" : "Куратор"} · міндеттер мен ереже</small></span>
+        <span><b>Регламент</b><small>${isHead() ? "Бас куратор" : "Куратор"} · міндеттер және ереже</small></span>
         ${icon("chevron_right")}
       </button>
       <div class="rp-arch-h">
@@ -5504,7 +5565,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             inStaff
               ? `${menuRow({
                   iconName: "gavel",
-                  title: isHead() ? "Бас куратор регламенті және міндеттері" : "Куратор регламенті және міндеттері",
+                  title: "Регламент",
                   action: "reglament",
                 })}<div class="menu-divider"></div>`
               : ""
