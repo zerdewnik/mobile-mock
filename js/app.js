@@ -6,7 +6,6 @@
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
     { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
-    { out: "assignment", fill: "assignment", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Отчёт" },
     { out: "how_to_reg", fill: "how_to_reg", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисление" },
   ];
   const NAV_STUDENT = [
@@ -15,12 +14,12 @@
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Отчёт", "Зачисление"];
+  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Зачисление"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
     mode: "staff",
-    tab: 3,
+    tab: 0,
     expandedGroupId: null,
     efirDate: new Date(2026, 9, 3),
     expandedEnrollmentId: null,
@@ -367,7 +366,7 @@
   }
 
   function setTab(index, { skipClose } = {}) {
-    if (state.mode === "staff" && index === 4 && state.staffRole !== "head") index = 0;
+    if (state.mode === "staff" && index === 3 && state.staffRole !== "head") index = 0;
     if (state.mode === "student" && index > 3) index = 0;
     state.tab = index;
     state.sub = null;
@@ -8115,7 +8114,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       { sub: "shop", label: "Магазин", img: "assets/v2/shopv2.png" },
       { sub: "war", label: "Батл", img: "assets/tournament/battle_line.png", hot: "war" },
       { sub: "tours", label: "Турниры", img: "assets/tournament/cup_line.png", hot: "cup" },
-      { sub: "games", label: "Ойындар", img: "assets/tournament/games_line.png" },
     ];
     return `
       ${bannerHtml()}
@@ -9468,16 +9466,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     if (state.tab === 3)
       return `
-      <div class="appbar-title" style="flex:1">${isHead() ? "Отчёттар" : "Отчёт"}</div>
-      <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
-      <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
-    if (state.tab === 4)
-      return `
       <div class="appbar-title-row"><span class="appbar-title">Зачисление</span><button type="button" class="appbar-add" id="enrollAdd" title="Дать доступ к курсу">${icon("add")}</button></div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     return `
-      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Отчёт", "Зачисление"][state.tab]}</div>
+      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Зачисление"][state.tab]}</div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
@@ -9510,8 +9503,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     else if (state.sub === "pushes") content.innerHTML = renderPushes();
     else if (state.tab === 0) content.innerHTML = renderStaffHome();
     else if (state.tab === 1) content.innerHTML = renderStaffNews();
-    else if (state.tab === 3) content.innerHTML = renderReports();
-    else if (state.tab === 4) content.innerHTML = renderAccessList();
+    else if (state.tab === 3) content.innerHTML = renderAccessList();
     else content.innerHTML = renderGroups();
 
     bindContent();
@@ -9691,7 +9683,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       })
     );
 
-    if (state.mode === "staff" && state.tab === 3) bindReports();
     $("#sendPush")?.addEventListener("click", openPushSheet);
     $("#addPush")?.addEventListener("click", openPushSheet);
     $$("[data-news]").forEach((btn) => {
@@ -9740,10 +9731,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         if (b.dataset.staffSub === "war") {
           state.navStack = [];
           return openStaffWars();
-        }
-        if (b.dataset.staffSub === "games") {
-          state.navStack = [];
-          return openGames();
         }
         if (b.dataset.staffSub === "shop") {
           state.navStack = [];
@@ -9934,7 +9921,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $$(".chip-role").forEach((b) => b.classList.toggle("active", b === btn));
         if (state.staffRole === "curator" && state.newsSeg === "review") state.newsSeg = "all";
         document.documentElement.dataset.role = state.staffRole;
-        if (state.staffRole === "curator" && state.tab === 4) return setTab(0);
+        if (state.staffRole === "curator" && state.tab === 3) return setTab(0);
         toast(state.staffRole === "head" ? "Рөл: бас куратор / академ. бөлім басшысы" : "Рөл: куратор");
         render();
       });

@@ -3798,8 +3798,8 @@ html[data-mode="staff"] .appbar-profile { color: var(--primary); }
 .acc-badge.warn { background: rgba(224,168,74,.18); color: #e0a84a; }
 .acc-badge .material-icons-outlined { font-size: 13px; }
 /* Зачисление — тек бас куратор */
-html[data-mode="student"] .nav-item[data-tab="4"], html[data-mode="staff"][data-role="curator"] .nav-item[data-tab="4"] { display: none; }
-html[data-role="curator"] #tabChips [data-goto="4"] { display: none; }
+html[data-mode="staff"][data-role="curator"] .nav-item[data-tab="3"] { display: none; }
+html[data-mode="staff"][data-role="curator"] #tabChips [data-goto="3"] { display: none; }
 .appbar-title-row { display: flex; align-items: center; gap: 6px; flex: 1; }
 .appbar-add { width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: #fff; display: grid; place-items: center; cursor: pointer; }
 .appbar-add .material-icons-round { font-size: 22px; }
