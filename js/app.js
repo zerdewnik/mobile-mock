@@ -8543,75 +8543,146 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
 
   /* —— Көрсеткіштерге түсіндірме: не екені, қалай есептеледі, мысал —— */
-  function openMetricExplain(key, a, period, g) {
+  /** Аналитика = PDF/Excel бір дереккөз */
+  function groupAnalyticsBundle(g, period, date) {
+    let D;
+    if (period === "month") {
+      const { from } = periodRange("month", date);
+      const weeks = [];
+      for (let d = new Date(from), i = 0; i < 6 && d.getMonth() === from.getMonth(); d.setDate(d.getDate() + 7), i++) weeks.push(academicWeek(d));
+      D = monthSummaryFromWeeks(g, [...new Set(weeks)].filter((w) => w >= 1), date);
+      D.label = periodLabel("month", date);
+      D.period = "month";
+    } else if (period === "day") {
+      const { from, to } = periodRange("day", date);
+      const asOf = to > AN_TODAY ? new Date(to) : AN_TODAY;
+      const act = analyze(g, "day", date);
+      const byId = Object.fromEntries(act.per.map((r) => [r.x.id, r]));
+      const students = g.students.map((x) => {
+        const sch = studentWeekScheduleStats(x, g, from, to, asOf);
+        const live = byId[x.id];
+        const ent = live?.ent?.length ? live.ent[live.ent.length - 1].score : null;
+        const reasons = [];
+        if (!live?.active) reasons.push("не заходил за период");
+        if (sch.videoPlan && sch.videoDone < sch.videoPlan) reasons.push(`видео ${sch.videoDone} из ${sch.videoPlan}`);
+        if (sch.notePlan && sch.noteDone < sch.notePlan) reasons.push(`конспект ${sch.noteDone} из ${sch.notePlan}`);
+        if (sch.testAvg != null && sch.testAvg < 55) reasons.push(`ср. тест ${sch.testAvg}`);
+        return { id: x.id, name: x.name, phone: x.phone || "", active: !!live?.active, activeDays: live?.activeDays || 0, ...sch, ent, need: reasons.join("; ") };
+      });
+      students.sort((p, q) => (q.planPct || 0) - (p.planPct || 0));
+      const videoDone = students.reduce((t, s) => t + s.videoDone, 0);
+      const videoPlan = students.reduce((t, s) => t + s.videoPlan, 0);
+      const noteDone = students.reduce((t, s) => t + s.noteDone, 0);
+      const notePlan = students.reduce((t, s) => t + s.notePlan, 0);
+      const testAvgs = students.map((s) => s.testAvg).filter((v) => v != null);
+      D = {
+        a: {
+          entAvg: act.entAvg,
+          entPrev: act.entPrev,
+          entCount: act.entCount,
+          entGrant: act.entGrant,
+          avgTest: testAvgs.length ? Math.round(avgArr(testAvgs)) : null,
+          avgScore: testAvgs.length ? Math.round(avgArr(testAvgs)) : null,
+          active: act.active,
+          videoDone,
+          videoPlan,
+          noteDone,
+          notePlan,
+          met: students.filter((s) => s.planOk).length,
+          testsCount: testAvgs.length,
+        },
+        n: g.students.length,
+        pct: videoPlan + notePlan ? Math.round(((videoDone + noteDone) / (videoPlan + notePlan)) * 100) : 0,
+        peak: null,
+        maxV: 0,
+        label: periodLabel("day", date),
+        period: "day",
+        students,
+        needWork: students.filter((s) => s.need),
+        course: courseTitleOf(g),
+        group: g.name,
+        curator: MOCK.curators.find((c) => c.id === g.curatorId)?.name || myName(),
+      };
+    } else D = groupReportDataWeek(g, date);
+    const act = analyze(g, period, date);
+    return { D, act, R: act.R };
+  }
+  function openMetricExplain(key, bundle, period, g) {
+    const D = bundle.D || bundle;
+    const a = D.a || bundle;
     const W = { day: "күн", week: "апта", month: "ай" }[period];
     const RU = { day: "день", week: "неделю", month: "месяц" }[period];
     const n = g.students.length;
-    const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
     const E = {
       ent: {
         t: "Пробный ЕНТ · средний балл группы",
         what: `Таңдалған кезеңде (${W}) тапсырылған барлық сынақ ҰБТ нәтижелерінің орташасы. Максимум 140 балл.`,
-        how: ["Кезеңдегі әр оқушының әр пробный нәтижесі алынады", "Барлығы қосылып, нәтижелер санына бөлінеді", "«к прошлому периоду» — алдыңғы кезеңнің орташасымен айырмасы", "Жолақтағы сызық — грантқа қатысу шегі 50 балл", "«≥ 50 баллов» — соңғы пробныйда 50-ден жоғары жинағандар"],
+        how: ["Кезеңдегі әр оқушының әр пробный нәтижесі алынады", "Барлығы қосылып, нәтижелер санына бөлінеді", "«к прошлому периоду» — алдыңғы кезеңнің орташасымен айырмасы", "Жолақтағы сызық — грантқа қатысу шегі 50 балл"],
         ex: a.entAvg != null ? `${a.entCount} оқушы тапсырды → орташа ${a.entAvg} / 140. ${a.entGrant} оқушы ≥ 50.` : "Бұл кезеңде пробный болмады.",
-        src: "Студенттің «Тесты → ЕНТ» бөлімінде тапсырған сынақ ҰБТ-лары.",
+        src: "Сынақ ҰБТ нәтижелері · PDF/Excel-дегідей.",
       },
       points: {
-        t: `Средний балл за ${RU}`,
-        what: "Топ рейтингіндегі балдардың орташасы — оқушы кезең ішінде жинаған белсенділік ұпайы.",
-        how: ["Әр тапсырылған сабақ тесті: нәтиже / 10 ұпай (мысалы 80 из 100 → 8 ұпай)", "Оқушының кезеңдегі барлық ұпайы қосылады", "Топтағы барлық оқушының ұпайы қосылып, оқушы санына бөлінеді (тапсырмағандар 0 болып есептеледі)"],
-        ex: `${n} оқушы · орташа ${a.avgPoints} ұпай.`,
-        src: "Сабақ тесттерінің нәтижелері (курс беті → тест).",
+        t: `Общий средний балл за ${RU}`,
+        what: "Оқушылардың кезеңдегі тест орташаларының топтық орташасы (100-ден). PDF/Excel «Общий средний балл».",
+        how: ["Әр оқушының кесте бойынша тест/апталық сынақ орташасы", "Осы орташалар қосылып, тест тапсырған оқушы санына бөлінеді"],
+        ex: a.avgScore != null ? `Топ орташасы ${a.avgScore} из 100.` : "Тест нәтижесі жоқ.",
+        src: "Кестедегі сабақ тесттері мен апталық сынақ.",
       },
       tests: {
         t: "Средний результат тестов",
-        what: "Кезеңде тапсырылған барлық сабақ тесттерінің орташа нәтижесі, 100 баллдық шкала.",
-        how: ["Кезеңдегі әр тест нәтижесі (0–100) алынады", "Барлығы қосылып, тест санына бөлінеді", "Тапсырылмаған тест есепке кірмейді"],
-        ex: a.testsCount ? `${a.testsCount} тест тапсырылды → орташа ${a.avgTest} из 100.` : "Бұл кезеңде тест тапсырылмады.",
-        src: "Курс ішіндегі сабақ тесттері (апталық сынақ пен пробный ЕНТ кірмейді).",
+        what: "Кезеңдегі сабақ тесттері мен апталық сынақтың орташа нәтижесі (100).",
+        how: ["Әр оқушының жеке орташасы есептеледі", "Топтық орташа = оқушы орташаларының орташасы"],
+        ex: a.avgTest != null ? `Орташа ${a.avgTest} из 100.` : "Бұл кезеңде тест тапсырылмады.",
+        src: "Кесте · PDF/Excel-дегідей.",
       },
       active: {
         t: `Активны за ${RU}`,
-        what: "Кезең ішінде қосымшаға кем дегенде бір рет кіріп, бір әрекет жасаған (сабақ ашқан, тест тапсырған) оқушылар саны.",
-        how: ["Әр оқушының кезеңдегі әрекеттері тексеріледі", "Кемінде бір әрекеті болса — белсенді", "Белсенділер / топтағы барлық оқушы"],
-        ex: `${a.active} / ${n} оқушы белсенді (${Math.round((a.active / n) * 100)}%).`,
-        src: "Қосымшаға кіру және сабақ әрекеттері журналы.",
+        what: "Кезең ішінде қосымшаға кірген оқушылар саны.",
+        how: ["Кемінде бір әрекеті болса — белсенді", "Белсенділер / топтағы барлық оқушы"],
+        ex: `${a.active} / ${n} оқушы белсенді.`,
+        src: "Қосымшаға кіру журналы.",
       },
       notes: {
         t: "Конспекты",
-        what: "Кезеңде оқушылар тапсырған конспект саны және оның қаншасы куратордың тексеруін күтіп тұр.",
-        how: ["«сдано» — видеосабақтан кейін тіркелген конспекттер саны", "«на проверке» — куратор әлі «Принять / Вернуть» баспағандары", "Тексеру: оқушы профилі → курс → 🕒 конспект"],
-        ex: `${a.notes} сдано · ${a.pending} на проверке.`,
-        src: "Видеосабақтағы «Прикрепите конспект».",
-        btn: a.pending ? "Тексеруге өту" : null,
+        what: "Кесте бойынша өткізу керек конспекттердің қаншасы өткізілді: (барлық өткізгені) / (барлық жоспар).",
+        how: ["Әр оқушының кестесіндегі сабақ саны = конспект жоспары", "Өткізгені = note ≠ «не сдан»", "Топ: сумма(өткізген) / сумма(жоспар)"],
+        ex: a.notePlan ? `${a.noteDone}/${a.notePlan} · ${pctOf(a.noteDone, a.notePlan)}` : "Кестеде сабақ жоқ.",
+        src: "Жеке кесте · PDF/Excel-дегідей.",
+      },
+      video: {
+        t: "Видеоуроки",
+        what: "Кесте бойынша қаралуы керек видеолардың қаншасы қаралды.",
+        how: ["Әр оқушының кестесіндегі сабақ = видео жоспары", "Топ: сумма(қаралған) / сумма(жоспар)"],
+        ex: a.videoPlan ? `${a.videoDone}/${a.videoPlan} · ${pctOf(a.videoDone, a.videoPlan)}` : "Кестеде сабақ жоқ.",
+        src: "Жеке кесте · PDF/Excel-дегідей.",
       },
       progress: {
-        t: `Прогресс за ${RU}`,
-        what: "Бір оқушы кезеңде орта есеппен неше сабақ өткені және кесте бойынша жоспардың орындалуы.",
-        how: ["Жоспар: әр жұмыс күні 1,6 сабақ (апта ≈ 8, ай ≈ 35); сенбі-жексенбі есептелмейді", "Ағымдағы кезеңде — тек бүгінге дейінгі күндер", "Орташа = оқушылардың өткен сабақтары қосындысы / оқушы саны", "Орындалу % = орташа / жоспар × 100", "«Выполнили» — жоспарды толық орындаған оқушылар"],
-        ex: a.plan ? `Жоспар ${a.plan} · орташа +${a.avgLessons} → ${pct}%. Орындағандар: ${a.met} из ${n}.` : "Бұл күні жоспар жоқ (демалыс).",
-        src: "Сабақтардың аяқталу күндері.",
+        t: `Прогресс / план за ${RU}`,
+        what: "Кесте бойынша видео+конспект орындалуы және жоспарды толық орындаған оқушылар.",
+        how: ["План оқушыда: барлық видео қаралды және барлық конспект өткізілді", "Орындалу % = (видео+конспект өткізген) / (видео+конспект жоспар)", "«Выполнили» — планOk оқушылар саны"],
+        ex: a.videoPlan || a.notePlan ? `Видео ${frac(a.videoDone, a.videoPlan)} · Конспект ${frac(a.noteDone, a.notePlan)} · план ${a.met} из ${n} · ${D.pct || 0}%.` : "Кестеде сабақ жоқ.",
+        src: "Жеке кесте · PDF/Excel-дегідей.",
       },
       activity: {
         t: "Активность",
         what: "Қосымшаға кірген оқушылар саны уақыт бойынша.",
-        how: ["Күн — 2 сағаттық аралықтар (08:00–24:00)", "Апта — күн сайын (Дс–Жс)", "Ай — айдың әр күні", "Бір оқушы бір аралықта бір рет саналады", "Ашық баған — ең көп кірген уақыт (пик)"],
+        how: ["Күн — сағаттық аралықтар", "Апта — күн сайын", "Ай — айдың әр күні"],
         ex: "Бағанның үстіне апарсаңыз, нақты сан шығады.",
         src: "Қосымшаға кіру журналы.",
       },
       entStudents: {
         t: "Пробный ЕНТ по ученикам",
-        what: "Кезеңде пробный тапсырған әр оқушының соңғы нәтижесі (140-тан), жоғарыдан төмен.",
-        how: ["Кезеңдегі оқушының соңғы пробныйы алынады", "Жасыл/қызыл сан — оның алдыңғы пробныйымен айырмасы", "Жолды басқанда — оқушы профилі"],
-        ex: `${a.entCount} оқушы тапсырды.`,
-        src: "Сынақ ҰБТ нәтижелері.",
+        what: "Кезеңде пробный тапсырған әр оқушының соңғы нәтижесі (140-тан).",
+        how: ["Кезеңдегі соңғы пробный", "Жасыл/қызыл — алдыңғымен айырма"],
+        ex: `${a.entCount || 0} оқушы тапсырды.`,
+        src: "Сынақ ҰБТ.",
       },
       attention: {
         t: "Требуют внимания",
-        what: "Куратор назар аударуы керек оқушылар — себебімен.",
-        how: ["Кезеңде мүлдем кірмеген", "Жоспардың жартысынан аз сабақ өткен", "Тесттердің орташа нәтижесі 55-тен төмен", "Бір оқушыда бірнеше себеп болуы мүмкін"],
-        ex: `${a.attention.length} оқушы.`,
-        src: "Белсенділік, прогресс және тест нәтижелері.",
+        what: "Кесте/белсенділік бойынша артта қалған оқушылар — PDF/Excel «Жұмыс жасалуы керек».",
+        how: ["Кірмеген", "Видео/конспект/эфир жоспардан аз", "Ср. тест < 55"],
+        ex: `${(D.needWork || []).length} оқушы.`,
+        src: "Кесте + белсенділік.",
       },
     }[key];
     if (!E) return;
@@ -8622,21 +8693,17 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       <div class="ex-block"><div class="ex-l">${icon("calculate", "material-icons-outlined")}Қалай есептеледі?</div><ol>${E.how.map((h) => `<li>${h}</li>`).join("")}</ol></div>
       <div class="ex-block ex-now"><div class="ex-l">${icon("insights", "material-icons-outlined")}Қазір (${g.name})</div><p>${E.ex}</p></div>
       <div class="ex-src">${icon("storage", "material-icons-outlined")}Дереккөз: ${E.src}</div>
-      <div class="sheet-actions">${E.btn ? `<button type="button" class="ef-submit" id="exGo" style="margin:0">${E.btn}</button>` : `<button type="button" class="btn btn-ghost" id="exClose" style="width:100%">Түсінікті</button>`}</div>`);
+      <div class="sheet-actions"><button type="button" class="btn btn-ghost" id="exClose" style="width:100%">Түсінікті</button></div>`);
     $("#exClose")?.addEventListener("click", closeSheet);
-    $("#exGo")?.addEventListener("click", () => {
-      closeSheet();
-      const s = g.students.find((x) => pendingCount(staffCourseFor(x, g)) > 0) || g.students[0];
-      openStaffStudent(s, g);
-    });
   }
 
   function openGroupAnalytics(g) {
     const A = { period: "week", date: new Date(AN_TODAY), attAll: false, who: false };
     const word = () => ({ day: "день", week: "неделю", month: "месяц" })[A.period];
     const build = () => {
-      const a = analyze(g, A.period, A.date);
-      const n = g.students.length;
+      const { D, act, R } = groupAnalyticsBundle(g, A.period, A.date);
+      const a = D.a;
+      const n = D.n;
       const head = `
         <div class="ga-head">
           <div class="ga-title">${g.name}</div>
@@ -8649,15 +8716,16 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="ga-dnav">
             <button type="button" class="sch-arrow" data-ga-shift="-1">${icon("chevron_left")}</button>
             <button type="button" class="ga-date" id="gaDate">${icon("calendar_today")}${periodLabel(A.period, A.date)}</button>
-            <button type="button" class="sch-arrow" data-ga-shift="1" ${a.R.to >= AN_TODAY ? "disabled" : ""}>${icon("chevron_right")}</button>
+            <button type="button" class="sch-arrow" data-ga-shift="1" ${R.to >= AN_TODAY ? "disabled" : ""}>${icon("chevron_right")}</button>
           </div>
         </div>`;
-      if (a.future) return `<div class="ga">${head}<div class="efir-empty" style="min-height:300px">Данных за этот период пока нет</div></div>`;
+      if (act.future && A.period !== "week") return `<div class="ga">${head}<div class="efir-empty" style="min-height:300px">Данных за этот период пока нет</div></div>`;
       const diff = a.entAvg != null && a.entPrev != null ? a.entAvg - a.entPrev : null;
-      const pct = a.plan ? Math.round((a.avgLessons / a.plan) * 100) : 0;
-      const maxV = Math.max(1, ...a.series.map((p) => p.v || 0));
-      const peak = a.series.findIndex((p) => p.v === maxV);
-      const ranked = a.per.filter((r) => r.ent.length).sort((p, q) => q.ent[q.ent.length - 1].score - p.ent[p.ent.length - 1].score);
+      const pct = D.pct || 0;
+      const maxV = Math.max(1, ...act.series.map((p) => p.v || 0));
+      const peak = act.series.findIndex((p) => p.v === maxV);
+      const ranked = act.per.filter((r) => r.ent.length).sort((p, q) => q.ent[q.ent.length - 1].score - p.ent[p.ent.length - 1].score);
+      const need = D.needWork || [];
       return `
       <div class="ga">
         ${head}
@@ -8677,37 +8745,36 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </div>
 
         <div class="ga-tiles">
-          <div class="ga-tile" data-ex="points"><span>Средний балл за ${word()}</span><b>${a.avgPoints}</b></div>
-          <div class="ga-tile" data-ex="tests"><span>Средний результат тестов</span><b>${a.testsCount ? a.avgTest : "—"}<small> ${a.testsCount ? "из 100" : ""}</small></b></div>
+          <div class="ga-tile" data-ex="points"><span>Общий средний балл</span><b>${a.avgScore != null ? a.avgScore : "—"}<small>${a.avgScore != null ? " из 100" : ""}</small></b></div>
+          <div class="ga-tile" data-ex="tests"><span>Средний результат тестов</span><b>${a.avgTest != null ? a.avgTest : "—"}<small>${a.avgTest != null ? " из 100" : ""}</small></b></div>
           <div class="ga-tile" data-ex="active"><span>Активны за ${word()}</span><b>${a.active}<small> / ${n}</small></b></div>
-          <div class="ga-tile ${a.pending ? "warn" : ""}" data-ex="notes"><span>${icon(a.pending ? "schedule" : "description", "material-icons-outlined")}Конспекты</span><b>${a.notes}<small> сдано${a.pending ? ` · ${a.pending} на проверке` : ""}</small></b></div>
+          <div class="ga-tile" data-ex="notes"><span>${icon("description", "material-icons-outlined")}Конспекты</span><b>${a.notePlan ? frac(a.noteDone, a.notePlan) : "—"}<small>${a.notePlan ? ` · ${pctOf(a.noteDone, a.notePlan)}` : ""}</small></b></div>
         </div>
 
         <div class="ga-card">
           <div class="ga-ctitle ex-h" data-ex="progress">Прогресс за ${word()}${icon("info", "material-icons-outlined")}</div>
           <div class="gp-row">
-            <div class="gp-big"><b>+${a.avgLessons}</b><span>${plural(Math.round(a.avgLessons), "урок", "урока", "уроков")} в среднем на ученика</span></div>
-            ${a.plan ? `<div class="gp-pct ${pct >= 100 ? "ok" : pct >= 70 ? "mid" : "low"}">${pct}%</div>` : ""}
+            <div class="gp-big"><b>${a.videoPlan ? frac(a.videoDone, a.videoPlan) : "—"}</b><span>видеоуроки по расписанию</span></div>
+            ${a.videoPlan || a.notePlan ? `<div class="gp-pct ${pct >= 100 ? "ok" : pct >= 70 ? "mid" : "low"}">${pct}%</div>` : ""}
           </div>
           ${
-            a.plan
+            a.videoPlan || a.notePlan
               ? `<div class="gp-bar"><i style="width:${Math.min(100, pct)}%"></i></div>
-          <div class="gp-meta"><span>План${a.R.to > AN_TODAY ? " на сегодня" : ""}: ${a.plan} ${plural(a.plan, "урок", "урока", "уроков")} · выполнен на ${pct}%</span><span>Выполнили: ${a.met} из ${n}</span></div>`
-              : `<div class="gp-meta"><span>Выходной — план не задан</span></div>`
+          <div class="gp-meta"><span>Конспекты ${frac(a.noteDone, a.notePlan)} · план из расписания</span><span>Выполнили план: ${a.met} из ${n}</span></div>`
+              : `<div class="gp-meta"><span>В расписании нет уроков за период</span></div>`
           }
           <button type="button" class="ga-more gp-who" id="gpWho">${A.who ? "Скрыть" : "Кто сколько прошёл"}</button>
           ${
             A.who
-              ? `<div class="ga-hbars">${[...a.per]
-                  .sort((p, q) => q.lessons - p.lessons)
-                  .map((r) => {
-                    const ok = a.plan && r.lessons >= a.plan;
-                    const w = a.plan ? Math.min(100, (r.lessons / a.plan) * 100) : r.lessons * 30;
+              ? `<div class="ga-hbars">${[...D.students]
+                  .sort((p, q) => (q.planPct || 0) - (p.planPct || 0))
+                  .map((s) => {
+                    const w = s.videoPlan ? Math.min(100, (s.videoDone / s.videoPlan) * 100) : 0;
                     return `
-                <button type="button" class="ga-hrow" data-ga-student="${r.x.id}" data-tip="${r.x.name}: ${r.lessons} ${plural(r.lessons, "урок", "урока", "уроков")}">
-                  <span class="ga-hname">${r.x.name}</span>
-                  <span class="ga-htrack"><i style="width:${Math.max(2, w)}%;${ok ? "" : "background:color-mix(in srgb,var(--primary) 55%,#1e1e1e)"}"></i></span>
-                  <span class="ga-hval">${r.lessons}${a.plan ? `/${a.plan}` : ""}</span>
+                <button type="button" class="ga-hrow" data-ga-student="${s.id}" data-tip="${s.name}: видео ${frac(s.videoDone, s.videoPlan)} · конспект ${frac(s.noteDone, s.notePlan)}">
+                  <span class="ga-hname">${s.name}</span>
+                  <span class="ga-htrack"><i style="width:${Math.max(2, w)}%;${s.planOk ? "" : "background:color-mix(in srgb,var(--primary) 55%,#1e1e1e)"}"></i></span>
+                  <span class="ga-hval">${frac(s.videoDone, s.videoPlan)}</span>
                 </button>`;
                   })
                   .join("")}</div>`
@@ -8718,8 +8785,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="ga-card">
           <div class="ga-ctitle ex-h" data-ex="activity">Активность${icon("info", "material-icons-outlined")}</div>
           <div class="ga-csub">Сколько учеников заходили в приложение${A.period === "day" ? " · по часам" : ""}</div>
-          <div class="ga-bars ${A.period === "month" ? "month" : ""}" style="grid-template-columns:repeat(${a.series.length},1fr)">
-            ${a.series
+          <div class="ga-bars ${A.period === "month" ? "month" : ""}" style="grid-template-columns:repeat(${act.series.length},1fr)">
+            ${act.series
               .map(
                 (p, i) => `
               <button type="button" class="ga-bar ${i === peak ? "today" : ""} ${p.v == null ? "none" : ""}" data-tip="${p.tip}: ${p.v == null ? "ещё не наступил" : `${p.v} из ${n}`}">
@@ -8730,7 +8797,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
               )
               .join("")}
           </div>
-          <div class="ga-peak">${maxV ? `Пик: ${a.series[peak].tip} · ${maxV} из ${n}` : "Никто не заходил"}</div>
+          <div class="ga-peak">${maxV && act.series[peak] ? `Пик: ${act.series[peak].tip} · ${maxV} из ${n}` : "Никто не заходил"}</div>
         </div>
 
         <div class="ga-card">
@@ -8759,18 +8826,18 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="ga-card">
           <div class="ga-ctitle ex-h" data-ex="attention">Требуют внимания${icon("info", "material-icons-outlined")}</div>
           ${
-            a.attention.length
-              ? a.attention
+            need.length
+              ? need
                   .slice(0, A.attAll ? 999 : 5)
                   .map(
-                    (r) => `
-              <button type="button" class="ga-att" data-ga-student="${r.x.id}">
+                    (s) => `
+              <button type="button" class="ga-att" data-ga-student="${s.id}">
                 <span class="ga-att-ico">${icon("warning_amber", "material-icons-outlined")}</span>
-                <span style="flex:1;min-width:0"><b>${r.x.name}</b><small>${r.reasons.join(" · ")}</small></span>
+                <span style="flex:1;min-width:0"><b>${s.name}</b><small>${s.need}</small></span>
                 ${icon("chevron_right")}
               </button>`
                   )
-                  .join("") + (a.attention.length > 5 && !A.attAll ? `<button type="button" class="ga-more" id="gaMore">Показать ещё ${a.attention.length - 5}</button>` : "")
+                  .join("") + (need.length > 5 && !A.attAll ? `<button type="button" class="ga-more" id="gaMore">Показать ещё ${need.length - 5}</button>` : "")
               : `<div class="ga-ok">${icon("check_circle", "material-icons-outlined")}Все ученики в норме</div>`
           }
         </div>
@@ -8799,7 +8866,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $$("[data-ex]").forEach((el) =>
           el.addEventListener("click", (e) => {
             if (e.target.closest("button")) return;
-            openMetricExplain(el.dataset.ex, analyze(g, A.period, A.date), A.period, g);
+            openMetricExplain(el.dataset.ex, groupAnalyticsBundle(g, A.period, A.date), A.period, g);
           })
         );
         $("#gaExport")?.addEventListener("click", () => openGroupExportSheet(g, A.period, A.date));
