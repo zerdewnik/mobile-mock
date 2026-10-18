@@ -6863,7 +6863,20 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     box.innerHTML = html;
     document.body.appendChild(box);
     try {
-      const canvas = await window.html2canvas(box.firstElementChild, { scale: 2, backgroundColor: "#ffffff" });
+      const canvas = await window.html2canvas(box.firstElementChild, {
+        scale: 2,
+        backgroundColor: "#ffffff",
+        useCORS: true,
+        onclone: (doc) => {
+          doc.querySelectorAll(".pdoc .bad-row td, .pdoc .warn-row td, .pdoc .ok-row td").forEach((el) => {
+            const tr = el.closest("tr");
+            if (!tr) return;
+            if (tr.classList.contains("bad-row")) el.style.setProperty("background-color", "#fde8e6", "important");
+            if (tr.classList.contains("warn-row")) el.style.setProperty("background-color", "#ffe8a3", "important");
+            if (tr.classList.contains("ok-row")) el.style.setProperty("background-color", "#c8efd4", "important");
+          });
+        },
+      });
       const { jsPDF } = window.jspdf;
       const pdf = new jsPDF({ unit: "pt", format: "a4" });
       const pw = pdf.internal.pageSize.getWidth();
@@ -7705,36 +7718,56 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const t = planPctTone(s.planPct);
     return t === "bad" ? "bad-row" : t === "warn" ? "warn-row" : t === "ok" ? "ok-row" : "";
   }
+  /** PDF/html2canvas үшін inline фон — класссыз да сары/жасыл/қызыл көрінеді */
+  function planPctRowInline(s) {
+    if (!(s.videoPlan || s.notePlan)) return "";
+    const t = planPctTone(s.planPct);
+    if (t === "bad") return "background-color:#fde8e6;color:#8b1e14";
+    if (t === "warn") return "background-color:#ffe8a3;color:#8a5a10";
+    if (t === "ok") return "background-color:#c8efd4;color:#1f6b3a";
+    return "";
+  }
+  function td(content, extra = "") {
+    const st = extra ? ` style="${extra}"` : "";
+    return `<td${st}>${content}</td>`;
+  }
   function groupReportDocHtml(g, D) {
     const studRows = D.students
       .map(
         (s, i) => {
           const tone = planPctTone(s.videoPlan || s.notePlan ? s.planPct : null);
+          const row = planPctRowInline(s);
+          const pctSt = row + (tone === "bad" ? ";font-weight:700;color:#c0392b" : tone === "warn" ? ";font-weight:700;color:#d07a1c" : tone === "ok" ? ";font-weight:700;color:#2e8b4e" : "");
           return `<tr class="${planPctRowClass(s)}">
-          <td>${i + 1}</td><td><b>${s.name}</b></td>
-          <td>${frac(s.videoDone, s.videoPlan)}</td>
-          <td>${frac(s.noteDone, s.notePlan)}</td>
-          <td>${s.testAvg != null ? s.testAvg : "—"}</td>
-          <td>${frac(s.efirDone, s.efirPlan)}</td>
-          <td>${s.active ? "да" : "нет"}</td>
-          <td>${s.ent != null ? s.ent : "—"}</td>
-          <td class="${tone}">${planPctLabel(s)}</td>
-          <td>${s.overallAvg != null ? s.overallAvg : "—"}</td>
-          <td>${needReason(s)}</td>
+          ${td(i + 1, row)}${td(`<b>${s.name}</b>`, row)}
+          ${td(frac(s.videoDone, s.videoPlan), row)}
+          ${td(frac(s.noteDone, s.notePlan), row)}
+          ${td(s.testAvg != null ? s.testAvg : "—", row)}
+          ${td(frac(s.efirDone, s.efirPlan), row)}
+          ${td(s.active ? "да" : "нет", row)}
+          ${td(s.ent != null ? s.ent : "—", row)}
+          ${td(planPctLabel(s), pctSt || row)}
+          ${td(s.overallAvg != null ? s.overallAvg : "—", row)}
+          ${td(needReason(s), row)}
         </tr>`;
         }
       )
       .join("");
     const needRows = D.needWork.length
       ? D.needWork
-          .map(
-            (s) =>
-              `<tr class="bad-row"><td>${s.name}</td><td>${needReason(s)}</td><td class="bad">${planPctLabel(s)}</td><td>${s.testAvg ?? "—"}</td><td>${s.ent ?? "—"}</td></tr>`
-          )
+          .map((s) => {
+            const row = "background-color:#fde8e6;color:#8b1e14";
+            return `<tr class="bad-row">${td(s.name, row)}${td(needReason(s), row)}${td(planPctLabel(s), row + ";font-weight:700;color:#c0392b")}${td(s.testAvg ?? "—", row)}${td(s.ent ?? "—", row)}</tr>`;
+          })
           .join("")
       : `<tr><td colspan="5">Все ученики в норме (≥ 50% плана)</td></tr>`;
     return `
       <div class="pdoc">
+        <style>
+          .pdoc .bad-row td { background-color:#fde8e6 !important; color:#8b1e14; }
+          .pdoc .warn-row td { background-color:#ffe8a3 !important; color:#8a5a10; }
+          .pdoc .ok-row td { background-color:#c8efd4 !important; color:#1f6b3a; }
+        </style>
         <div class="pdoc-head"><b>I4U</b><div>I4U.kz Білім беру орталығы<br>Образовательный центр I4U.kz</div></div>
         <h1>Отчёт по группе</h1>
         <div class="pdoc-sub">${D.period === "month" ? "Месяц" : "Неделя"}: ${D.label} · сформирован ${dmy(new Date())}</div>
@@ -8135,8 +8168,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       return rgb ? { font: { bold: true, sz: 11, color: { rgb } }, alignment: { horizontal: "center", vertical: "center" } } : null;
     };
     const badRow = { font: { sz: 11, color: { rgb: "8B1E14" } }, fill: { fgColor: { rgb: "FDE8E6" } }, alignment: { vertical: "center" } };
-    const warnRow = { font: { sz: 11, color: { rgb: "8A5A10" } }, fill: { fgColor: { rgb: "FFF4D6" } }, alignment: { vertical: "center" } };
-    const okRow = { font: { sz: 11, color: { rgb: "1F6B3A" } }, fill: { fgColor: { rgb: "E6F6EB" } }, alignment: { vertical: "center" } };
+    const warnRow = { font: { sz: 11, color: { rgb: "8A5A10" } }, fill: { fgColor: { rgb: "FFE8A3" } }, alignment: { vertical: "center" } };
+    const okRow = { font: { sz: 11, color: { rgb: "1F6B3A" } }, fill: { fgColor: { rgb: "C8EFD4" } }, alignment: { vertical: "center" } };
     const toneRow = (n) => (n == null ? null : n <= 49 ? badRow : n <= 75 ? warnRow : okRow);
     set(layout.title, 0, XL.title);
     for (let r = 1; r <= 5; r++) {
