@@ -6,7 +6,6 @@
     { out: "home", fill: "home", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Главная" },
     { out: "newspaper", fill: "newspaper", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Новости" },
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
-    { out: "assignment", fill: "assignment", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Отчёт" },
     { out: "how_to_reg", fill: "how_to_reg", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Зачисление" },
   ];
   const NAV_STUDENT = [
@@ -15,7 +14,7 @@
     { out: "groups", fill: "groups", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Группы" },
     { out: "menu_book", fill: "menu_book", outClass: "material-icons-outlined", fillClass: "material-icons-round", label: "Мои курсы" },
   ];
-  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Отчёт", "Зачисление"];
+  const CHIPS_STAFF = ["Главная", "Новости", "Группы", "Зачисление"];
   const CHIPS_STUDENT = ["Главная", "Новости", "Группы", "Мои курсы"];
 
   const state = {
@@ -367,7 +366,7 @@
   }
 
   function setTab(index, { skipClose } = {}) {
-    if (state.mode === "staff" && index === 4 && state.staffRole !== "head") index = 0;
+    if (state.mode === "staff" && index === 3 && state.staffRole !== "head") index = 0;
     if (state.mode === "student" && index > 3) index = 0;
     state.tab = index;
     state.sub = null;
@@ -3580,33 +3579,6 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  /** Отчёт: тек PDF (жүктелген күні бойынша) + рөл регламенті */
-  function reportPdfArchive() {
-    if (!MOCK.reportPdfs) {
-      const mk = (id, title, sub, y, m, d, hh, mm, groupId, week) => ({
-        id,
-        title,
-        sub,
-        uploaded: new Date(y, m, d, hh, mm),
-        groupId,
-        week,
-      });
-      MOCK.reportPdfs = [
-        mk(1, "Викингтер · 28.09 – 04.10", "Дүниежүзі тарихы · апталық отчёт", 2026, 9, 4, 18, 20, 9, 5),
-        mk(2, "Викингтер · 21.09 – 27.09", "Дүниежүзі тарихы · апталық отчёт", 2026, 8, 27, 16, 5, 9, 4),
-        mk(3, "Викингтер · 14.09 – 20.09", "Дүниежүзі тарихы · апталық отчёт", 2026, 8, 20, 15, 40, 9, 3),
-        mk(4, "Викингтер · Қыркүйек", "Дүниежүзі тарихы · айлық қорытынды", 2026, 8, 30, 12, 10, 9, null),
-        mk(5, "Хронос 3 · 28.09 – 04.10", "Қазақстан тарихы · апталық отчёт", 2026, 9, 4, 19, 5, 3, 5),
-        mk(6, "Math Empire · 28.09 – 04.10", "Математика · апталық отчёт", 2026, 9, 3, 17, 50, 2, 5),
-      ];
-    }
-    let list = [...MOCK.reportPdfs];
-    if (!isHead()) {
-      const ids = new Set(visibleGroups().map((g) => g.id));
-      list = list.filter((p) => ids.has(p.groupId));
-    }
-    return list.sort((a, b) => b.uploaded - a.uploaded);
-  }
   const DEFAULT_DUTIES = [
     "Группамен танысу (куратор сағаты)",
     "Группаның списогын жасау (аты-жөні, номері, ата-анасының номері, қай қаладан, квартира ма общежитие ма, ҰБТ балы, қай мектепті бітірді, спортпен немесе өнермен айналыса ма)",
@@ -3714,40 +3686,6 @@
       { right: "<span></span>", cls: "rg-screen" }
     );
   }
-  function openReportPdfItem(p) {
-    const g = MOCK.groups.find((x) => x.id === p.groupId) || visibleGroups()[0];
-    openSheet(`
-      <div class="sheet-handle"></div>
-      <div class="sheet-title">${esc(p.title)}</div>
-      <div class="sheet-sub">${esc(p.sub)}<br>Жүктелген: ${dmy(p.uploaded)} ${pad(p.uploaded.getHours())}:${pad(p.uploaded.getMinutes())}</div>
-      <div class="sheet-actions" style="flex-direction:column;gap:8px">
-        <button type="button" class="btn btn-primary" id="rpPdfOpen">${icon("picture_as_pdf", "material-icons-outlined")} PDF ашу / скачать</button>
-        <button type="button" class="btn" id="rpPdfClose">Жабу</button>
-      </div>`);
-    $("#rpPdfClose").onclick = closeSheet;
-    $("#rpPdfOpen").onclick = async () => {
-      const b = $("#rpPdfOpen");
-      b.disabled = true;
-      b.textContent = "PDF…";
-      try {
-        const date = p.week ? dateOfAcademicWeek(p.week) : AN_TODAY;
-        const file = await exportGroupPdf(g, p.week ? "week" : "month", date);
-        const named = new File([file], `${p.title.replace(/\s+/g, " ")}.pdf`, { type: "application/pdf" });
-        saveFile(named);
-        closeSheet();
-        toast("PDF скачан", "ok");
-      } catch (e) {
-        console.error(e);
-        toast("PDF қатесі", "err");
-        b.disabled = false;
-      }
-    };
-  }
-  function renderReports() {
-    return `<div class="list-pad" style="min-height:120px"></div>`;
-  }
-  function bindReports() {}
-
   /* —— Staff: Магазин ——
      Бас куратор: тауарлар (қосу, баға, қалдық, жасыру), барлық тапсырыстар, монета беру (≤500)
      Куратор: өз топтарының тапсырыстары (дайын → берілді), оқушы монеталары, бонус (≤50/апта бір оқушыға) */
@@ -10074,16 +10012,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     }
     if (state.tab === 3)
       return `
-      <div class="appbar-title" style="flex:1">${isHead() ? "Отчёттар" : "Отчёт"}</div>
-      <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
-      <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
-    if (state.tab === 4)
-      return `
       <div class="appbar-title-row"><span class="appbar-title">Зачисление</span><button type="button" class="appbar-add" id="enrollAdd" title="Дать доступ к курсу">${icon("add")}</button></div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
     return `
-      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Отчёт", "Зачисление"][state.tab]}</div>
+      <div class="appbar-title" style="flex:1">${["Главная", "Новости", "Группы", "Зачисление"][state.tab]}</div>
       <button type="button" class="appbar-bell" id="staffBell" title="Хабарлама">${icon("notifications_none")}</button>
       <button type="button" class="appbar-profile" id="curatorAvatar">${icon("person")}</button>`;
   }
@@ -10116,8 +10049,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     else if (state.sub === "pushes") content.innerHTML = renderPushes();
     else if (state.tab === 0) content.innerHTML = renderStaffHome();
     else if (state.tab === 1) content.innerHTML = renderStaffNews();
-    else if (state.tab === 3) content.innerHTML = renderReports();
-    else if (state.tab === 4) content.innerHTML = renderAccessList();
+    else if (state.tab === 3) content.innerHTML = renderAccessList();
     else content.innerHTML = renderGroups();
 
     bindContent();
@@ -10385,7 +10317,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     $("#addGroup")?.addEventListener("click", () => openGroupForm());
     $("#addEnroll")?.addEventListener("click", () => openEnrollmentForm());
     $("#curatorAvatar")?.addEventListener("click", openUserProfile);
-    if (state.mode === "staff" && state.tab === 3) bindReports();
   }
 
   /* —— Телефонды жылжыту және кішірейту (компьютерде) —— */
@@ -10536,7 +10467,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         $$(".chip-role").forEach((b) => b.classList.toggle("active", b === btn));
         if (state.staffRole === "curator" && state.newsSeg === "review") state.newsSeg = "all";
         document.documentElement.dataset.role = state.staffRole;
-        if (state.staffRole === "curator" && state.tab === 4) return setTab(0);
+        if (state.staffRole === "curator" && state.tab === 3) return setTab(0);
         toast(state.staffRole === "head" ? "Рөл: бас куратор / академ. бөлім басшысы" : "Рөл: куратор");
         render();
       });
