@@ -3183,8 +3183,6 @@ html[data-mode="staff"] .fab-core { background: #8b5cf6; }
 .ga-bars.month { gap: 1px; }
 .ga-bars.month .ga-bar i { width: 70%; border-radius: 2px 2px 0 0; }
 .ga-peak { font-size: 11px; color: #8a8d9c; }
-.ga-hrow { grid-template-columns: 110px 1fr 52px; }
-.ga-hval { display: flex; gap: 4px; justify-content: flex-end; align-items: baseline; }
 .ga-hval small { font-size: 10px; }
 
 /* Прогресс за период */
