@@ -3744,48 +3744,9 @@
     };
   }
   function renderReports() {
-    const pdfs = reportPdfArchive();
-    const when = (d) => {
-      const same = dayKey(d) === dayKey(AN_TODAY);
-      return same ? `бүгін ${pad(d.getHours())}:${pad(d.getMinutes())}` : `${dmy(d)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
-    return `<div class="list-pad rp-arch">
-      <button type="button" class="rp-reg" id="rpReglament">
-        ${icon("gavel", "material-icons-outlined")}
-        <span><b>Регламент</b><small>${isHead() ? "Бас куратор" : "Куратор"} · міндеттер және ереже</small></span>
-        ${icon("chevron_right")}
-      </button>
-      <div class="rp-arch-h">
-        <b>PDF отчёттар</b>
-        <small>жүктелген күні бойынша · ${pdfs.length}</small>
-      </div>
-      ${
-        pdfs.length
-          ? pdfs
-              .map(
-                (p) => `<button type="button" class="rp-pdf-row" data-rppdf="${p.id}">
-          <span class="rp-pdf-ico">${icon("picture_as_pdf", "material-icons-outlined")}</span>
-          <span class="rp-pdf-b"><b>${esc(p.title)}</b><small>${esc(p.sub)}</small></span>
-          <span class="rp-pdf-d">${when(p.uploaded)}</span>
-        </button>`
-              )
-              .join("")
-          : `<div class="efir-empty" style="min-height:160px">Әзірге PDF жоқ</div>`
-      }
-    </div>`;
+    return `<div class="list-pad" style="min-height:120px"></div>`;
   }
-  function bindReports() {
-    $("#rpReglament")?.addEventListener("click", () => {
-      state.navStack = [];
-      openReglament();
-    });
-    $$("[data-rppdf]").forEach((b) => {
-      b.onclick = () => {
-        const p = reportPdfArchive().find((x) => x.id === Number(b.dataset.rppdf));
-        if (p) openReportPdfItem(p);
-      };
-    });
-  }
+  function bindReports() {}
 
   /* —— Staff: Магазин ——
      Бас куратор: тауарлар (қосу, баға, қалдық, жасыру), барлық тапсырыстар, монета беру (≤500)
@@ -7742,7 +7703,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       group: g.name,
       curator: MOCK.curators.find((c) => c.id === g.curatorId)?.name || myName(),
       students,
-      needWork: students.filter((s) => s.need),
+      needWork: students.filter((s) => s.need && s.plan && Math.round((s.lessons / s.plan) * 100) < 50),
     };
   }
   function frac(a, b) {
@@ -7751,25 +7712,53 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   function pctOf(a, b) {
     return b ? `${Math.round((a / b) * 100)}%` : "";
   }
+  /** План % түсі: ≤49 қызыл, 50–75 сары, 76–100 жасыл */
+  function planPctTone(p) {
+    if (p == null || Number.isNaN(p)) return "";
+    if (p <= 49) return "bad";
+    if (p <= 75) return "warn";
+    return "ok";
+  }
+  function planPctRgb(p) {
+    if (p == null || Number.isNaN(p)) return null;
+    if (p <= 49) return "C0392B";
+    if (p <= 75) return "D07A1C";
+    return "2E8B4E";
+  }
+  function planPctLabel(s) {
+    return s.videoPlan || s.notePlan ? `${s.planPct ?? 0}%` : "—";
+  }
+  /** Жұмыс керек: план < 50% (49 және төмен) */
+  function isNeedWorkStudent(s) {
+    return !!(s.videoPlan || s.notePlan) && (s.planPct ?? 0) < 50;
+  }
+  function needWorkList(students) {
+    return students.filter(isNeedWorkStudent).sort((a, b) => (a.planPct ?? 0) - (b.planPct ?? 0) || a.name.localeCompare(b.name, "kk"));
+  }
   function groupReportDocHtml(g, D) {
     const studRows = D.students
       .map(
-        (s, i) => `<tr class="${s.need ? "warn-row" : ""}">
-          <td>${i + 1}</td><td><b>${s.name}</b>${s.need ? `<div class="pdoc-need">${s.need}</div>` : ""}</td>
-          <td>${s.planOk ? "да" : "нет"}${s.videoPlan ? ` · ${s.planPct}%` : ""}</td>
+        (s, i) => `<tr class="${isNeedWorkStudent(s) ? "warn-row" : ""}">
+          <td>${i + 1}</td><td><b>${s.name}</b></td>
           <td>${frac(s.videoDone, s.videoPlan)}</td>
           <td>${frac(s.noteDone, s.notePlan)}</td>
           <td>${s.testAvg != null ? s.testAvg : "—"}</td>
           <td>${frac(s.efirDone, s.efirPlan)}</td>
           <td>${s.active ? "да" : "нет"}</td>
           <td>${s.ent != null ? s.ent : "—"}</td>
+          <td class="${planPctTone(s.videoPlan || s.notePlan ? s.planPct : null)}">${planPctLabel(s)}</td>
           <td>${s.overallAvg != null ? s.overallAvg : "—"}</td>
         </tr>`
       )
       .join("");
     const needRows = D.needWork.length
-      ? D.needWork.map((s) => `<tr><td>${s.name}</td><td>${s.need}</td><td>${frac(s.videoDone, s.videoPlan)}</td><td>${frac(s.noteDone, s.notePlan)}</td><td>${s.testAvg ?? "—"}</td></tr>`).join("")
-      : `<tr><td colspan="5">Все ученики в норме</td></tr>`;
+      ? D.needWork
+          .map(
+            (s) =>
+              `<tr><td>${s.name}</td><td class="${planPctTone(s.planPct)}">${planPctLabel(s)}</td><td>${s.testAvg ?? "—"}</td><td>${s.ent ?? "—"}</td></tr>`
+          )
+          .join("")
+      : `<tr><td colspan="4">Все ученики в норме (≥ 50% плана)</td></tr>`;
     return `
       <div class="pdoc">
         <div class="pdoc-head"><b>I4U</b><div>I4U.kz Білім беру орталығы<br>Образовательный центр I4U.kz</div></div>
@@ -7779,7 +7768,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <tr><td>Группа</td><td><b>${D.group}</b></td><td>Курс</td><td><b>${D.course}</b></td></tr>
           <tr><td>Куратор</td><td>${D.curator}</td><td>Учеников</td><td>${D.n}</td></tr>
         </table>
-        <div class="pdoc-plan">Общие показатели за период · план кестеден · видео/конспект = өткізгені / кестедегі жоспар.</div>
+        <div class="pdoc-plan">Общие показатели за период · план кестеден · видео/конспект = өткізгені / кестедегі жоспар. «Жұмыс жасалуы керек» — план &lt; 50%.</div>
         <table class="pdoc-sum">
           <tr><th>Пробный ЕНТ</th><th>Ср. тест</th><th>Общий балл</th><th>Активны</th><th>Видео</th><th>Конспекты</th><th>План</th></tr>
           <tr>
@@ -7795,12 +7784,12 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="pdoc-plan" style="margin-top:10px">Сдавали ЕНТ: ${D.a.entCount} из ${D.n}${D.a.entCount ? ` · ≥50: ${D.a.entGrant} из ${D.a.entCount}` : ""}${D.peak ? `<br>Пик активности: ${D.peak.tip} · ${D.maxV} из ${D.n}` : ""}</div>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Жұмыс жасалуы керек оқушылар</h2>
         <table class="pdoc-tbl">
-          <tr><th>Ученик</th><th>Причина</th><th>Видео</th><th>Конспект</th><th>Тест</th></tr>
+          <tr><th>Ученик</th><th>%</th><th>Ср. тест</th><th>ЕНТ</th></tr>
           ${needRows}
         </table>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Показатели по ученикам</h2>
         <table class="pdoc-tbl">
-          <tr><th>№</th><th>Ученик</th><th>План</th><th>Видео</th><th>Конспект</th><th>Ср. тест</th><th>Эфир</th><th>Активен</th><th>ЕНТ</th><th>Общий балл</th></tr>
+          <tr><th>№</th><th>Ученик</th><th>Видео</th><th>Конспект</th><th>Ср. тест</th><th>Эфир</th><th>Активен</th><th>ЕНТ</th><th>%</th><th>Общий балл</th></tr>
           ${studRows}
         </table>
         <div class="pdoc-foot">Отчёт сформирован автоматически в приложении I4U.</div>
@@ -7808,19 +7797,18 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
   function sheetPackFromReport(D) {
     const needBody = D.needWork.length
-      ? D.needWork.map((s) => [s.name, s.need, frac(s.videoDone, s.videoPlan), frac(s.noteDone, s.notePlan), s.testAvg ?? "—", s.ent ?? "—"])
-      : [["Все ученики в норме", "", "", "", "", ""]];
+      ? D.needWork.map((s) => [s.name, planPctLabel(s), s.testAvg ?? "—", s.ent ?? "—"])
+      : [["Все ученики в норме (≥ 50% плана)", "", "", ""]];
     const studBody = D.students.map((s, i) => [
       i + 1,
       s.name,
-      s.planOk ? "да" : "нет",
-      s.videoPlan ? `${s.planPct}%` : "—",
       frac(s.videoDone, s.videoPlan),
       frac(s.noteDone, s.notePlan),
       s.testAvg ?? "—",
       frac(s.efirDone, s.efirPlan),
       s.active ? "да" : "нет",
       s.ent ?? "—",
+      planPctLabel(s),
       s.overallAvg ?? "—",
       s.need || "",
     ]);
@@ -7844,15 +7832,15 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       ["Выполнили план", `${D.a.met} из ${D.n}`],
       ["Пик активности", D.peak ? `${D.peak.tip} · ${D.maxV} из ${D.n}` : "—"],
       [],
-      ["ЖҰМЫС ЖАСАЛУЫ КЕРЕК"],
-      ["Ученик", "Причина", "Видео", "Конспект", "Ср. тест", "ЕНТ"],
+      ["ЖҰМЫС ЖАСАЛУЫ КЕРЕК (< 50% плана)"],
+      ["Ученик", "%", "Ср. тест", "ЕНТ"],
       ...needBody,
       [],
       ["ПОКАЗАТЕЛИ ПО УЧЕНИКАМ"],
-      ["№", "Ученик", "План", "План %", "Видеоурок", "Конспект", "Ср. тест", "Эфир", "Активен", "ЕНТ", "Общий балл", "Внимание"],
+      ["№", "Ученик", "Видеоурок", "Конспект", "Ср. тест", "Эфир", "Активен", "ЕНТ", "%", "Общий балл", "Внимание"],
       ...studBody,
     ];
-    const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "Причина");
+    const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "%");
     const studHead = rows.findIndex((r) => r[0] === "№" && r[1] === "Ученик");
     return {
       rows,
@@ -7865,8 +7853,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         studTitle: studHead - 1,
         studHead,
         studEnd: studHead + studBody.length,
-        needCols: 6,
-        studCols: 12,
+        needCols: 4,
+        studCols: 11,
+        needPctCol: 1,
+        studPctCol: 8,
       },
     };
   }
@@ -8054,7 +8044,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       group: g.name,
       curator: MOCK.curators.find((c) => c.id === g.curatorId)?.name || myName(),
       students,
-      needWork: students.filter((s) => s.need),
+      needWork: needWorkList(students),
     };
   }
   function monthSummaryFromWeeks(g, weekNos, dateHint) {
@@ -8131,7 +8121,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       group: g.name,
       curator: D0.curator,
       students,
-      needWork: students.filter((s) => s.need),
+      needWork: needWorkList(students),
     };
   }
   let xlsxLib = null;
@@ -8161,6 +8151,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const paintRow = (r, cols, s) => {
       for (let c = 0; c < cols; c++) set(r, c, s);
     };
+    const pctStyle = (raw) => {
+      const m = String(raw ?? "").match(/(\d+)\s*%/);
+      const rgb = m ? planPctRgb(+m[1]) : null;
+      return rgb ? { font: { bold: true, sz: 11, color: { rgb } }, alignment: { horizontal: "center", vertical: "center" } } : null;
+    };
     set(layout.title, 0, XL.title);
     for (let r = 1; r <= 5; r++) {
       set(r, 0, XL.label);
@@ -8173,9 +8168,19 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     paintRow(layout.studHead, layout.studCols, XL.studHead);
     for (let r = layout.needHead + 1; r <= layout.needEnd; r++) {
       for (let c = 0; c < layout.needCols; c++) set(r, c, { ...XL.cell, ...(r % 2 ? XL.band : {}) });
+      if (layout.needPctCol != null) {
+        const ref = XLSX.utils.encode_cell({ r, c: layout.needPctCol });
+        const ps = pctStyle(ws[ref]?.v);
+        if (ps) set(r, layout.needPctCol, { ...XL.cell, ...ps });
+      }
     }
     for (let r = layout.studHead + 1; r <= layout.studEnd; r++) {
       for (let c = 0; c < layout.studCols; c++) set(r, c, { ...XL.cell, ...((r - layout.studHead) % 2 === 0 ? XL.band : {}) });
+      if (layout.studPctCol != null) {
+        const ref = XLSX.utils.encode_cell({ r, c: layout.studPctCol });
+        const ps = pctStyle(ws[ref]?.v);
+        if (ps) set(r, layout.studPctCol, { ...XL.cell, ...ps });
+      }
     }
     ws["!autofilter"] = {
       ref: XLSX.utils.encode_range({
@@ -8208,7 +8213,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       let layout = t.layout;
       if (!layout && rows[0]?.[0] === "I4U · Отчёт по группе") {
         const studHead = rows.findIndex((r) => r[0] === "№" && r[1] === "Ученик");
-        const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "Причина");
+        const needHead = rows.findIndex((r) => r[0] === "Ученик" && (r[1] === "%" || r[1] === "Причина"));
         layout = {
           title: 0,
           sectionGeneral: rows.findIndex((r) => r[0] === "ОБЩИЕ ПОКАЗАТЕЛИ"),
@@ -8218,8 +8223,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           studTitle: studHead >= 0 ? studHead - 1 : -1,
           studHead,
           studEnd: rows.length - 1,
-          needCols: 5,
-          studCols: 13,
+          needCols: 4,
+          studCols: 11,
+          needPctCol: 1,
+          studPctCol: rows[studHead]?.indexOf("%") ?? 8,
         };
       }
       if (layout) styleReportSheet(XLSX, ws, layout);
@@ -8412,7 +8419,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         label: periodLabel("day", date),
         period: "day",
         students,
-        needWork: students.filter((s) => s.need),
+        needWork: needWorkList(students),
         course: courseTitleOf(g),
         group: g.name,
         curator: MOCK.curators.find((c) => c.id === g.curatorId)?.name || myName(),
@@ -8493,10 +8500,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       },
       attention: {
         t: "Требуют внимания",
-        what: "Кесте/белсенділік бойынша артта қалған оқушылар — PDF/Excel «Жұмыс жасалуы керек».",
-        how: ["Кірмеген", "Видео/конспект/эфир жоспардан аз", "Ср. тест < 55"],
+        what: "PDF/Excel «Жұмыс жасалуы керек» — планды 50%-дан аз орындаған оқушылар ғана.",
+        how: ["Орындалу % = (видео+конспект өткізген) / (видео+конспект жоспар)", "Тізімге кіреді: % < 50 (49 және төмен)", "Түс: ≤49 қызыл · 50–75 сары · 76–100 жасыл"],
         ex: `${(D.needWork || []).length} оқушы.`,
-        src: "Кесте + белсенділік.",
+        src: "Кесте · PDF/Excel-дегідей.",
       },
     }[key];
     if (!E) return;
@@ -8569,7 +8576,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <div class="ga-ctitle ex-h" data-ex="progress">Прогресс за ${word()}${icon("info", "material-icons-outlined")}</div>
           <div class="gp-row">
             <div class="gp-big"><b>${a.videoPlan ? frac(a.videoDone, a.videoPlan) : "—"}</b><span>видеоуроки по расписанию</span></div>
-            ${a.videoPlan || a.notePlan ? `<div class="gp-pct ${pct >= 100 ? "ok" : pct >= 70 ? "mid" : "low"}">${pct}%</div>` : ""}
+            ${a.videoPlan || a.notePlan ? `<div class="gp-pct ${planPctTone(pct) === "ok" ? "ok" : planPctTone(pct) === "warn" ? "mid" : "low"}">${pct}%</div>` : ""}
           </div>
           ${
             a.videoPlan || a.notePlan
@@ -8583,12 +8590,15 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
               ? `<div class="ga-hbars">${[...D.students]
                   .sort((p, q) => (q.planPct || 0) - (p.planPct || 0))
                   .map((s) => {
-                    const w = s.videoPlan ? Math.min(100, (s.videoDone / s.videoPlan) * 100) : 0;
+                    const w = Math.min(100, s.planPct || 0);
+                    const tone = planPctTone(s.videoPlan || s.notePlan ? s.planPct : null);
+                    const pctCls = tone === "ok" ? "ok" : tone === "warn" ? "mid" : tone === "bad" ? "low" : "";
                     return `
-                <button type="button" class="ga-hrow" data-ga-student="${s.id}" data-tip="${s.name}: видео ${frac(s.videoDone, s.videoPlan)} · конспект ${frac(s.noteDone, s.notePlan)}">
+                <button type="button" class="ga-hrow" data-ga-student="${s.id}" data-tip="${s.name}: ${planPctLabel(s)} · видео ${frac(s.videoDone, s.videoPlan)} · конспект ${frac(s.noteDone, s.notePlan)} · балл ${s.overallAvg ?? "—"}">
                   <span class="ga-hname">${s.name}</span>
                   <span class="ga-htrack"><i style="width:${Math.max(2, w)}%;${s.planOk ? "" : "background:color-mix(in srgb,var(--primary) 55%,#1e1e1e)"}"></i></span>
-                  <span class="ga-hval">${frac(s.videoDone, s.videoPlan)}</span>
+                  <span class="ga-hval ${pctCls}">${planPctLabel(s)}</span>
+                  <span class="ga-hscore">${s.overallAvg != null ? s.overallAvg : "—"}</span>
                 </button>`;
                   })
                   .join("")}</div>`

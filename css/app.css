@@ -3138,12 +3138,16 @@ html[data-mode="staff"] .fab-core { background: #8b5cf6; }
 [data-tip]:hover::after, [data-tip]:focus::after { content: attr(data-tip); position: absolute; left: 50%; bottom: calc(100% + 6px); transform: translateX(-50%); white-space: nowrap; background: #f2f2f2; color: #121212; font-size: 11px; font-weight: 500; padding: 5px 8px; border-radius: 8px; z-index: 5; pointer-events: none; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4); }
 .ga-bar[data-tip]:hover::after, .ga-bar[data-tip]:focus::after { bottom: auto; top: -6px; transform: translate(-50%, -100%); }
 .ga-hbars { margin-top: 12px; display: flex; flex-direction: column; gap: 2px; }
-.ga-hrow { border: 0; background: transparent; color: #fff; font-family: inherit; display: grid; grid-template-columns: 110px 1fr 36px; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; text-align: left; }
+.ga-hrow { border: 0; background: transparent; color: #fff; font-family: inherit; display: grid; grid-template-columns: 96px 1fr 40px 32px; align-items: center; gap: 6px; padding: 5px 0; cursor: pointer; text-align: left; }
 .ga-hrow:hover .ga-htrack i, .ga-hrow:focus .ga-htrack i { background: color-mix(in srgb, var(--primary) 80%, #fff); }
 .ga-hname { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ga-htrack { height: 10px; border-radius: 0 4px 4px 0; background: #262628; overflow: hidden; }
 .ga-htrack i { display: block; height: 100%; border-radius: 0 4px 4px 0; background: var(--primary); }
-.ga-hval { font-size: 11.5px; color: #c8cad4; text-align: right; }
+.ga-hval { font-size: 11.5px; color: #c8cad4; text-align: right; font-weight: 700; }
+.ga-hval.ok { color: #5cb36d; }
+.ga-hval.mid { color: #e0a84a; }
+.ga-hval.low { color: #e06b5b; }
+.ga-hscore { font-size: 11px; color: #8a8d9c; text-align: right; }
 .ga-hrow[data-tip]:hover::after, .ga-hrow[data-tip]:focus::after { left: 60%; }
 .ga-att { width: 100%; border: 0; border-bottom: 1px solid #2c2c33; background: transparent; color: #fff; font-family: inherit; text-align: left; display: flex; align-items: center; gap: 12px; padding: 12px 0; cursor: pointer; }
 .ga-att:last-child { border-bottom: 0; }
