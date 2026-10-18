@@ -7689,10 +7689,21 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   function needWorkList(students) {
     return students.filter(isNeedWorkStudent).sort((a, b) => (a.planPct ?? 0) - (b.planPct ?? 0) || a.name.localeCompare(b.name, "kk"));
   }
+  /** Нақты не жасалмады — бұрынғыдай причина */
+  function needReason(s) {
+    if (s.need) return s.need;
+    const bits = [];
+    if (!s.active) bits.push("не заходил за период");
+    if (s.videoPlan && s.videoDone < s.videoPlan) bits.push(`видео ${s.videoDone} из ${s.videoPlan}`);
+    if (s.notePlan && s.noteDone < s.notePlan) bits.push(`конспект ${s.noteDone} из ${s.notePlan}`);
+    if (s.testAvg != null && s.testAvg < 55) bits.push(`ср. тест ${s.testAvg}`);
+    if (s.efirPlan && s.efirDone < s.efirPlan) bits.push(`эфир ${s.efirDone} из ${s.efirPlan}`);
+    return bits.join("; ") || "план < 50%";
+  }
   function groupReportDocHtml(g, D) {
     const studRows = D.students
       .map(
-        (s, i) => `<tr class="${isNeedWorkStudent(s) ? "warn-row" : ""}">
+        (s, i) => `<tr class="${isNeedWorkStudent(s) ? "bad-row" : ""}">
           <td>${i + 1}</td><td><b>${s.name}</b></td>
           <td>${frac(s.videoDone, s.videoPlan)}</td>
           <td>${frac(s.noteDone, s.notePlan)}</td>
@@ -7709,10 +7720,10 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       ? D.needWork
           .map(
             (s) =>
-              `<tr><td>${s.name}</td><td class="${planPctTone(s.planPct)}">${planPctLabel(s)}</td><td>${s.testAvg ?? "—"}</td><td>${s.ent ?? "—"}</td></tr>`
+              `<tr class="bad-row"><td>${s.name}</td><td>${needReason(s)}</td><td class="bad">${planPctLabel(s)}</td><td>${s.testAvg ?? "—"}</td><td>${s.ent ?? "—"}</td></tr>`
           )
           .join("")
-      : `<tr><td colspan="4">Все ученики в норме (≥ 50% плана)</td></tr>`;
+      : `<tr><td colspan="5">Все ученики в норме (≥ 50% плана)</td></tr>`;
     return `
       <div class="pdoc">
         <div class="pdoc-head"><b>I4U</b><div>I4U.kz Білім беру орталығы<br>Образовательный центр I4U.kz</div></div>
@@ -7738,7 +7749,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         <div class="pdoc-plan" style="margin-top:10px">Сдавали ЕНТ: ${D.a.entCount} из ${D.n}${D.a.entCount ? ` · ≥50: ${D.a.entGrant} из ${D.a.entCount}` : ""}${D.peak ? `<br>Пик активности: ${D.peak.tip} · ${D.maxV} из ${D.n}` : ""}</div>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Жұмыс жасалуы керек оқушылар</h2>
         <table class="pdoc-tbl">
-          <tr><th>Ученик</th><th>%</th><th>Ср. тест</th><th>ЕНТ</th></tr>
+          <tr><th>Ученик</th><th>Причина</th><th>%</th><th>Ср. тест</th><th>ЕНТ</th></tr>
           ${needRows}
         </table>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Показатели по ученикам</h2>
@@ -7751,8 +7762,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
   }
   function sheetPackFromReport(D) {
     const needBody = D.needWork.length
-      ? D.needWork.map((s) => [s.name, planPctLabel(s), s.testAvg ?? "—", s.ent ?? "—"])
-      : [["Все ученики в норме (≥ 50% плана)", "", "", ""]];
+      ? D.needWork.map((s) => [s.name, needReason(s), planPctLabel(s), s.testAvg ?? "—", s.ent ?? "—"])
+      : [["Все ученики в норме (≥ 50% плана)", "", "", "", ""]];
     const studBody = D.students.map((s, i) => [
       i + 1,
       s.name,
@@ -7764,7 +7775,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       s.ent ?? "—",
       planPctLabel(s),
       s.overallAvg ?? "—",
-      s.need || "",
+      needReason(s),
     ]);
     const rows = [
       ["I4U · Отчёт по группе"],
@@ -7787,14 +7798,14 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       ["Пик активности", D.peak ? `${D.peak.tip} · ${D.maxV} из ${D.n}` : "—"],
       [],
       ["ЖҰМЫС ЖАСАЛУЫ КЕРЕК (< 50% плана)"],
-      ["Ученик", "%", "Ср. тест", "ЕНТ"],
+      ["Ученик", "Причина", "%", "Ср. тест", "ЕНТ"],
       ...needBody,
       [],
       ["ПОКАЗАТЕЛИ ПО УЧЕНИКАМ"],
-      ["№", "Ученик", "Видеоурок", "Конспект", "Ср. тест", "Эфир", "Активен", "ЕНТ", "%", "Общий балл", "Внимание"],
+      ["№", "Ученик", "Видеоурок", "Конспект", "Ср. тест", "Эфир", "Активен", "ЕНТ", "%", "Общий балл", "Причина"],
       ...studBody,
     ];
-    const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "%");
+    const needHead = rows.findIndex((r) => r[0] === "Ученик" && r[1] === "Причина");
     const studHead = rows.findIndex((r) => r[0] === "№" && r[1] === "Ученик");
     return {
       rows,
@@ -7807,9 +7818,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         studTitle: studHead - 1,
         studHead,
         studEnd: studHead + studBody.length,
-        needCols: 4,
+        needCols: 5,
         studCols: 11,
-        needPctCol: 1,
+        needPctCol: 2,
         studPctCol: 8,
       },
     };
@@ -8105,11 +8116,16 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     const paintRow = (r, cols, s) => {
       for (let c = 0; c < cols; c++) set(r, c, s);
     };
-    const pctStyle = (raw) => {
+    const pctNum = (raw) => {
       const m = String(raw ?? "").match(/(\d+)\s*%/);
-      const rgb = m ? planPctRgb(+m[1]) : null;
+      return m ? +m[1] : null;
+    };
+    const pctStyle = (raw) => {
+      const n = pctNum(raw);
+      const rgb = n != null ? planPctRgb(n) : null;
       return rgb ? { font: { bold: true, sz: 11, color: { rgb } }, alignment: { horizontal: "center", vertical: "center" } } : null;
     };
+    const badRow = { font: { sz: 11, color: { rgb: "8B1E14" } }, fill: { fgColor: { rgb: "FDE8E6" } }, alignment: { vertical: "center" } };
     set(layout.title, 0, XL.title);
     for (let r = 1; r <= 5; r++) {
       set(r, 0, XL.label);
@@ -8121,19 +8137,25 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     if (layout.needHead >= 0) paintRow(layout.needHead, layout.needCols, XL.needHead);
     paintRow(layout.studHead, layout.studCols, XL.studHead);
     for (let r = layout.needHead + 1; r <= layout.needEnd; r++) {
-      for (let c = 0; c < layout.needCols; c++) set(r, c, { ...XL.cell, ...(r % 2 ? XL.band : {}) });
+      const pctRef = layout.needPctCol != null ? XLSX.utils.encode_cell({ r, c: layout.needPctCol }) : null;
+      const n = pctRef ? pctNum(ws[pctRef]?.v) : null;
+      const isBad = n != null && n <= 49;
+      for (let c = 0; c < layout.needCols; c++) set(r, c, isBad ? badRow : { ...XL.cell, ...(r % 2 ? XL.band : {}) });
       if (layout.needPctCol != null) {
-        const ref = XLSX.utils.encode_cell({ r, c: layout.needPctCol });
-        const ps = pctStyle(ws[ref]?.v);
-        if (ps) set(r, layout.needPctCol, { ...XL.cell, ...ps });
+        const ps = pctStyle(ws[XLSX.utils.encode_cell({ r, c: layout.needPctCol })]?.v);
+        if (ps) set(r, layout.needPctCol, { ...(isBad ? badRow : XL.cell), ...ps, fill: isBad ? badRow.fill : undefined });
       }
     }
     for (let r = layout.studHead + 1; r <= layout.studEnd; r++) {
-      for (let c = 0; c < layout.studCols; c++) set(r, c, { ...XL.cell, ...((r - layout.studHead) % 2 === 0 ? XL.band : {}) });
+      const pctRef = layout.studPctCol != null ? XLSX.utils.encode_cell({ r, c: layout.studPctCol }) : null;
+      const n = pctRef ? pctNum(ws[pctRef]?.v) : null;
+      const isBad = n != null && n <= 49;
+      for (let c = 0; c < layout.studCols; c++) {
+        set(r, c, isBad ? badRow : { ...XL.cell, ...((r - layout.studHead) % 2 === 0 ? XL.band : {}) });
+      }
       if (layout.studPctCol != null) {
-        const ref = XLSX.utils.encode_cell({ r, c: layout.studPctCol });
-        const ps = pctStyle(ws[ref]?.v);
-        if (ps) set(r, layout.studPctCol, { ...XL.cell, ...ps });
+        const ps = pctStyle(ws[pctRef]?.v);
+        if (ps) set(r, layout.studPctCol, { ...(isBad ? badRow : XL.cell), ...ps, fill: isBad ? badRow.fill : undefined });
       }
     }
     ws["!autofilter"] = {
@@ -8167,7 +8189,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       let layout = t.layout;
       if (!layout && rows[0]?.[0] === "I4U · Отчёт по группе") {
         const studHead = rows.findIndex((r) => r[0] === "№" && r[1] === "Ученик");
-        const needHead = rows.findIndex((r) => r[0] === "Ученик" && (r[1] === "%" || r[1] === "Причина"));
+        const needHead = rows.findIndex((r) => r[0] === "Ученик" && (r[1] === "Причина" || r[1] === "%"));
+        const needPctCol = needHead >= 0 ? rows[needHead].indexOf("%") : 2;
         layout = {
           title: 0,
           sectionGeneral: rows.findIndex((r) => r[0] === "ОБЩИЕ ПОКАЗАТЕЛИ"),
@@ -8177,9 +8200,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           studTitle: studHead >= 0 ? studHead - 1 : -1,
           studHead,
           studEnd: rows.length - 1,
-          needCols: 4,
+          needCols: needHead >= 0 ? rows[needHead].length : 5,
           studCols: 11,
-          needPctCol: 1,
+          needPctCol: needPctCol >= 0 ? needPctCol : 2,
           studPctCol: rows[studHead]?.indexOf("%") ?? 8,
         };
       }

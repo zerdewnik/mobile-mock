@@ -3492,6 +3492,8 @@ html[data-mode="staff"] .fab-core { background: #8b5cf6; }
 .rg-add .material-icons-round { font-size: 20px; color: #c4b5fd; }
 .rg-body { width: 100%; min-height: 360px; box-sizing: border-box; border: 0; border-radius: 16px; background: var(--card, #1e1e1e); color: inherit; font: inherit; font-size: 14px; line-height: 1.5; padding: 14px; resize: vertical; outline: none; }
 .pdoc .warn-row td { background: #fff8f0; }
+.pdoc .bad-row td { background: #fde8e6; color: #8b1e14; }
+.pdoc .bad-row td.bad { color: #c0392b; font-weight: 700; }
 .pdoc-need { margin-top: 2px; font-size: 10px; color: #c07820; font-weight: 500; }
 .ga-export-foot { display: flex; gap: 8px; padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); }
 .ga-export-foot .btn { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
