@@ -3595,113 +3595,6 @@
 
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
-  const DEFAULT_DUTIES = [
-    "Группамен танысу (куратор сағаты)",
-    "Группаның списогын жасау (аты-жөні, номері, ата-анасының номері, қай қаладан, квартира ма общежитие ма, ҰБТ балы, қай мектепті бітірді, спортпен немесе өнермен айналыса ма)",
-    "Группаның старостасын сайлау",
-    "Группаның ватсап чатын ашу",
-    "Группаның ережесін бекіту",
-    "Группаның мақсатын айқындау",
-    "Сабақ кестесімен таныстыру",
-    "Универдің ережелерімен таныстыру",
-    "Студенттердің сабаққа қатысуын бақылау",
-    "Студенттердің үлгерімін бақылау",
-    "Студенттердің тәртібін бақылау",
-    "Студенттердің жатақханадағы жағдайын бақылау",
-    "Студенттермен жеке жұмыс жасау",
-    "Ата-аналармен байланыста болу",
-    "Деканатпен байланыста болу",
-    "Тәрбиелік іс-шаралар өткізу",
-    "Студенттердің қоғамдық жұмыстарға қатысуын қадағалау",
-    "Есеп беру (апталық, айлық, семестрлік)",
-  ];
-  function reglamentStore() {
-    const key = isHead() ? "head" : "curator";
-    const bag = (MOCK.reglament ||= {});
-    if (!bag[key]) {
-      bag[key] = {
-        tab: "duties",
-        text: "",
-        duties: DEFAULT_DUTIES.map((text, i) => ({ id: i + 1, text, done: false })),
-        nextId: DEFAULT_DUTIES.length + 1,
-      };
-    }
-    return bag[key];
-  }
-  function openReglament() {
-    const S = reglamentStore();
-    const paint = () => paintStack();
-    pushScreen(
-      "Регламент",
-      () => {
-        const tab = S.tab || "duties";
-        const done = S.duties.filter((d) => d.done).length;
-        return `<div class="list-pad rg">
-          <div class="seg-tabs">
-            <button type="button" data-rgtab="duties" class="${tab === "duties" ? "on" : ""}">Міндеттер</button>
-            <button type="button" data-rgtab="text" class="${tab === "text" ? "on" : ""}">Регламент</button>
-          </div>
-          ${
-            tab === "duties"
-              ? `<div class="rg-meta"><b>${done}/${S.duties.length}</b><small>орындалды · мәтінді өзгертуге болады</small></div>
-            <div class="rg-list">
-              ${S.duties
-                .map(
-                  (d) => `<div class="rg-duty ${d.done ? "on" : ""}" data-rgduty="${d.id}">
-                <button type="button" class="rg-check" data-rgtoggle="${d.id}" aria-label="Галочка">${icon("check")}</button>
-                <textarea class="rg-duty-t" data-rgtext="${d.id}" rows="2">${esc(d.text)}</textarea>
-                <button type="button" class="rg-del" data-rgdel="${d.id}" aria-label="Өшіру">${icon("close")}</button>
-              </div>`
-                )
-                .join("")}
-            </div>
-            <button type="button" class="rg-add" id="rgAddDuty">${icon("add")} Міндет қосу</button>`
-              : `<div class="rg-meta"><small>Бос — өзіңіз жазыңыз. Сақталады.</small></div>
-            <textarea class="rg-body" id="rgBody" rows="16" placeholder="Регламент мәтінін осында жазыңыз…">${esc(S.text)}</textarea>`
-          }
-        </div>`;
-      },
-      () => {
-        $$("[data-rgtab]").forEach((b) => {
-          b.onclick = () => {
-            S.tab = b.dataset.rgtab;
-            paint();
-          };
-        });
-        $$("[data-rgtoggle]").forEach((b) => {
-          b.onclick = (e) => {
-            e.stopPropagation();
-            const d = S.duties.find((x) => x.id === +b.dataset.rgtoggle);
-            if (d) d.done = !d.done;
-            paint();
-          };
-        });
-        $$("[data-rgtext]").forEach((ta) => {
-          ta.oninput = () => {
-            const d = S.duties.find((x) => x.id === +ta.dataset.rgtext);
-            if (d) d.text = ta.value;
-          };
-        });
-        $$("[data-rgdel]").forEach((b) => {
-          b.onclick = (e) => {
-            e.stopPropagation();
-            S.duties = S.duties.filter((x) => x.id !== +b.dataset.rgdel);
-            paint();
-          };
-        });
-        $("#rgAddDuty")?.addEventListener("click", () => {
-          S.duties.push({ id: S.nextId++, text: "", done: false });
-          paint();
-          const ta = $(`[data-rgtext="${S.duties[S.duties.length - 1].id}"]`);
-          ta?.focus();
-        });
-        $("#rgBody")?.addEventListener("input", (e) => {
-          S.text = e.target.value;
-        });
-      },
-      { right: "<span></span>", cls: "rg-screen" }
-    );
-  }
   /* —— Staff: Магазин ——
      Бас куратор: тауарлар (қосу, баға, қалдық, жасыру), барлық тапсырыстар, монета беру (≤500)
      Куратор: өз топтарының тапсырыстары (дайын → берілді), оқушы монеталары, бонус (≤50/апта бір оқушыға) */
@@ -5476,15 +5369,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           </div>
         </div>
         <div class="menu-block">
-          ${
-            inStaff
-              ? `${menuRow({
-                  iconName: "gavel",
-                  title: "Регламент",
-                  action: "reglament",
-                })}<div class="menu-divider"></div>`
-              : ""
-          }
           ${menuRow({ iconName: "info", title: L.about, action: "about" })}
           <div class="menu-divider"></div>
           ${menuRow({ iconName: "description", title: L.terms, action: "terms" })}
@@ -5580,12 +5464,6 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
             closeSheet();
             toast("Покупки восстановлены", "ok");
           };
-          return;
-        }
-        if (a === "reglament") {
-          closeScreen();
-          state.navStack = [];
-          openReglament();
           return;
         }
         const labels = {
