@@ -3855,8 +3855,11 @@ html[data-mode="staff"] .appbar-profile { color: var(--primary); }
 .acc-badge { display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 999px; background: rgba(92,179,109,.18); color: #5cb36d; }
 .acc-badge.warn { background: rgba(224,168,74,.18); color: #e0a84a; }
 .acc-badge .material-icons-outlined { font-size: 13px; }
-/* Зачисление — тек бас куратор (студентте осы слот — Мои курсы) */
-html[data-mode="staff"][data-role="curator"] .nav-item[data-tab="3"] { display: none; }
+/* Куратор: оң жақ слот бос (орын сақталады). Зачисление — тек бас куратор. Студентте сол слот — Мои курсы */
+html[data-mode="staff"] .nav-item.nav-empty {
+  visibility: hidden;
+  pointer-events: none;
+}
 html[data-mode="staff"][data-role="curator"] #tabChips [data-goto="3"] { display: none; }
 .appbar-title-row { display: flex; align-items: center; gap: 6px; flex: 1; }
 .appbar-add { width: 30px; height: 30px; border-radius: 50%; border: 0; background: rgba(255,255,255,.16); color: #fff; display: grid; place-items: center; cursor: pointer; }

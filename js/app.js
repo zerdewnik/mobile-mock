@@ -322,11 +322,27 @@
     const NAV = navConf();
     $$(".nav-item").forEach((btn) => {
       const i = Number(btn.dataset.tab);
+      const ico = btn.querySelector(".nav-ico");
+      const label = btn.querySelector(".nav-label");
+      /* Куратор: оң жақ слот (бұрынғы Отчёт) бос — орнына ештеңе қойылмайды, орын сақталады */
+      if (state.mode === "staff" && state.staffRole === "curator" && i === 3) {
+        btn.classList.remove("active");
+        btn.classList.add("nav-empty");
+        btn.disabled = true;
+        btn.setAttribute("aria-hidden", "true");
+        if (label) label.textContent = "";
+        if (ico) {
+          ico.className = "nav-ico";
+          ico.textContent = "";
+        }
+        return;
+      }
+      btn.classList.remove("nav-empty");
+      btn.disabled = false;
+      btn.removeAttribute("aria-hidden");
       const active = i === state.tab;
       btn.classList.toggle("active", active);
       const conf = NAV[i];
-      const ico = btn.querySelector(".nav-ico");
-      const label = btn.querySelector(".nav-label");
       if (label && conf) label.textContent = conf.label;
       if (!ico || !conf) return;
       ico.className = `nav-ico ${active ? conf.fillClass : conf.outClass}`;
