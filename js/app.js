@@ -7698,12 +7698,19 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     if (s.notePlan && s.noteDone < s.notePlan) bits.push(`конспект ${s.noteDone} из ${s.notePlan}`);
     if (s.testAvg != null && s.testAvg < 55) bits.push(`ср. тест ${s.testAvg}`);
     if (s.efirPlan && s.efirDone < s.efirPlan) bits.push(`эфир ${s.efirDone} из ${s.efirPlan}`);
-    return bits.join("; ") || "план < 50%";
+    return bits.length ? bits.join("; ") : "—";
+  }
+  function planPctRowClass(s) {
+    if (!(s.videoPlan || s.notePlan)) return "";
+    const t = planPctTone(s.planPct);
+    return t === "bad" ? "bad-row" : t === "warn" ? "warn-row" : t === "ok" ? "ok-row" : "";
   }
   function groupReportDocHtml(g, D) {
     const studRows = D.students
       .map(
-        (s, i) => `<tr class="${isNeedWorkStudent(s) ? "bad-row" : ""}">
+        (s, i) => {
+          const tone = planPctTone(s.videoPlan || s.notePlan ? s.planPct : null);
+          return `<tr class="${planPctRowClass(s)}">
           <td>${i + 1}</td><td><b>${s.name}</b></td>
           <td>${frac(s.videoDone, s.videoPlan)}</td>
           <td>${frac(s.noteDone, s.notePlan)}</td>
@@ -7711,9 +7718,11 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
           <td>${frac(s.efirDone, s.efirPlan)}</td>
           <td>${s.active ? "да" : "нет"}</td>
           <td>${s.ent != null ? s.ent : "—"}</td>
-          <td class="${planPctTone(s.videoPlan || s.notePlan ? s.planPct : null)}">${planPctLabel(s)}</td>
+          <td class="${tone}">${planPctLabel(s)}</td>
           <td>${s.overallAvg != null ? s.overallAvg : "—"}</td>
-        </tr>`
+          <td>${needReason(s)}</td>
+        </tr>`;
+        }
       )
       .join("");
     const needRows = D.needWork.length
@@ -7754,7 +7763,7 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         </table>
         <h2 style="margin:18px 0 6px;font-size:15px;color:#2d5a8c">Показатели по ученикам</h2>
         <table class="pdoc-tbl">
-          <tr><th>№</th><th>Ученик</th><th>Видео</th><th>Конспект</th><th>Ср. тест</th><th>Эфир</th><th>Активен</th><th>ЕНТ</th><th>%</th><th>Общий балл</th></tr>
+          <tr><th>№</th><th>Ученик</th><th>Видео</th><th>Конспект</th><th>Ср. тест</th><th>Эфир</th><th>Активен</th><th>ЕНТ</th><th>%</th><th>Общий балл</th><th>Причина</th></tr>
           ${studRows}
         </table>
         <div class="pdoc-foot">Отчёт сформирован автоматически в приложении I4U.</div>
@@ -8126,6 +8135,9 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
       return rgb ? { font: { bold: true, sz: 11, color: { rgb } }, alignment: { horizontal: "center", vertical: "center" } } : null;
     };
     const badRow = { font: { sz: 11, color: { rgb: "8B1E14" } }, fill: { fgColor: { rgb: "FDE8E6" } }, alignment: { vertical: "center" } };
+    const warnRow = { font: { sz: 11, color: { rgb: "8A5A10" } }, fill: { fgColor: { rgb: "FFF4D6" } }, alignment: { vertical: "center" } };
+    const okRow = { font: { sz: 11, color: { rgb: "1F6B3A" } }, fill: { fgColor: { rgb: "E6F6EB" } }, alignment: { vertical: "center" } };
+    const toneRow = (n) => (n == null ? null : n <= 49 ? badRow : n <= 75 ? warnRow : okRow);
     set(layout.title, 0, XL.title);
     for (let r = 1; r <= 5; r++) {
       set(r, 0, XL.label);
@@ -8139,23 +8151,21 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
     for (let r = layout.needHead + 1; r <= layout.needEnd; r++) {
       const pctRef = layout.needPctCol != null ? XLSX.utils.encode_cell({ r, c: layout.needPctCol }) : null;
       const n = pctRef ? pctNum(ws[pctRef]?.v) : null;
-      const isBad = n != null && n <= 49;
-      for (let c = 0; c < layout.needCols; c++) set(r, c, isBad ? badRow : { ...XL.cell, ...(r % 2 ? XL.band : {}) });
+      const rowSt = toneRow(n) || { ...XL.cell, ...(r % 2 ? XL.band : {}) };
+      for (let c = 0; c < layout.needCols; c++) set(r, c, rowSt);
       if (layout.needPctCol != null) {
         const ps = pctStyle(ws[XLSX.utils.encode_cell({ r, c: layout.needPctCol })]?.v);
-        if (ps) set(r, layout.needPctCol, { ...(isBad ? badRow : XL.cell), ...ps, fill: isBad ? badRow.fill : undefined });
+        if (ps) set(r, layout.needPctCol, { ...rowSt, ...ps, fill: rowSt.fill });
       }
     }
     for (let r = layout.studHead + 1; r <= layout.studEnd; r++) {
       const pctRef = layout.studPctCol != null ? XLSX.utils.encode_cell({ r, c: layout.studPctCol }) : null;
       const n = pctRef ? pctNum(ws[pctRef]?.v) : null;
-      const isBad = n != null && n <= 49;
-      for (let c = 0; c < layout.studCols; c++) {
-        set(r, c, isBad ? badRow : { ...XL.cell, ...((r - layout.studHead) % 2 === 0 ? XL.band : {}) });
-      }
+      const rowSt = toneRow(n) || { ...XL.cell, ...((r - layout.studHead) % 2 === 0 ? XL.band : {}) };
+      for (let c = 0; c < layout.studCols; c++) set(r, c, rowSt);
       if (layout.studPctCol != null) {
         const ps = pctStyle(ws[pctRef]?.v);
-        if (ps) set(r, layout.studPctCol, { ...(isBad ? badRow : XL.cell), ...ps, fill: isBad ? badRow.fill : undefined });
+        if (ps) set(r, layout.studPctCol, { ...rowSt, ...ps, fill: rowSt.fill });
       }
     }
     ws["!autofilter"] = {
