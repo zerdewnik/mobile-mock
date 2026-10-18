@@ -10484,6 +10484,8 @@ ${f(`S<sub>n</sub> = ${frac("a<sub>1</sub> + a<sub>n</sub>", "2")} · n`)}
         if (state.staffRole === "curator" && state.newsSeg === "review") state.newsSeg = "all";
         document.documentElement.dataset.role = state.staffRole;
         if (state.staffRole === "curator" && state.tab === 3) return setTab(0);
+        paintNavIcons();
+        paintTabChips();
         toast(state.staffRole === "head" ? "Рөл: бас куратор / академ. бөлім басшысы" : "Рөл: куратор");
         render();
       });
